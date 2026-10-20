@@ -8,7 +8,7 @@ source: Zhachory1/ralph#2
 revision: v1
 date: 2026-10-20
 prs:
-  - Zhachory1/docs (this pull request)
+  - Zhachory1/docs#1
 ---
 
 # Keep the built-in dashboard; do not adopt hermes-webui
