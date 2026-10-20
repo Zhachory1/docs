@@ -1,406 +1,441 @@
 ---
 id: dec-hermes-webui-evaluation
-title: Keep the built-in dashboard; do not adopt hermes-webui
+title: Keep the built-in dashboard as monitor and as chat surface; do not adopt hermes-webui
 status: in review
 owner: Zhachory1
-card: t_d0c0db4f
+card: t_582469df
 source: Zhachory1/ralph#2
-revision: v2
+revision: v3
 date: 2026-10-20
 prs:
   - Zhachory1/docs#1
 ---
 
-# Keep the built-in dashboard; do not adopt hermes-webui
+# Keep the built-in dashboard as monitor and as chat surface; do not adopt hermes-webui
 
 Status: **in review** — proposed, awaiting human ratification at the decision gate.
-Decision: **Keep the built-in dashboard. Do not adopt hermes-webui.**
-Source: Zhachory1/ralph issue #2, "Evaluate hermes-webui as the interface, in place of the built-in dashboard".
-Revision: v2 (2026-10-20). v1 is superseded in its reasoning, not in its answer — see "Changed since v1".
+Decision: **Keep the built-in dashboard. Do not adopt hermes-webui — not as the monitor, and not
+as a second surface for chat.**
+Source: Zhachory1/ralph issue #2, "Evaluate hermes-webui as the interface, in place of the built-in
+dashboard".
+Revision: v3 (2026-10-20). v2 answered "which of these two is the better monitor". You then said
+hermes-webui is built for humans *chatting with the orchestrator*, not for monitoring. v3 answers
+the question that frame implies. The answer is the same; the reason is different again, and one
+load-bearing fact changed — see "Changed since v2".
 
 ---
 
 ## Review header
 
-**Decisions needed from you (3).**
+**Decisions needed from you (4).**
 
-1. **Ratify or overturn the recommendation.** It is unchanged from v1 — keep the built-in
-   dashboard — but it is now a **weak** preference resting on an absence of demonstrated benefit,
-   where v1 claimed a safety case. That safety case did not survive your review and has been
-   withdrawn. A reasonable person could decide the other way on this evidence; I am recording my
-   reading, not asserting the question is closed. Merging ratifies; a comment overturns.
-2. **Settle it on this evidence, or test the thing that was never tested.** Issue #2's own
-   strongest complaint is that the built-in Kanban view *"has been least useful during this work"*
-   — and the comparison the issue commissioned tested one narrow job (find a blocked card, read
-   its reason, clear it), not daily usefulness. So the evaluation never examined the grievance
-   that motivated it. A bounded trial would settle that properly; see "How to overturn this
-   cheaply". Whether that is worth your time, or whether "no demonstrated benefit" is enough to
-   close the question, is a call about your own time and I should not make it for you.
-3. **Where this file lives.** Filed as `projects/hermes-webui-evaluation/decisions.md` because the
-   card directed it there. This repository's own rule moves a decision that outlives its feature up
-   to the owning area, and "which interface runs the board" is an ongoing responsibility rather
-   than work with an end. If you agree, move it to `areas/` on merge. Flagged rather than silently
-   chosen. (Unchanged from v1; you did not comment on it.)
+1. **Ratify or overturn, now on the conversational axis.** The recommendation is unchanged, and it
+   is still **weakly held**. What changed is why: the premise that this system has no
+   conversational surface does not hold. The built-in dashboard ships an always-enabled in-browser
+   Chat tab that runs a full Hermes session, scoped to any profile — including `ralph-orchestrator`
+   — and can resume a past session ([CODE], §1). So hermes-webui is not filling an empty slot; it is
+   offering a nicer-shaped chat than one you already have and, as far as I can tell, have not
+   opened. Merging ratifies; a comment overturns.
+2. **Check one thing I could not: does your dashboard on `127.0.0.1:9219` show a Chat tab?** I read
+   the Chat tab out of the Hermes install this worker runs on (`0.22.2`, `d923a5e`), and could not
+   reach port 9219 from inside the worker container to confirm the pinned image you actually
+   publish has it. If it does not, decision 1 is much closer, because then hermes-webui really
+   would be adding a surface rather than duplicating one. This is a ten-second check at your desk
+   and it is the single fact this revision leans on hardest.
+3. **What does "chatting with the orchestrator" mean — between runs, or during one?** Both chat
+   surfaces (hermes-webui's and the dashboard's) *start or resume* a session; neither attaches to a
+   dispatched worker while it is running ([CODE], §3). If you meant "ask the system things and have
+   it act, between cards", you have that today. If you meant "interrupt the orchestrator mid-card
+   and steer it", neither tool delivers it, this evaluation cannot settle it, and it should be its
+   own card. I could not infer which you meant and the answer changes what gets built next.
+4. **Where this file lives.** Still filed as `projects/hermes-webui-evaluation/decisions.md` because
+   the card said so; this repository's own rule would move a standing responsibility to `areas/`.
+   Move it on merge if you agree. (Unchanged from v1 and v2; you have not commented on it.)
 
 **Council dissent.**
 
-- **You, in review on PR #1, against v1 — upheld on every point, and v1 was wrong.** Your summary
-  was that the record *"has made a lot of assumptions on what I want/need for a service and over
-  provisioned on safety even though it's not exposing ports at all."* I agree. Specifically:
-  blast radius is not a property of the UI (the same agent capability sits behind the current
-  dashboard and is mitigated in base Hermes by sandboxes and approved tools); exposure risk is
-  moot while nothing binds past localhost; third-party and always-on are already true of what runs
-  today; an unpinned image is a thing to pin, not a thing to refuse; and the attention banner was
-  far too thin to be reason #1. Four of v1's five pillars are withdrawn below under "What this
-  decision no longer rests on". **Resolution: conceded in full.** The answer survives only because
-  the one argument you did not contest — nothing here shows the replacement is *better* — was
-  always the load-bearing one, and v1 buried it under four arguments that were not.
-- **Agent reviewer (t_b493c10f) against v1 — one finding resolved by your review, one promoted.**
-  It flagged that the "full CLI toolset" blast-radius claim rested on an observed config grant
-  rather than an executed tool call, and called it *the* load-bearing assumption. That is now
-  resolved by subtraction, not by evidence: blast radius no longer differentiates the two UIs, so
-  the strength of that evidence no longer matters to the decision. Its second finding is promoted
-  to load-bearing: version coupling was sandboxed only on the non-Docker install path while this
-  stack deploys via Docker Compose — and version coupling is now the main surviving argument. See
-  Assumption 1.
-- **Research note vs sandbox report, internal to the evidence — unchanged from v1, and it cuts
-  against this recommendation.** The research note predicted no dedicated kanban REST endpoint;
-  the sandbox found a first-class kanban surface including `POST /api/kanban/tasks/<id>/unblock`
-  and an SSE event stream. **Resolved in favour of the sandbox**, which watched real traffic. This
-  is evidence that the kanban integration is more mature than its documentation suggests, and it
-  is kept here rather than dropped.
+- **You, on PR #1 — the frame is accepted in full, and it was the right correction.** Both earlier
+  revisions compared two monitors and scored them on finding a blocked card. If hermes-webui's job
+  is conversation, that comparison was answering a question nobody asked. §3 redoes it on the
+  conversational axis. **Resolution: conceded on the frame, unchanged on the answer** — and the
+  record now says which of its claims the frame retires.
+- **The sandbox report versus the code, on whether the dashboard has a chat — the one real evidence
+  conflict in this revision.** The sandbox report states the built-in dashboard "does not bundle a
+  full agent chat session into the same page by default" [SANDBOX]. The dashboard's own source says
+  otherwise: the Chat tab is a module constant set to enabled, not a flag
+  (`web_server.py:461-464`), and its single-page app ships `ChatPage` and `SessionsPage` bundles
+  [CODE]. **Resolved in favour of the code**, because the sandbox never opened the tab — it was
+  driving the kanban comparison the card asked for, and recorded an absence it had not looked for.
+  This is exactly the kind of claim a decision should not inherit unchecked, and v2 did inherit it.
+  Decision 2 exists because resolving it in favour of the code is still one install removed from
+  *your* install.
+- **Agent reviewer (t_b493c10f), carried forward.** Its promoted finding stands untouched by this
+  reframing: version coupling was sandboxed only on the non-Docker path, while this stack deploys
+  via Docker Compose, and coupling is still the surviving cost. See Assumption 3.
 
 **Scope: S.** One PR, documentation only: this file. No code, no compose change, no port, no
 service.
 
-**Changed since v1.**
+**Changed since v2.**
 
-- The reasoning is rewritten, not softened. Four of five arguments are **withdrawn outright** and
-  named as withdrawn, so this record cannot be cited later for claims it no longer makes.
-- The attention banner is demoted from reason #1 to a parenthetical. The named job is now recorded
-  as a **wash**, full stop.
-- "What this decision costs" is **deleted**: its central claim — that the off-desk reply problem
-  stays unsolved — was wrong. The notifier plus a poller already covers that, and off-host access
-  is a non-starter regardless.
-- v1's human-decision #2 ("accept the unmet need, or commission a separate exposure record") is
-  **deleted** for the same reason. Replaced with decision 2 above, which is a real open question.
-- §3 is rewritten from "Risk axes" into "What the risk axes came to", recording for three of the
-  four axes that they **do not differentiate the two options** — and why.
-- §5 (exposure) is cut from two paragraphs to three sentences: one factual statement that issue #2
-  requires, with the sermon removed.
-- Assumptions is restructured: six items are moved out of the list into "No longer assumptions"
-  because you have now stated the answers, and the remaining list is reordered by how much weight
-  the decision actually puts on each.
-- The decision itself is **unchanged**, and is now explicitly recorded as weakly held.
+- **New, and load-bearing: the incumbent already has the thing.** §1 records the dashboard's Chat
+  tab, profile scoping, and session resume, read from source with paths and line numbers. v2 did
+  not know this, and it is why the answer survives the reframing instead of being overturned by it.
+- **The comparison is redone on the conversational axis** (§3), replacing "who shows a blocked card
+  better" as the deciding comparison. The monitor comparison is demoted to §4 and compressed to a
+  single paragraph: it is still true, it is just no longer the question.
+- **A third option is named and declined: adopt hermes-webui for chat only, alongside the
+  dashboard** (§2, "The option this frame opens"). Neither earlier revision considered it, and
+  under this frame it is the strongest version of the case for adoption.
+- **The never-tested gap moved.** v2's weak point was that nobody tested the kanban view across a
+  working week. v3's is sharper: **nobody ran a single chat turn on either tool**, so the axis this
+  decision now turns on is the one the evidence covers least. Promoted from Assumption 2 (low
+  weight) to Assumption 2 (load-bearing), inverted by the reframing.
+- **"How to overturn this cheaply" is rewritten** around chat rather than around the board, and now
+  starts with opening a URL rather than installing anything.
+- Your reframing comment is recorded as settled fact, not as my inference ("No longer assumptions").
+- The decision itself is **unchanged** and remains explicitly weakly held.
 
 ---
 
 ## Decision
 
-**Keep the built-in dashboard. Do not adopt hermes-webui as the interface.**
+**Keep the built-in dashboard. Do not adopt hermes-webui, as monitor or as chat surface.**
 
-### The reason, in one paragraph
+### The question this frame implies, and the answer
 
-On the one job issue #2 named, the two tools are a wash — neither is better at finding a blocked
-card, reading its reason, and clearing it. No other tested property favours hermes-webui, and
-adopting it adds a standing upgrade constraint: because it runs Hermes in-process against internal
-module layout rather than a versioned API, a pinned hermes-webui is pinned to a *particular*
-Hermes, so every Hermes bump needs a hermes-webui that matches it. The built-in dashboard has that
-constraint satisfied by construction, since it ships inside the image you already pin. Changing the
-control surface of the system for no measured gain, in exchange for a permanent coupling, is not a
-trade worth making on the evidence collected. That is the whole case.
+You asked, in effect, two things: should this system have a conversational surface to the
+orchestrator, and is hermes-webui a reasonable one.
 
-### What this decision no longer rests on
+**Should it: yes, and it has three.** A terminal session under any profile; the dashboard's Chat
+tab, which is that same session in a browser and can be scoped to `ralph-orchestrator` or resumed
+from a past session; and the card comment thread, which is the only one of the three that is
+durable and reaches a future run. §1 records all three with citations. The channel the system is
+genuinely missing is not a chat window — it is a way to reach a worker *while it is running*, and
+nothing in either tool provides that.
 
-v1 gave five reasons. Your review retired four of them, and this record withdraws them explicitly
-so that nobody — including a future me — re-litigates this from the old text:
+**Is hermes-webui a reasonable one: yes, and it is probably the better-shaped chat.** It presents
+conversation as a chat application rather than a terminal emulator, with a session list, model and
+reasoning surfaces, attachment storage, a transcription capability probe, and a profile switcher
+[SANDBOX][RESEARCH], plus the mobile layout issue #2 credits it with. Against the dashboard's
+xterm-in-a-tab, that is a real ergonomic difference and a larger one than anything the monitor
+comparison found.
 
-1. **Withdrawn: "its blast radius is the profile's, not a dashboard's."** You are right that this
-   is not a property of the UI. The same agent capability is reachable behind the current
-   dashboard, and the mitigation lives in base Hermes — sandboxes and approved tools — not in the
-   choice of front end. Whatever is true of hermes-webui's reach here is already true today. It is
-   not a differentiator and it should not have been argued as one.
-2. **Withdrawn: "a password is not safe exposure."** Correct as a general statement and irrelevant
-   here: nothing binds beyond 127.0.0.1, you have said that is not going to change, and this is
-   your machine. An argument about what *would* be true after a hypothetical exposure is not an
-   argument about the decision in front of you. §5 now states the localhost fact once, because
-   issue #2 requires it, and stops.
-3. **Withdrawn: "third-party, and one more always-on service."** The current UI is already a
-   third-party always-on service. The marginal cost of adopting hermes-webui is one more
-   lifecycle, which is a real but small operational cost, not a category change — and nothing like
-   the notifier's 4.5GB→451MB problem, which was about size, and size is not the issue here.
-4. **Withdrawn as a *reason*, retained as a *requirement*: "it does not pin a Hermes version."**
-   Your answer — if it is not a pinned image, it should be — is the right one. An unpinned
-   dependency is a thing you fix on adoption, not a reason to decline. What survives is strictly
-   narrower and is stated in the paragraph above: the in-process coupling means pinning must now
-   be done in matched pairs, and that constraint does not go away after you fix the pin.
-5. **Demoted, not withdrawn: the attention banner.** You are right that a banner is a very small
-   thing to put at the top of a list. It is a genuine ergonomic difference the sandbox observed,
-   and it is worth about one sentence, which is what it now gets in §2. The named job is a wash.
+**Which is why the recommendation still does not change.** The ergonomic gain is concentrated
+exactly where you have ruled out going: a chat application beats a terminal emulator mainly when
+you are not at a terminal — on a phone, on a tablet, away from the desk. You have said off-host is
+a non-starter and only the local machine runs this. At the desk, the best chat surface on this
+machine is the terminal itself, and the dashboard's Chat tab already covers "in a browser, as a
+chosen profile" for the cases where a browser is what you have open. What hermes-webui adds over
+that, under your own constraint, is a nicer composer for a conversation you can already have —
+against a standing cost that has not changed: because its chat runs Hermes in-process against
+internal module layout rather than a versioned API, a pinned hermes-webui is pinned to a
+*particular* Hermes, so every Hermes bump becomes a two-sided upgrade [RESEARCH][SANDBOX]. That
+trade was not worth making for a monitor and it is not worth making for a composer.
+
+### The option this frame opens, and why it is declined
+
+The honest strongest case for adoption, which neither v1 nor v2 considered: **keep the dashboard as
+the monitor and add hermes-webui purely as the chat surface.** The two are not mutually exclusive —
+hermes-webui ships a compose layout that runs both against the same Hermes home [RESEARCH] — so
+this is a real option, not a rhetorical one, and it drops the disruption of replacing a working
+monitor.
+
+It is declined for now on two grounds, both of which you can overturn cheaply. First, the surface
+it would add overlaps one you already have and have not tried (decision 2). Second, **no one has
+run a single conversation turn on either tool**: the sandbox deliberately gave its scratch profile
+no model credentials, so hermes-webui's chat was characterised from its running config and its
+endpoints, never used [SANDBOX]. Adopting a second always-on service for a chat experience nobody
+has had yet is a decision made on a brochure. Try the tab you own, and if conversation is the thing
+that matters, run a chat trial (see "How to overturn this cheaply") — that is the evidence this
+record would need, and it does not exist today.
 
 ### What this decision is weak against
 
-Recorded plainly, because it is the strongest argument on the other side and it came from you, in
-issue #2: the built-in dashboard's Kanban view is *"the thing Ralph uses Hermes for most and the
-part of the built-in dashboard that has been least useful during this work."* The comparison this
-evaluation ran does not speak to that. It tested one narrow interaction and found parity; it did
-not test whether hermes-webui's board is nicer to live with across a working week, which is the
-actual grievance. So this decision says "no measured benefit", and the honest footnote is that the
-benefit most likely to exist was never measured. See decision 2 and "How to overturn this cheaply".
+Stated plainly, because it is the strongest argument on the other side. A terminal UI rendered into
+a browser tab is not a chat interface designed for humans, and your comment says exactly that about
+how hermes-webui was built. If, having opened `/chat`, you find the TUI-in-xterm unpleasant enough
+that you avoid talking to the system at all, then "you already have a chat surface" is technically
+true and practically worthless, and the right answer flips to the option above. That judgement
+needs five minutes with the tab, which I cannot do for you.
 
 ---
 
-## 1. What hermes-webui can reach (sandbox-verified)
+## 1. The conversational surfaces this system already has (verified)
 
-Recorded because issue #2's acceptance criteria require it. Read it as a capability description:
-after the concessions above, none of it is an argument against adoption, because the same
-capability is already reachable today. All observed by running it, not read from documentation.
-[SANDBOX]
+Recorded because this revision turns on it. Read from the source of the Hermes install this worker
+runs on — version `0.22.2`, commit `d923a5eb487a17c0a68801bba9ef0f56c81040a8` — not from
+documentation. [CODE]
 
-**Hermes APIs.** hermes-webui is not an HTTP client of a stable Hermes API. It imports Hermes
-Python modules in-process — `run_agent.AIAgent`, and the same `hermes_cli.kanban_db` the CLI and
-dispatcher use. [SANDBOX][RESEARCH] Roughly 100 distinct `/api/*` calls were captured in one
-ordinary session, including `/api/settings`, `/api/profiles`, `/api/profile/active`,
-`/api/sessions*`, `/api/models`, `/api/workspaces`, `/api/projects`, `/api/updates/check`, and a
-complete kanban surface: `/api/kanban/boards`, `/board`, `/config`, `/assignees`, `/stats`,
-`/events/stream` (long-lived SSE), `/tasks/<id>`, `/tasks/<id>/log`, and
-`POST /api/kanban/tasks/<id>/unblock`. [SANDBOX]
+**The dashboard has a Chat tab, and it is not optional.** `/opt/hermes/hermes_cli/web_server.py`
+lines 461-464: *"In-browser Chat tab (`/chat`, `/api/pty`, `/api/ws`): always enabled"*, implemented
+as a module constant rather than a feature flag. The single-page app ships the matching pages:
+`web_dist/assets/ChatPage-RJV46vkP.js` and `SessionsPage-Dp4jBTPn.js`. [CODE]
 
-**Can it act as a profile?** Yes — confirmed by action. The unblock call actually flipped a task
-from `blocked` to `ready` in the underlying SQLite board and recorded a canonical `unblocked`
-event, cross-checked from a separate shell with `hermes kanban show`. [SANDBOX] Its chat runs with
-`toolsets: ["hermes-cli"]`, read from the running config rather than the README — the same bundle a
-terminal `hermes chat` session gets: terminal, code execution, file read/write, cron, delegation.
-[SANDBOX][RESEARCH] A profile switcher means whoever is authenticated acts as the selected profile.
-[RESEARCH] This is the same capability that already sits behind the current dashboard and is
-mitigated at the Hermes layer, so it is recorded here as fact and carries no weight in the
-decision.
+**What that tab runs.** `/opt/hermes/hermes_cli/web_server_chat.py`, `_resolve_chat_argv`
+(lines 382-470): the tab spawns `hermes --tui` behind a pseudo-terminal and bridges it to xterm.js
+in the page. It takes a `profile` parameter that scopes the whole chat by pointing `HERMES_HOME` at
+that profile's directory — the source says it is *"the same propagation `hermes -p <name>`
+performs"* — and a `resume` parameter that reattaches to a past session, resolved to its newest
+descendant. So "chat with the orchestrator, from a browser, as the orchestrator" is a URL on a port
+you already publish. [CODE]
 
-**Files.** The *workspace browser panel* is scoped to a configured directory and never listed
-outside it. [SANDBOX] The *chat agent's* file and code-execution tools are not scoped to it at all.
-[SANDBOX] Worth knowing if you ever expected the panel's scoping to be a containment boundary; it
-is not one.
+**What it is not.** It is a terminal emulator, not a message composer: `ChatPage` is built on xterm
+against `/api/pty` and `/api/ws`. [CODE] Everything true of `hermes chat` in a terminal is true of
+it, including the parts that are unpleasant on a small screen.
 
-**One finding that is specific to this tool and does survive.** hermes-webui resolves which board
-to show from `HERMES_KANBAN_DB`/`HERMES_KANBAN_BOARD` environment pins, *not* from `HERMES_HOME`,
-and its documentation does not mention those variables. Launched from a shell that already had
-those pins set, it came up **labelled "Board: Default" while actually displaying the live board**.
-No writes occurred and it was corrected immediately. [SANDBOX] This is not a safety-posture
-argument: it is a correctness hazard about acting on the wrong board while the UI tells you
-otherwise, it was hit in practice rather than hypothesised, and following the tool's own documented
-isolation recipe would not have prevented it. It is mitigable by setting the variables explicitly
-on launch. It also is not purely hermes-webui's problem — see Observations.
+**The board is the other conversational channel, and the only durable one.** A comment on a card is
+delivered into the next worker's context: the `worker_context` this very card handed me opens with
+the card body and includes the full comment thread and each parent's handoff. [BOARD] That is how
+your six review comments on PR #1 reached v2 and how your reframing comment reached v3. A chat
+window has immediacy; the comment thread has memory, an audit trail, and a guaranteed reader.
 
-**Secondary observation.** Opening hermes-webui's page makes the *browser* fetch seven assets from
-`cdn.jsdelivr.net` (xterm, prism, katex), all 200 OK; the server itself only ever talked to
-127.0.0.1. The built-in dashboard made zero non-localhost requests because its assets are bundled.
-[SANDBOX] Recorded as a real difference, weighted as minor.
+**Nothing else is connected.** The gateway is running and serves ten profiles, `ralph-orchestrator`
+among them, but its only connected platform is the local API server on `127.0.0.1:8642`,
+and the channel directory lists no messaging platform at all
+(`/home/hermes/.hermes/channel_directory.json`: `"platforms": {}`). [CODE] So the card's premise is
+right about messaging — there is no chat app wired to this stack today — and wrong about the
+browser: the dashboard's own Chat tab is there.
 
-## 2. The comparison issue #2 asked for: find a blocked card, read its reason, clear it
+## 2. What hermes-webui's chat is, and what it can reach
 
-Run independently on each UI against a throwaway board with realistically-worded blocked cards.
-[SANDBOX]
+From the sandbox run and the source review, not from its README.
 
-| | hermes-webui | Built-in dashboard |
-|---|---|---|
-| Finding it | Open Kanban tab, scan the Blocked column for a ⊘/BLOCKED marker | "⚠ 1 task needs attention" banner, clickable, jumps straight to it |
-| Reading the reason | One click; reason appears as the summary line and verbatim in Comments | One click; reason in a dedicated "Final Result (run summary)" field, separate from the event history |
-| Clearing it | One "Unblock" button, no confirmation, immediate (`POST .../unblock`) | One "Unblock" button, no confirmation, immediate (`PATCH ... status=ready`) |
-| Audit trail | Canonical `unblocked` event | Same canonical `unblocked` event |
+**It is a chat application, and it runs the agent in-process.** Chat is backed by
+`run_agent.AIAgent` imported directly, with `run_conversation(..., task_id=...)` — so a conversation
+can be bound to a kanban task, which is the one chat affordance in either tool that points at the
+board. [RESEARCH] Around it the sandbox observed a session surface (`/api/sessions*`,
+`/api/sessions/gateway/stream`), `/api/models`, `/api/reasoning`, `/api/transcribe/capability`, its
+own attachment and session storage, and a profile switcher — roughly 100 distinct `/api/*` calls in
+one ordinary session. [SANDBOX][RESEARCH] Issue #2 credits it with a mobile layout; that was not
+exercised. [ISSUE]
 
-**Verdict: a wash.** Reading and clearing are indistinguishable from the operator's seat; the
-different endpoints underneath are a maintenance detail, not a user-facing one. The dashboard's
-attention banner is a small genuine convenience on finding, and that is all it is — not a reason to
-prefer the incumbent, and corrected here from v1, which over-weighted it. [SANDBOX] Screenshots of
-both card-detail and post-unblock states were captured as evidence.
+**Its reach is a full agent session.** Chat runs with `toolsets: ["hermes-cli"]`, read from the
+running config rather than the README — the same bundle a terminal `hermes chat` gets: terminal,
+code execution, file read/write, cron, delegation. [SANDBOX] The workspace browser panel is scoped
+to a configured directory; the chat agent's file and code-execution tools are not scoped to it at
+all. [SANDBOX] A profile switcher means whoever is authenticated acts as the selected profile.
+[RESEARCH] None of this counts against it: the dashboard's Chat tab spawns the same kind of session
+with the same toolset under a profile you choose [CODE], and the mitigation for both lives in base
+Hermes — sandboxes and approved tools — as you said in review.
 
-**What this comparison does not cover**, and should be read as a limit on the whole evaluation: one
-interaction on a small throwaway board, by an operator who had just built both boards. It says
-nothing about either Kanban view across a working week on a busy real board, which is the use issue
-#2 actually cares about.
+**It can act on the board, confirmed by action.** `POST /api/kanban/tasks/<id>/unblock` actually
+flipped a task from `blocked` to `ready` in the underlying SQLite board and recorded a canonical
+`unblocked` event, cross-checked from a separate shell. [SANDBOX] Its kanban integration is more
+mature than its documentation suggests, and that is worth saying even in a record that declines it.
 
-## 3. What the risk axes came to
+**One tool-specific hazard, carried from v2 because it survives the reframing.** hermes-webui
+resolves which board to show from `HERMES_KANBAN_DB`/`HERMES_KANBAN_BOARD` environment pins, not
+from `HERMES_HOME`, and its documentation mentions neither variable. Launched from a shell that had
+those pins set, it came up **labelled "Board: Default" while actually displaying the live board**;
+no writes occurred and it was corrected immediately. [SANDBOX] Mitigable by setting the variables
+explicitly on launch, and not purely its problem — see Observations.
 
-Issue #2 named four axes. After review, three of them do not distinguish the two options. Recording
-that explicitly is the point of this section — a retired axis should be retired in writing, not
-quietly dropped.
+**What nobody did:** run a conversation turn, on either tool. The sandbox profile had no model
+credentials, deliberately. [SANDBOX] See Assumption 2.
 
-**Third-party project holding the board, profiles, and a credentialed chat — does not
-differentiate.** The facts stand: ~19,018 stars (GitHub API, confirming the issue's "~19k"), MIT,
-2,747 forks, 951 open issues/PRs, 326+ contributors. [RESEARCH] But the current dashboard is also
-third-party code with board-mutation reach, and the agent capability behind it is the same one,
-mitigated in base Hermes rather than in the front end. The honest residual is narrow: adopting
-hermes-webui means a *second* independent codebase with that reach instead of one, so its supply
-chain is additional attack surface rather than substituted attack surface. That is a real but small
-increment, not the step change v1 described. One unresolved gap, kept in proportion and not
-load-bearing: commit recency verified only to 2026-08-26, a reported `pushed_at` of 2026-10-18 that
-did not reconcile with the commits API, and issue-response latency unmeasurable because the API
-rate-limited. [RESEARCH]
+## 3. The comparison that matters under this frame: having a conversation with the orchestrator
 
-**Password versus exposure — moot.** Nothing in this stack binds beyond 127.0.0.1 and you have said
-that is not changing. The posture difference is real in the abstract — hermes-webui's
-`docs/remote-access.md` positions its password as the enabler for `HERMES_WEBUI_HOST=0.0.0.0`
-[RESEARCH], where the built-in dashboard's unauthenticated-loopback stance makes no such offer —
-but an argument about a configuration nobody is going to adopt is not an input to this decision.
-Withdrawn as a reason. §5 keeps the one factual sentence issue #2 requires.
+| | hermes-webui chat | Dashboard Chat tab | Card comment |
+|---|---|---|---|
+| Form | Chat application: composer, session list, reasoning and model surfaces, attachments [SANDBOX] | `hermes --tui` in xterm.js, bridged over `/api/pty` [CODE] | Markdown in a thread |
+| Talk as the orchestrator | Profile switcher [RESEARCH] | `profile=` scopes `HERMES_HOME`, as `hermes -p` does [CODE] | n/a — you address the card, the next run reads it |
+| Continue a past session | Session list [SANDBOX] | `resume=`, resolved to newest descendant [CODE] | The thread is the memory |
+| Reach a worker **mid-run** | No — spawns its own session [RESEARCH][SANDBOX] | No — a scoped chat spawns its own [CODE] | No — delivered at the next run |
+| Reaches a future run | Only if written to the board | Only if written to the board | Yes, in `worker_context` [BOARD] |
+| Away from this machine | Mobile layout, but off-host is a non-starter [ISSUE] | Same constraint | Same constraint |
+| Agent capability | Full `hermes-cli` toolset [SANDBOX] | Full session, same toolset [CODE] | Whatever the next worker has |
+| Standing cost | Matched-pair Hermes pinning, one more lifecycle [RESEARCH] | None — ships in the image you pin | None |
 
-**Hermes version coupling — this is the surviving argument.** hermes-webui pins no Hermes Agent
-version on either install path: `bootstrap.py` installs hermes-agent's `main`, and its
-two-container compose uses the floating `nousresearch/hermes-agent:latest`. [RESEARCH] As you said,
-that part is fixable by pinning and is a requirement, not an objection. What is not fixable by
-pinning is why the pin has to be exact: chat runs against Hermes internals in-process — module
-layout, the `AIAgent(...)` constructor signature, `run_conversation(..., task_id=...)`, the
-`state.db` schema — so an upstream refactor can break it while Hermes's documented API is untouched.
-This has already happened once: `api/agent_compat.py` exists as a "compatibility-only" shim for
-Hermes names that moved, and the project's own RFC calls the arrangement *"a compatibility bridge,
-not the long-term API contract."* [RESEARCH] The sandbox saw the coupling mechanically: bootstrap
-probed for an interpreter that could `import run_agent.AIAgent` before it would start, and
-succeeded only because the host's install happened to be shaped the way hermes-webui expected.
-[SANDBOX] **Concretely, the cost you would be taking on:** every Hermes image bump becomes a
-two-sided upgrade — find a hermes-webui revision compatible with the new Hermes, or hold the bump —
-and the canary has to cover both. The built-in dashboard has no such step, because it ships inside
-the image already being pinned. **Caveat, and it matters:** this was sandboxed on the non-Docker
-path only; the Docker-path evidence is read from compose files, not run, and this stack is Docker
-Compose. See Assumption 1.
+**Verdict: hermes-webui wins on form and loses on everything the form would buy.** Its chat is the
+better-shaped chat, and the shape pays off mainly off the desk, which is ruled out. On the two
+properties this system's loop actually runs on — reaching a worker mid-run, and being read by the
+next run — all three columns say the same thing, and the third column is the only one that says
+yes to the second. The board, not the chat window, is this system's conversational channel, and
+that is a design fact rather than a missing feature.
 
-**One more service — real, small.** A second always-on HTTP server with its own state directory,
-session and attachment storage, PID and log files, `ctl.sh` lifecycle, and an update check firing
-on every page load. [SANDBOX] Its footprint is modest: pure Python and vanilla JS, no bundler or
-runtime build step. [SANDBOX] Size is not the complaint and the notifier comparison does not apply.
-The marginal cost is one more lifecycle to run, upgrade, back up, and reason about during an
-incident. One line of cost, weighted as one line.
+**What this comparison does not cover**, and it is a sharper limit than v2's: neither chat was ever
+used. The form column is read from endpoints, bundles, and configuration, not from a conversation.
 
-## 4. Non-goals
+## 4. The monitor comparison, demoted
 
-- **Replacing the notifier.** Chat stays the alert path. Out of scope per issue #2 — and per your
+v2's comparison stands, it is simply no longer the deciding one. On the job issue #2 named — find a
+blocked card, read its reason, clear it — the two are a **wash**: reading and clearing are
+indistinguishable from the operator's seat, both land the same canonical `unblocked` event, and the
+dashboard's "⚠ 1 task needs attention" banner is a small genuine convenience on *finding*, worth
+one sentence and no more. [SANDBOX] Screenshots of both card-detail and post-unblock states are
+attached to card `t_18025034`. The dashboard stays the monitor by default, not by merit: nothing
+displaced it. Your standing complaint from issue #2 — that its Kanban view "has been least useful
+during this work" — remains untested across a working week, and is now the second-best reason to
+run the trial below rather than the first.
+
+## 5. What this decision no longer rests on
+
+v1 gave five reasons; your review retired four, and v2 withdrew them by name. They stay withdrawn
+and are not re-argued here: **blast radius** (not a property of the UI; mitigated in base Hermes by
+sandboxes and approved tools), **password versus exposure** (moot while nothing binds past
+localhost), **third-party and always-on** (the current UI is already both; the residual is one more
+lifecycle, weighted at one line), and **the unpinned image** (withdrawn as a reason, kept as a
+requirement on adoption — in your words, if it is not a pinned image, it should be). The **banner**
+was demoted to a sentence and stays demoted.
+
+v3 retires one more, this time its own: **"the dashboard is the better monitor" is no longer a
+reason to decline hermes-webui**, because under your framing it was never offering to be the
+monitor. What survives from v2 is exactly one cost — in-process coupling means pinning in matched
+pairs, and that constraint does not go away after you fix the pin [RESEARCH][SANDBOX] — and it is
+now weighed against a chat surface that overlaps one you already own rather than against a board
+view.
+
+## 6. Non-goals
+
+- **Replacing the notifier.** Chat stays the alert path, out of scope per issue #2 — and per your
   review, the notifier plus a poller is already how you communicate with this stack.
-- **Any exposure beyond localhost.** See §5.
-- **A general feature comparison.** Issue #2 named one job; this record evaluates it and declines
-  to accumulate a feature matrix.
-- **Judging hermes-webui as a project.** It looks competent and well-built, and its kanban
-  integration is more mature than its documentation suggests. This record is about fit here.
+- **Any exposure beyond localhost.** See §7.
+- **Building a mid-run steering channel.** Decision 3 may turn out to be what you want; it is not
+  something either tool offers and not something this record designs.
+- **Re-litigating the base system's agent-capability model.** Sandboxes and approved tools are the
+  mitigation layer and are not this record's business.
+- **Judging hermes-webui as a project.** It looks competent, its chat is the nicer chat, and its
+  kanban integration beats its documentation. This record is about fit here.
 - **Implementing anything.** No code, compose, or port changes accompany this record.
-- **Re-litigating the base system's agent-capability model.** Sandboxes and approved tools in base
-  Hermes are the mitigation layer and are not this record's business.
 
-## 5. Exposure
+## 7. Exposure
 
 Nothing in this evaluation was exposed beyond 127.0.0.1: both tools stayed loopback-only for the
 entire sandbox run, verified via `/proc/net/tcp` and their startup banners, with no password on
-either. [SANDBOX] **This record does not authorize exposing anything beyond localhost**, which
-issue #2 places out of scope; any future change there would be its own decision, for either tool.
-Keeping the built-in dashboard is not an argument that its loopback binding is now safe to relax.
+either. [SANDBOX] This record does not authorize exposing anything beyond localhost, which issue #2
+places out of scope; any future change there is its own decision, for either tool.
 
 ## How to overturn this cheaply
 
-This decision is weakly held, and the cheapest thing that would overturn it is not more analysis —
-it is a week of use. With the risk case withdrawn, a trial costs little: hermes-webui installs
-without touching the existing dashboard, both can run at once against the same Hermes home, and
-nothing needs to bind off the host.
+In order, cheapest first. The first step costs nothing and may end the question.
 
-A bounded trial that would actually settle decision 2: run it on localhost against the live board
-for a working week alongside the dashboard, launched with `HERMES_KANBAN_DB`/`HERMES_KANBAN_BOARD`
-set explicitly so the board-labelling hazard in §1 cannot bite, with its Hermes revision pinned so
-the coupling cost is observed rather than argued. If its Kanban view is meaningfully better to live
-with, that is the measured benefit this record says is missing, and this decision should be
-overturned on that evidence. If it is not, this is settled.
+1. **Open `http://127.0.0.1:9219/chat` and talk to the orchestrator for five minutes.** If the tab
+   is absent, decision 2 is answered against this record and the chat-only option in §2 gets much
+   stronger immediately. If it is present and tolerable, this is settled. If it is present and you
+   hate using it, go to step 2 — that is the real finding and it is worth recording on this card.
+2. **Run a chat trial, not a board trial.** Install hermes-webui on localhost alongside the
+   dashboard, pin its Hermes revision so the matched-pair cost is observed rather than argued,
+   launch it with `HERMES_KANBAN_DB`/`HERMES_KANBAN_BOARD` set explicitly so the board-labelling
+   hazard cannot bite, and use its chat — not its board — for a working week. The question it
+   answers is whether a real chat UI changes how much you actually talk to this system. If it does,
+   overturn to the chat-only option in §2; the monitor need not move either way.
 
-Otherwise, re-open only if one of these changes — "someone found the project again" is not a
-reason:
+Otherwise, re-open only if one of these changes — "someone found the project again" is not a reason:
 
 1. It talks to Hermes over a versioned, documented API instead of in-process imports — its own
    RFC's "long-term API contract" — removing the matched-pair pinning constraint.
-2. The built-in dashboard's Kanban view regresses or is removed upstream.
-3. The constraint that only the local machine runs this changes. That would reopen the interface
-   question legitimately, and should be decided on its own merits first.
+2. The dashboard's Chat tab or Kanban view regresses or is removed upstream.
+3. The constraint that only the local machine runs this changes. That reopens the interface question
+   legitimately, and the mobile layout becomes a real argument rather than an unreachable one.
 
 ## Assumptions
 
 Every inference the brief and the sources did not state, ordered by how much this decision leans on
 each.
 
-1. **Load-bearing: the Docker install path was never exercised.** hermes-webui was installed via
-   `python3 bootstrap.py` against an existing agent directory; the Docker paths were read from
-   compose files, not run. [RESEARCH] This matters more in v2 than it did in v1, because version
-   coupling is now the main surviving argument and this stack deploys via Docker Compose. If you
-   are inclined to overturn, this is the gap to close first: the matched-pair pinning cost is
-   inferred for the path you would actually use. Flagged by the agent reviewer against v1 and
-   promoted here.
-2. **Low weight now: toolset reach was observed as a grant, not exercised.** The sandbox read
-   `toolsets: ["hermes-cli"]` from the running config but did not execute a tool call through a
-   live chat turn, because the scratch profile was deliberately given no model credentials.
-   [SANDBOX] In v1 this was the load-bearing assumption; it no longer is, because blast radius no
-   longer differentiates the two options.
-3. **Low weight: the comparison is of the software, not of this deployment.** The sandbox ran its
-   own instances on 127.0.0.1:8788 and 127.0.0.1:9129 against a throwaway board, not this stack's
-   dashboard on 127.0.0.1:9219. [SANDBOX]
-4. **Low weight: maintenance health is partly unverified.** Commit recency confirmed only to
+1. **Load-bearing: your dashboard is the build I read.** The Chat tab, profile scoping, and session
+   resume are read from `/opt/hermes` on the host this worker runs on (`0.22.2`,
+   `d923a5eb487a17c0a68801bba9ef0f56c81040a8`). The dashboard you publish on `127.0.0.1:9219` comes
+   from the image this stack pins, which I could not reach from inside the worker container
+   (connection refused) and therefore could not confirm is the same build. Decision 2 is this
+   assumption, handed to you as a ten-second check.
+2. **Load-bearing: no one has had a conversation with either tool.** hermes-webui's chat was
+   characterised from its running config and observed endpoints; the sandbox profile had no model
+   credentials by design, so no turn was ever run. [SANDBOX] The dashboard's Chat tab was read from
+   source, not opened. This decision turns on an ergonomic comparison neither source measured, and
+   that is the honest weakness of v3 — in v2 this was a low-weight assumption; the reframing
+   promoted it.
+3. **Load-bearing: the Docker install path was never exercised.** hermes-webui was installed via
+   `python3 bootstrap.py` against an existing agent directory; its Docker paths were read from
+   compose files, not run [RESEARCH], and this stack deploys via Docker Compose. The matched-pair
+   pinning cost — the one surviving cost — is therefore inferred for the path you would actually
+   use. Flagged by the agent reviewer against v1 and still open.
+4. **Moderate: neither chat surface can reach a running worker.** I infer this from structure
+   rather than from a test: the dashboard's profile-scoped chat "spawns its own" gateway rather
+   than attaching to the dashboard's [CODE] and `resume` reattaches to a session's newest
+   descendant, while hermes-webui constructs its own `AIAgent` in-process [RESEARCH]. I did not try
+   to interrupt a live dispatched worker from either. If mid-run steering is what you meant, verify
+   this before building on it.
+5. **Moderate: "chatting with the orchestrator" means the orchestrator profile.** I read your
+   comment as being about talking to the system's main agent, and treat a session scoped to
+   `ralph-orchestrator` as satisfying it. If you meant something narrower — a specific long-lived
+   orchestrator process — nothing in this system has one, and that is decision 3.
+6. **Low weight: the mobile layout is taken on the issue's word.** Issue #2 describes it; the
+   sandbox drove desktop Chromium only. [SANDBOX] It does not matter under the local-only
+   constraint, and would matter immediately if that constraint changed.
+7. **Low weight: the comparison is of the software, not of this deployment.** The sandbox ran its
+   own instances on `127.0.0.1:8788` and `127.0.0.1:9129` against a throwaway board, not this
+   stack's dashboard on `127.0.0.1:9219`. [SANDBOX]
+8. **Low weight: maintenance health is partly unverified.** Commit recency confirmed only to
    2026-08-26; issue-response latency not measured (API rate-limited); no CODEOWNERS found.
-   [RESEARCH] Not load-bearing — but if you overturn to "adopt", it becomes so and should be
-   re-checked.
-5. **Low weight: footprint is characterized, not measured.** No published image size; "modest"
-   rests on the observed absence of a runtime build step and bundled ML dependencies. [SANDBOX]
-   Your review makes this near-irrelevant: size was never the complaint here.
-6. **Low weight: the CDN egress was not traced further.** Seven jsdelivr assets observed loading;
-   whether they can be vendored or disabled by configuration was not investigated. [SANDBOX]
-7. **My reading of your comment on exposure, which I may have wrong.** You wrote, against v1's
-   claim that exposure should be decided first: *"We already have the decisions right? It's
-   whatever is available now, the notifier, the kanban board, and the API."* I read that as: there
-   is no pending exposure decision for this record to wait on — what is reachable is what is
-   running now, and it stays local. v1's "decide exposure first, then pick an interface"
-   sequencing is withdrawn on that reading. If I have misread you, that withdrawal is the thing to
-   correct.
-8. **This pull request comes from a fork.** The credential available to me authenticates as
-   `zhach1`, which has `push: false` on `Zhachory1/docs`, so the branch lives on a fork and PR #1
-   is cross-fork. Nothing about the content depends on it; if these documents are meant to land on
-   branches of `Zhachory1/docs` itself, that account needs write access.
+   [RESEARCH] Not load-bearing — but if you overturn to "adopt", it becomes so.
+9. **Low weight: the CDN egress was not traced further.** Opening hermes-webui's page makes the
+   browser fetch seven assets from `cdn.jsdelivr.net` (xterm, prism, katex); the built-in dashboard
+   bundles its assets and made zero non-localhost requests. [SANDBOX] Whether those can be vendored
+   or disabled was not investigated.
+10. **This pull request comes from a fork.** The credential available to me authenticates as
+    `zhach1`, which has `push: false` on `Zhachory1/docs`, so the branch lives on a fork and PR #1
+    is cross-fork. Nothing about the content depends on it.
 
 ### No longer assumptions — stated by you in review
 
-v1 guessed at these. It should not have, and that is the substance of your "a lot of assumptions
-on what I want/need" — recorded here so they are never re-assumed:
-
+- **hermes-webui is built for humans chatting with the orchestrator, not as a monitor.** Your
+  framing, now the frame of this record. v1 and v2 both scored it as a monitor; that was the wrong
+  test, and §3 replaces it.
 - **Off-desk replies are already handled.** The notifier is in the stack, and with a poller
-  watching messages you can communicate with it. v1 assumed this need was open and motivating; it
-  is not.
-- **Off-host access is a non-starter.** Only the local machine runs this. v1 treated remote access
-  as a deferred benefit; it is a closed question.
+  watching messages you can communicate with it.
+- **Off-host access is a non-starter.** Only the local machine runs this. This is what caps the
+  value of a mobile-shaped chat.
 - **The risk appetite is yours, on your machine.** v1 applied a conservative posture to a service
   exposing no ports. Withdrawn.
 - **Blast radius is mitigated in base Hermes**, by sandboxes and approved tools, and does not
-  depend on the UI. v1 treated it as a UI property. That was an error, not merely an assumption.
-- **The current UI is already a third-party always-on service.** v1 counted both as new costs.
-- **An unpinned image is a thing to pin.** Your words: if it is not a pinned image, it should be.
-  v1 treated unpinned-ness as a reason to decline rather than a task on adoption.
+  depend on the UI.
+- **The current UI is already a third-party always-on service.**
+- **An unpinned image is a thing to pin**, not a reason to decline.
 
 ## Observations — out of scope, not acted on
 
+- **There is no messaging platform connected to this stack.** The gateway serves ten profiles
+  but its only connected platform is the local API server; the channel directory is empty.
+  [CODE] If "talk to the orchestrator from wherever you are" ever becomes a goal within the
+  local-only constraint, wiring a platform to the gateway is a smaller change than adopting a web
+  UI, and it is a different card.
 - **The board-resolution hazard is not hermes-webui's alone.** Any tool resolving the board from
   ambient `HERMES_KANBAN_DB`/`HERMES_KANBAN_BOARD` pins can display the live board while labelled
-  otherwise. The sandbox hit this. It may deserve its own hardening card regardless of what is
-  decided here.
-- **The two tools are not mutually exclusive.** hermes-webui ships a compose layout running both
-  against the same Hermes home, with a documented history of lock-file races between them.
-  [RESEARCH] Not relevant under this decision; directly relevant to the trial above.
+  otherwise. It may deserve its own hardening card regardless of what is decided here.
+- **The sandbox report contains one claim this record had to correct.** Its statement that the
+  dashboard bundles no chat is contradicted by the dashboard's source. The report is otherwise
+  solid; a report's absences are weaker evidence than its observations, and that is a lesson about
+  how this board's research gets consumed, not a complaint about the run.
 - **`GH_TOKEN` is not forwarded into dispatcher-spawned workers** (only `GIT_AUTHOR_NAME`/`EMAIL`
   are), so an authoring worker has to recover it from elsewhere to push. Worth fixing if authoring
   workers are expected to open pull requests routinely.
 
 ## Sources
 
+- **[CODE]** — Hermes Agent source and runtime state on the host running this worker, read
+  2026-10-20 at version `0.22.2`, commit `d923a5eb487a17c0a68801bba9ef0f56c81040a8`:
+  `/opt/hermes/hermes_cli/web_server.py` (lines 461-464),
+  `/opt/hermes/hermes_cli/web_server_chat.py` (`_resolve_chat_argv`, lines 382-470),
+  `/opt/hermes/hermes_cli/web_dist/assets/ChatPage-RJV46vkP.js` and `SessionsPage-Dp4jBTPn.js`,
+  `/home/hermes/.hermes/gateway_state.json`, `/home/hermes/.hermes/channel_directory.json`.
 - **[SANDBOX]** — Empirical sandbox run, 2026-10-20: hermes-webui installed from `master` HEAD via
   `python3 bootstrap.py --host 127.0.0.1`, run against a purpose-built throwaway kanban board
   alongside the built-in `hermes dashboard`, both loopback-only; both UIs driven with
   Playwright + Chromium with full network capture; board effects cross-checked independently via
-  `hermes kanban show`; port bindings confirmed via `/proc/net/tcp`; torn down afterwards.
-  Recorded on the ralph board as card `t_18025034`, with four screenshots attached.
+  `hermes kanban show`; port bindings confirmed via `/proc/net/tcp`; torn down afterwards. Recorded
+  on the ralph board as card `t_18025034`, with four screenshots attached.
 - **[RESEARCH]** — Read-only source and documentation review, 2026-10-20, of
   `github.com/nesquena/hermes-webui` at `master`: README, ARCHITECTURE.md, docs/docker.md,
-  docs/remote-access.md, Dockerfile, requirements.txt, LICENSE, `.env.docker.example`, both
-  compose files, plus the GitHub repository and commits APIs. Recorded on the ralph board as card
+  docs/remote-access.md, Dockerfile, requirements.txt, LICENSE, `.env.docker.example`, both compose
+  files, plus the GitHub repository and commits APIs. Recorded on the ralph board as card
   `t_2e0a9333`.
-- **Review of v1** — six line-anchored review comments and a summary comment by `zhach1` on
-  `Zhachory1/docs#1`, 2026-10-20, against the v1 blob; plus the agent review recorded on card
-  `t_b493c10f`.
-- **Issue** — Zhachory1/ralph#2, "Evaluate hermes-webui as the interface, in place of the built-in
-  dashboard", read at its current body, including its acceptance criteria and "Not in scope".
+- **[BOARD]** — The ralph kanban board: the `worker_context` delivered to card `t_582469df` (this
+  revision's card; v1 and v2 came from `t_2f2c6131`), which carries the card body, the comment
+  thread, and parent handoffs.
+- **[ISSUE]** — Zhachory1/ralph#2, read at its current body, including acceptance criteria and
+  "Not in scope".
+- **Review of v1 and v2** — six line-anchored review comments and two summary comments by `zhach1`
+  on `Zhachory1/docs#1`, 2026-10-20, the second of which is the reframing this revision answers;
+  plus the agent review recorded on card `t_b493c10f`.
