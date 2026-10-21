@@ -315,7 +315,7 @@ deliberately small, and it stays small.
 collection on your machine, where it will keep working in the tool it came from. Nothing deletes
 anything.
 
-The four kept near-overlaps from the brief's analysis are kept for the stated reasons and mounted
+The three kept near-overlaps from the brief's analysis stay for the stated reasons and are mounted
 accordingly: `test-maker` (code lane) alongside builtin `test-driven-development`, `investigation`
 (review lane) alongside builtin `systematic-debugging`, and the four `debug-*` skills, which have
 no builtin equivalent.
