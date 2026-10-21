@@ -7,7 +7,7 @@ card: t_8a78fa8b
 revision: v1
 date: 2026-10-21
 prs:
-  - Zhachory1/docs#PENDING
+  - Zhachory1/docs#2
 ---
 
 # Publish 50 skills in ralph, keep 12 in the private overlay, and mount them per profile as read-only lanes
