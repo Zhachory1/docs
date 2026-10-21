@@ -4,7 +4,7 @@ title: Publish 50 skills in ralph, keep 12 in the private overlay, and mount the
 status: in review
 owner: Zhachory1
 card: t_8a78fa8b
-revision: v1
+revision: v2
 date: 2026-10-21
 prs:
   - Zhachory1/docs#2
@@ -45,12 +45,15 @@ not the repository. See decision 4 if you would rather have the evidence quotabl
    nothing in that 42. The two autopraxis ones are already public upstream and should be mounted,
    not copied. The 5 from a Rokt team repository are the only things in either collection whose
    copyright plausibly is not yours, and I have not assumed otherwise.
-3. **Two skills are someone else's MIT work and cannot ship under your name.** `stop-slop` is a
-   checkout of `hardikpandya/stop-slop` and `google-workspace` is a checkout of
-   `andmarios/google-workspace-skill`, both MIT with their own copyright lines [COLLECTIONS].
-   Proposal: neither is vendored; they are listed in a `third-party.yaml` manifest with upstream URL
-   and pinned commit, and installed rather than copied. Confirm, or say you would rather vendor them
-   with their LICENSE files intact.
+3. **One skill is someone else's MIT work and ships by reference, not by copy.** `stop-slop` is a
+   checkout of `hardikpandya/stop-slop`, MIT with its own copyright line [COLLECTIONS]. Proposal: it
+   is not vendored; it is listed in a `third-party.yaml` manifest with upstream URL and pinned
+   commit, and installed rather than copied. Confirm, or say you would rather vendor it with its
+   LICENSE file intact. `google-workspace` is also someone else's — a checkout of
+   `andmarios/google-workspace-skill` — but it is **dropped, not manifested**, because Hermes ships
+   a builtin of the same name (`productivity/google-workspace`) and the builtin sits in a tier that
+   always wins: a mounted copy could never resolve [HERMES]. If you prefer the third party's version
+   to the builtin, say so, and it becomes a manifest entry installed under a different name.
 4. **Keep this design public, or move it?** Every internal identifier above is paraphrased, which
    costs you the ability to check my classification against the actual line. If you want the
    evidence quotable, this file moves to a private repository and only the rule (section 2) stays
@@ -58,24 +61,54 @@ not the repository. See decision 4 if you would rather have the evidence quotabl
 
 **Council dissent.**
 
-No council was convened: this profile's toolset this run has no `delegate_task`, and inventing
-personas to disagree with would be theatre. The critic pass is the agent reviewer, which runs on
-this card before you see it. In its place, the three points where the evidence contradicts the
-brief, each of which a critic would have raised:
+No council was convened: this profile's toolset has no `delegate_task`, and inventing personas to
+disagree with would be theatre. The critic pass is the agent reviewer, which has now run once.
+
+*What it found, and how it was resolved.* It re-derived every count in this document from the
+collections and from Hermes source rather than reading the prose, and raised two blocking
+contradictions, both of which it won outright. (1) `google-workspace` was classified as a manifest
+entry in decision 3 and as a drop in section 2, which the rule order could not reconcile. Resolved
+in v2 by changing the rule rather than the row: the builtin test now runs first, because a name
+that collides with a builtin can never resolve whatever its licence says — so the drop was right
+and the rule was wrong. Section 6 is back to four rows with the fifth drop called out separately.
+(2) The per-profile table counted public lanes only while the paragraph under it added private
+lanes, and it gave the experimenter a private lane one sentence after saying unproven profiles get
+nothing. Resolved in v2 by making the table total both tiers and by cutting the experimenter's
+private mount, which was the half I could not defend: it is the least proven profile with the
+widest toolset. It also showed that the dissent bullet below arrived at 10 by arithmetic that does
+not work; that is now stated correctly, and the correction strengthens the case for the
+shape-based check in section 7. No finding was declined.
+
+Below, the three points where the evidence contradicts the brief, each of which a critic would
+have raised:
 
 - **"76 skills" is 34.** The second collection has 34 directories, of which 4 are loose files, so
   30 are real skills; the other 42 entries are symlinks into four upstreams [COLLECTIONS]. The
   brief's framing — two collections of 45 and 76 — is how the tools present them, not what is on
   disk. Nothing in the brief is wrong; the count is a directory listing. But a plan written to
   "split 121 skills" would have spent most of its effort on things that are one plugin.
-- **"12 trivial mentions" is 10, after the drops.** My mechanical scan finds 15 of the 45 personal
-  skills carrying an internal marker outside the vendored file; 5 of those are the Rokt-coupled set
-  and 2 more are in the four being dropped, leaving 10 that both ship publicly and need a sentence
-  changed. Named in section 7. The difference is bookkeeping, not disagreement.
+- **"12 trivial mentions" is 10, after the drops — and it takes two scans to find them.** A word
+  scan for the company name, run over every non-binary file outside the vendored reference and
+  outside build output, matches 15 of the 45 personal skills. Five of those are the Rokt-coupled set
+  that stays private, and one (`getting-started`) is among the four dropped, which leaves **nine**.
+  The tenth, `worktree`, carries no mention of the company at all: it hard-codes a corporate Jira
+  tenant in an example URL and is caught only by a second scan for SaaS-tenant URL shapes. So the 10
+  is the union of a name scan and a URL scan, not 15 minus 2 — and that is the argument for the
+  publication check in section 7 testing shapes as well as names, since a name list alone would
+  have shipped `worktree` unchanged. Named in section 7. The difference is bookkeeping, not
+  disagreement.
 - **The ownership premise has two exceptions.** "Both collections are their own copyright" is out
   of scope to relitigate and I have not. It is still true that two directories are git checkouts of
   other people's repositories, and publishing them MIT under your name would be a licence error
   rather than a judgement call. Decision 3.
+
+**What changed in v2.** Four edits, all from the agent reviewer's round-1 findings, none of which
+changes the shape of the design: the rule order in section 2 now puts the builtin test first and
+decision 3 agrees with it; section 5's table totals public and private lanes instead of public
+only, and the experimenter no longer mounts a private lane; the private lanes are now named skill
+by skill in section 5; and the review header's 12-to-10 reconciliation is corrected to a union of
+two scans. Assumption 3 drops from load-bearing to moderate on evidence the reviewer supplied.
+Load-bearing assumptions are now two, not three.
 
 **Scope: L — split into six pull requests**, none over ~400 lines of hand-written change. The bulk
 is mechanical file movement, which is why the rule and the check land before any skill does.
@@ -86,7 +119,7 @@ is mechanical file movement, which is why the rule and the check land before any
 | 2 | ralph (public) | The 24 clean personal skills, each stripped of the vendored reference file | M |
 | 3 | ralph (public) | The 10 generalised personal skills, one commit each so the diff is the generalisation | M |
 | 4 | ralph (public) | The 16 skills from the second collection | M |
-| 5 | layer-3 overlay (private) | The 12 private skills, with the two `standards` collisions renamed, plus the internal marker list the drift check reads | M |
+| 5 | layer-3 overlay (private) | The 12 private skills, with the `standards` name collision resolved by renaming the router to `standards-index`, plus the internal marker list the drift check reads | M |
 | 6 | ralph (public) | Nine profile templates gaining their `skills:` block; `doctor` check for mount drift | S |
 
 PR 6 is last on purpose: until the trees exist, a mount points at nothing, and a profile whose
@@ -129,13 +162,19 @@ Three facts from the scan shape everything below.
 
 ## 2. The rule that decides where a skill goes
 
-Apply in order and stop at the first match. The order is deliberate: the earlier tests remove a
-skill from publication entirely, so they must run before the test that only chooses a repository.
+Apply in order and stop at the first match. The order runs from the tests that take a skill out of
+the import entirely, through the test that decides whose licence it ships under, to the tests that
+only choose which repository holds it — so a later test is never asked a question an earlier one
+has already made moot.
 
-1. **Is it someone else's?** A LICENSE naming another copyright holder, or a `.git` remote outside
+1. **Does a Hermes builtin already do it, or share its name?** Then: **drop.** Section 6. This
+   test runs first because it is the only one that can make the others moot: a skill whose name
+   matches a builtin can never resolve anyway — builtins sit in the profile skills tier, which
+   outranks both mount points [HERMES] — so deciding its licence or its repository would be
+   deciding where to file something that will never load.
+2. **Is it someone else's?** A LICENSE naming another copyright holder, or a `.git` remote outside
    your account. Then: **manifest.** It is listed in `third-party.yaml` with upstream and pinned
    commit, and installed from there. Never vendored, never relicensed.
-2. **Does a Hermes builtin already do it?** Then: **drop.** Section 6.
 3. **Does it need something only one machine has?** A local daemon, a private document store, a
    personal credential path. Then: **config repo.** It is useless in a container, so it ships in
    neither repository and is mounted only where the dependency exists.
@@ -166,8 +205,11 @@ Applying the rule to the 75 readable skills:
 | Manifest, third-party | 1 | `stop-slop` |
 | Folded duplicates | 4 | identical copies resolved to one |
 
-`code-verifier` is both Rokt-coupled and redundant. Dropping wins: rule 2 runs before rule 4, so it
-ships nowhere rather than being carried privately forever.
+Two skills match more than one test, and the order settles both. `code-verifier` is Rokt-coupled
+*and* redundant: rule 1 runs before rule 4, so it ships nowhere rather than being carried privately
+forever. `google-workspace` is third-party *and* name-identical to a builtin: rule 1 runs before
+rule 2, so it is dropped rather than manifested — manifesting it would add an entry to
+`third-party.yaml` for a skill the resolver would never reach.
 
 ## 3. Layout, and what each tier is for
 
@@ -259,21 +301,30 @@ Three consequences, which are the whole map:
   living. Everything it can quote, a page can ask it to quote. It mounts no lane at all — and it
   does not need one: `grounded-citations`, `llm-wiki`, `arxiv`, `blocked-page-recovery` and
   `codebase-inspection` are builtins it already has.
-- **Unproven profiles mount nothing until a card proves otherwise.** Adding a lane later is one
-  line. Discovering that the experimenter has been carrying 24 front-end skills for a year is not
-  recoverable attention.
+- **Unproven profiles get the smallest public mount their charter already names, and no private
+  one.** The analyst and the auditor have charters that map onto an existing lane — `write` for
+  one, `write` and `meta` for the one whose job is judging the system — so they mount it, and it is
+  one line to remove if the charter turns out wrong. The experimenter has no established workload
+  and the broadest toolset of the three (`code_execution`, `file` and `web` [RALPH]), which is the
+  combination where a wrong lane costs the most, so it mounts nothing in either tree until a card
+  says what it does. Adding a lane later is one line. Discovering that the experimenter has been
+  carrying 24 front-end skills for a year is not recoverable attention.
 
-| Profile | Lanes | Skills | Index cost |
-| --- | --- | --- | --- |
-| orchestrator | plan, meta | 11 | ~880 tok |
-| author | plan, write | 14 | ~1,155 tok |
-| builder | code, debug, ui | 24 | ~1,560 tok |
-| reviewer | review | 7 | ~330 tok |
-| watcher | ops | 2 | ~145 tok |
-| analyst | write | 6 | ~500 tok |
-| auditor | write, meta | 9 | ~730 tok |
-| researcher | — | 0 | 0 |
-| experimenter | — | 0 | 0 |
+Skills and index cost below are the **total** a profile carries: public lanes plus the private lane
+it mounts on top, if any. Index cost is measured from the real frontmatter descriptions at roughly
+four characters to the token [COLLECTIONS].
+
+| Profile | Public lanes | Private lane | Skills (public + private) | Index cost |
+| --- | --- | --- | --- | --- |
+| orchestrator | plan, meta | — | 11 | ~880 tok |
+| author | plan, write | write (5) | 19 = 14 + 5 | ~1,645 tok |
+| builder | code, debug, ui | code (6) | 30 = 24 + 6 | ~2,150 tok |
+| reviewer | review | — | 7 | ~330 tok |
+| watcher | ops | — | 2 | ~145 tok |
+| analyst | write | — | 6 | ~500 tok |
+| auditor | write, meta | — | 9 | ~730 tok |
+| researcher | — | — | 0 | 0 |
+| experimenter | — | — | 0 | 0 |
 
 Lane contents, so the map is checkable rather than asserted:
 
@@ -291,15 +342,32 @@ Lane contents, so the map is checkable rather than asserted:
 - **ops** — alert-monitor-suggester, google-chat
 - **meta** — agent-forge, agent-optimizer, skill-forge
 
-Private lanes mount on top for the profiles that do company work: `write/` on author, `code/` on
-builder, `analysis/` on analyst and experimenter. The researcher never mounts a private lane, which
-is the point of the third consequence.
+Private lane contents, named so the overlay is as checkable as the public tree. Lane cuts follow
+the same audience rule, and the names are the ones that exist after PR 5's rename:
 
-**The token column is not the argument.** The worst case is 1,560 tokens on the builder, which is
-noise beside a diff. The argument is selection: Hermes instructs the model to scan the index and
-load anything even partially relevant [HERMES]. Twenty-four plausible skills is a judgement call
-every turn; fifty is a lottery. The watcher at two skills is the design working — it was
-deliberately small, and it stays small.
+- **write** (5) — `standards-index` (the 1-file router), `ads-success-docs`, `doc-architect`,
+  `doc-critique`, `rokt-brand-guidelines`
+- **code** (6) — `standards` (the 16-file pack), `keda-scaling`, `pr-dashboard`, `publish-branch`,
+  `rokt-ai-platform`, `spa-builder`
+- **analysis** (1) — `rokt-experiment-analysis`
+
+Two profiles mount a private lane: `write/` on the author and `code/` on the builder, which are the
+two that do company work with the toolsets those lanes assume. The researcher never mounts one,
+which is the point of the second consequence; the experimenter mounts none either, which is the
+point of the third.
+
+The private `analysis/` lane is therefore **mounted by no profile at launch**. It exists because its
+one skill cannot be published, not because a profile is waiting for it: the private repository is
+where a non-publishable skill lives whether or not anything mounts it. It mounts on the analyst the
+day a card gives the analyst company analysis work, which is one line in one profile config.
+
+**The token column is not the argument.** The worst case is about 2,150 tokens on the builder — 30
+skills, public and private together — which is noise beside a diff. The argument is selection:
+Hermes instructs the model to scan the index and load anything even partially relevant [HERMES].
+Thirty plausible skills is a judgement call every turn; sixty-two is a lottery. That the builder is
+the worst case twice over — most public skills and the larger private lane — is the first place to
+look if its work gets vaguer after this lands. The watcher at two skills is the design working — it
+was deliberately small, and it stays small.
 
 ## 6. The four dropped skills, and what the agents do instead
 
@@ -309,11 +377,19 @@ deliberately small, and it stays small.
 | `getting-started` | builtin `codebase-inspection` | Nothing. The dropped one opened by reading an internal onboarding path |
 | `conventional-commit` | builtin `github` | The commit-message rules, which `commit-push-watch` (public, kept) already applies |
 | `compound` | builtins `llm-wiki` + `grounded-citations` | Nothing: the two builtins cover compounding notes and citation discipline between them |
-| `google-workspace` | builtin `google-workspace` | Nothing, and it resolves a name collision: the vendored copy is a third party's and shares a name with the builtin |
 
 "Dropped" means the skill is never imported into either repository. It stays in the source
 collection on your machine, where it will keep working in the tool it came from. Nothing deletes
 anything.
+
+**A fifth drop, which is not from the brief's analysis.** `google-workspace` in the second
+collection is dropped too, and for a different reason than the four: it is a checkout of a third
+party's repository that happens to carry the same name as a Hermes builtin. Rule 1 catches it
+before the provenance test ever runs, and the mechanism is why — builtins live in the profile
+skills tier, which outranks both `create_dir` and `external_dirs` [HERMES], so a mounted copy would
+be shadowed on every resolve and never load. Manifesting it would file a licence record for a skill
+the resolver cannot reach. The agents use the builtin, which covers Gmail, Calendar, Drive, Docs
+and Sheets. Decision 3 is where you overrule this if you prefer the third party's version.
 
 The three kept near-overlaps from the brief's analysis stay for the stated reasons and are mounted
 accordingly: `test-maker` (code lane) alongside builtin `test-driven-development`, `investigation`
@@ -326,8 +402,10 @@ no builtin equivalent.
 mention: `agent-forge`, `agent-optimizer`, `alert-monitor-suggester`, `code-optimizer`,
 `commit-push-watch`, `doc-writer`, `exec-summary`, `skill-forge`, `test-maker`, `worktree`. Nine
 carry one or two mentions of the company name in a sentence. `worktree` is the one with real
-content to change: it hard-codes a named corporate Jira tenant in an example URL, which must become
-a placeholder.
+content to change, and the one the name scan misses entirely: it hard-codes a corporate Jira tenant
+and a real-looking ticket id in an example URL — not even this company's tenant — which must become
+a placeholder. It is in this list because of the URL-shape scan, not the name scan, which is the
+reconciliation in the review header and the reason check 1 below tests shapes.
 
 **How.** PR 3, one commit per skill, so each diff is exactly the generalisation and nothing else.
 Each edit replaces the specific with the configurable — a placeholder host, "your issue tracker",
@@ -416,11 +494,14 @@ Every inference the brief did not state, ordered by weight.
 2. **Load-bearing: nothing in the 42 pointers needs to ship.** I classified none of them. If the
    `gstack` plugin is the operator's own and is meant to come along, the import is a different
    shape — one plugin, not 34 skills — and section 3's lane counts change.
-3. **Load-bearing: `create_dir` is read-only-mountable while still serving as the write target.** I
-   verified the tier ordering and the write-target behaviour in source [HERMES], but did not run a
-   `skill_manage` write against a read-only `create_dir`. If that errors in a way that breaks a
-   turn rather than returning a tool error, the private mount must be writable and section 4's
-   guarantee weakens to convention.
+3. **Moderate — downgraded in v2: `create_dir` is read-only-mountable while still serving as the
+   write target.** I verified the tier ordering and the write-target behaviour in source [HERMES]
+   and have still never run a `skill_manage` write against a read-only `create_dir`. What closed
+   the dangerous half of this assumption is the dispatcher: every tool call is wrapped in a blanket
+   `except Exception` that turns the exception into an `Error executing tool ...` string returned to
+   the model [HERMES], so a `PermissionError` from a read-only mount surfaces as a visible tool
+   error rather than a broken turn. The residue is cosmetic — the agent sees an unhelpful message —
+   and section 4's guarantee holds.
 4. **Moderate: my classification of the 30 readable skills in the second collection is mine alone.**
    The brief's established analysis covers the 45 personal skills; nobody had classified the other
    collection. The eight I route private each name an internal repository, platform, brand or
@@ -468,7 +549,9 @@ Every inference the brief did not state, ordered by weight.
   `followlinks=True`, 842-851), `agent/prompt_builder.py` (the skills index and its loading
   instruction, 1451-1490), `hermes_cli/config_defaults.py` (the `skills:` block, 1448-1492),
   `agent/agent_init.py` (1381-1383) and `agent/turn_finalizer.py` (764-765) for
-  `creation_nudge_interval`, `hermes_constants.py` (`get_config_path`, `get_skills_dir`, 1196-1203).
+  `creation_nudge_interval`, `hermes_constants.py` (`get_config_path`, `get_skills_dir`, 1196-1203),
+  and `agent/tool_executor.py` (the blanket `except Exception as tool_error` that returns
+  `Error executing tool ...` to the model rather than raising, 1369-1371 — cited for assumption 3).
   Profile isolation confirmed against the live profile directories under
   `/home/hermes/.hermes/profiles/`.
 - **[RALPH]** — the layer-2 contributor guide, the layer-3 README, and the system design document,
