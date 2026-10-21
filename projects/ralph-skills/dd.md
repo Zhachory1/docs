@@ -7,7 +7,8 @@ card: t_78046316
 revision: v3
 date: 2026-10-21
 prs:
-  - Zhachory1/docs#2
+  - Zhachory1/docs#2   # v1-v2, merged
+  - Zhachory1/docs#3   # v3, same branch — #2 was merged and cannot be reopened
 ---
 
 # Publish 50 skills in ralph, keep 17 in the private overlay, and mount them per profile as read-only lanes
