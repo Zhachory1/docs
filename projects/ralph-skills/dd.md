@@ -12,6 +12,12 @@ prs:
 
 # Publish 50 skills in ralph, keep 12 in the private overlay, and mount them per profile as read-only lanes
 
+> **Names in this document are placeholders.** This repository is public, so every skill that
+> exists only inside the company appears here under a neutral `internal-*` name, and the company
+> itself is referred to as "the company". The real names live in the private overlay, where the
+> lane tables below are reproduced verbatim. A reader implementing this needs the overlay
+> checkout; a reader reviewing the *design* does not, which is the point of the substitution.
+
 Status: **in review** — proposed, awaiting your approval at the design gate. Nothing has been
 copied, moved, or edited; this document is the thing to review before any of that happens.
 Decision: **the public collection ships as lanes under `skills/` in the public layer-2 repository
@@ -33,17 +39,17 @@ not the repository. See decision 4 if you would rather have the evidence quotabl
 1. **Which repository is "the private one" — the layer-3 overlay, or your personal config repo?**
    The brief says "a public repository and a private one". The layer-2 contributor guide says a
    user's own skills live in their config repo, and the layer-3 README repeats it [RALPH]. Those
-   are different repositories with different audiences: a Rokt org can read layer 3, only you can
-   read your config repo. This design puts the 12 Rokt-coupled skills in layer 3 and makes that
+   are different repositories with different audiences: the company org can read layer 3, only you can
+   read your config repo. This design puts the 12 company-coupled skills in layer 3 and makes that
    checkout the `skills.create_dir` for every profile, which also makes it the target for anything
    an agent writes. If you want agent-written skills to land somewhere only you can see, say so and
    the write target moves to the config repo — at the cost described in section 4, "What we give up".
-2. **42 of the 76 "Rokt-flavoured" skills are pointers, not skills. Which upstreams do you want
+2. **42 of the 76 "company-flavoured" skills are pointers, not skills. Which upstreams do you want
    imported?** They are symlinks into four places on your Mac: 34 into one `gstack` plugin, 5 into
-   a Rokt team repository, 1 into a local agent-fleet checkout, 2 into autopraxis [COLLECTIONS].
+   a company team repository, 1 into a local agent-fleet checkout, 2 into autopraxis [COLLECTIONS].
    I could not read any of them — the targets do not exist in this container — so I have classified
    nothing in that 42. The two autopraxis ones are already public upstream and should be mounted,
-   not copied. The 5 from a Rokt team repository are the only things in either collection whose
+   not copied. The 5 from a company team repository are the only things in either collection whose
    copyright plausibly is not yours, and I have not assumed otherwise.
 3. **One skill is someone else's MIT work and ships by reference, not by copy.** `stop-slop` is a
    checkout of `hardikpandya/stop-slop`, MIT with its own copyright line [COLLECTIONS]. Proposal: it
@@ -89,7 +95,7 @@ have raised:
   "split 121 skills" would have spent most of its effort on things that are one plugin.
 - **"12 trivial mentions" is 10, after the drops — and it takes two scans to find them.** A word
   scan for the company name, run over every non-binary file outside the vendored reference and
-  outside build output, matches 15 of the 45 personal skills. Five of those are the Rokt-coupled set
+  outside build output, matches 15 of the 45 personal skills. Five of those are the company-coupled set
   that stays private, and one (`getting-started`) is among the four dropped, which leaves **nine**.
   The tenth, `worktree`, carries no mention of the company at all: it hard-codes a corporate Jira
   tenant in an example URL and is caught only by a second scan for SaaS-tenant URL shapes. So the 10
@@ -139,7 +145,7 @@ Counts verified by walking both trees in the card workspace on 2026-10-21 [COLLE
 | Symlinks into another tree | 0 | 42 |
 
 The 42 pointers resolve to four upstreams: 34 to one `gstack` plugin whose sub-skills are each
-surfaced as a top-level name, 5 to a Rokt team repository, 1 to a local agent-fleet checkout, 2 to
+surfaced as a top-level name, 5 to a company team repository, 1 to a local agent-fleet checkout, 2 to
 autopraxis. All 42 are dangling in this container, so their content was not read and nothing in
 this design classifies them. Decision 2.
 
@@ -199,13 +205,13 @@ Applying the rule to the 75 readable skills:
 | Outcome | Count | Which |
 | --- | --- | --- |
 | Public | 50 | 34 personal, 16 from the second collection |
-| Private overlay | 12 | 4 personal (`standards`, `keda-scaling`, `pr-dashboard`, `publish-branch`), 8 from the second collection (`ads-success-docs`, `doc-architect`, `doc-critique`, `rokt-ai-platform`, `rokt-brand-guidelines`, `rokt-experiment-analysis`, `spa-builder`, `standards`) |
+| Private overlay | 12 | 4 personal (`standards`, `internal-autoscaling`, `internal-pr-dashboard`, `internal-publish-branch`), 8 from the second collection (`internal-docs`, `internal-doc-architect`, `internal-doc-critique`, `internal-platform`, `internal-brand`, `internal-experiment-analysis`, `internal-app-builder`, `standards`) |
 | Config repo, host-coupled | 3 | `hermes-queue-client`, `zbrain-query`, `conventions` |
 | Dropped, builtin wins | 5 | `code-verifier`, `getting-started`, `conventional-commit`, `compound`, `google-workspace` |
 | Manifest, third-party | 1 | `stop-slop` |
 | Folded duplicates | 4 | identical copies resolved to one |
 
-Two skills match more than one test, and the order settles both. `code-verifier` is Rokt-coupled
+Two skills match more than one test, and the order settles both. `code-verifier` is company-coupled
 *and* redundant: rule 1 runs before rule 4, so it ships nowhere rather than being carried privately
 forever. `google-workspace` is third-party *and* name-identical to a builtin: rule 1 runs before
 rule 2, so it is dropped rather than manifested — manifesting it would add an entry to
@@ -333,23 +339,23 @@ Lane contents, so the map is checkable rather than asserted:
 - **write** — doc-writer, exec-summary, simplified-technical-english, better-writing,
   technical-drawing, i-have-adhd
 - **code** — test-maker, code-optimizer, ship, swarm, worktree, graphite-stacked-prs, pr,
-  pr-review-handler, commit-push-watch, bash-last-policy
+  pr-review-handler, commit-push-watch, internal-shell-policy
 - **debug** — debug-api, debug-build, debug-jest, debug-playwright, dev-monitor, ci-watcher
 - **ui** — build-design, break, variant, state-machine, better-colors, better-ui,
   msw-storybook-validator, storybook-play-tests
 - **review** — interface-review, explain-interface, investigation, better-accessibility,
   better-interface, better-layout, better-typography
-- **ops** — alert-monitor-suggester, google-chat
+- **ops** — alert-monitor-suggester, internal-chat
 - **meta** — agent-forge, agent-optimizer, skill-forge
 
 Private lane contents, named so the overlay is as checkable as the public tree. Lane cuts follow
 the same audience rule, and the names are the ones that exist after PR 5's rename:
 
-- **write** (5) — `standards-index` (the 1-file router), `ads-success-docs`, `doc-architect`,
-  `doc-critique`, `rokt-brand-guidelines`
-- **code** (6) — `standards` (the 16-file pack), `keda-scaling`, `pr-dashboard`, `publish-branch`,
-  `rokt-ai-platform`, `spa-builder`
-- **analysis** (1) — `rokt-experiment-analysis`
+- **write** (5) — `standards-index` (the 1-file router), `internal-docs`, `internal-doc-architect`,
+  `internal-doc-critique`, `internal-brand`
+- **code** (6) — `standards` (the 16-file pack), `internal-autoscaling`, `internal-pr-dashboard`, `internal-publish-branch`,
+  `internal-platform`, `internal-app-builder`
+- **analysis** (1) — `internal-experiment-analysis`
 
 Two profiles mount a private lane: `write/` on the author and `code/` on the builder, which are the
 two that do company work with the toolsets those lanes assume. The researcher never mounts one,
@@ -508,7 +514,7 @@ Every inference the brief did not state, ordered by weight.
    process; the sixteen I publish contain no internal marker outside build artefacts.
 5. **Moderate: 10 skills need generalising, not 12.** Reconciled in the review header. If the
    brief's 12 came from a list rather than a count, use the list and ignore mine.
-6. **Moderate: `doc-architect` and `spa-builder` are private.** Both are mostly generic mechanism
+6. **Moderate: `internal-doc-architect` and `internal-app-builder` are private.** Both are mostly generic mechanism
    wrapped around an internal dependency — a credential path, a brand guideline skill. Rule 4 sends
    them private; a generalisation pass could move either one public later, and neither is worth
    blocking on now.
@@ -525,7 +531,7 @@ Every inference the brief did not state, ordered by weight.
 - Four files in the second collection are not skills at all (a README, two filing-rule files, an
   output-rules file) but sit in the skills directory as though they were. They are the config
   repo's business if anything's.
-- `google-chat` ships a `__pycache__` with two compiled modules. Build artefacts in a skill
+- `internal-chat` ships a `__pycache__` with two compiled modules. Build artefacts in a skill
   directory are how a clean skill fails a naive scan; the import should strip them everywhere.
 - The brief's framing of "45 and 76" comes from a directory listing in each tool. A `hermes skills`
   equivalent that resolved symlinks would have shown 45 and 34 from the start.
@@ -535,12 +541,12 @@ Every inference the brief did not state, ordered by weight.
 ## Sources
 
 - **[COLLECTIONS]** — the two skill collections as snapshotted into this card's workspace
-  `/workspaces/skills-dd` on 2026-10-21: `mewrite-skills/` (45 entries) and `roktcode-skills/`
+  `/workspaces/skills-dd` on 2026-10-21: `personal-collection/` (45 entries) and `second-collection/`
   (76 entries). Walked in full: entry types, symlink targets, `SKILL.md` presence, SHA-256 of every
   duplicate pair and of all 32 copies of the vendored reference file, frontmatter names and
   descriptions, and a marker scan over every non-binary file excluding that vendored file. The
   third-party provenance is from `.git/config` remotes and `LICENSE` copyright lines inside
-  `roktcode-skills/stop-slop` and `roktcode-skills/google-workspace`.
+  `second-collection/stop-slop` and `second-collection/google-workspace`.
 - **[HERMES]** — Hermes Agent source on the host running this worker, version `0.22.2`, commit
   `d923a5eb487a17c0a68801bba9ef0f56c81040a8`, read 2026-10-21: `agent/skill_utils.py`
   (tier constants and precedence, lines 381-384; `get_skill_search_roots`, 393-403;
@@ -555,8 +561,8 @@ Every inference the brief did not state, ordered by weight.
   Profile isolation confirmed against the live profile directories under
   `/home/hermes/.hermes/profiles/`.
 - **[RALPH]** — the layer-2 contributor guide, the layer-3 README, and the system design document,
-  as pinned to this card: `ralph-AGENTS.md`, `rokt-it-ralph-README.md`, and
-  `rokt-it-ralph-design.md` (the profile table and permissions, the three-layer section, and the
+  as pinned to this card: `ralph-AGENTS.md`, `overlay-README.md`, and
+  `overlay-design.md` (the profile table and permissions, the three-layer section, and the
   extension green path), plus the nine profile `config.yaml` files in `ralph-profiles/`.
 - **[BOARD]** — the `worker_context` delivered to card `t_8a78fa8b`, carrying the brief, its
   acceptance criteria, constraints and out-of-scope list.
