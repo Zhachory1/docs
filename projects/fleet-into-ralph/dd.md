@@ -4,10 +4,10 @@ title: Move the fleet's producers into Ralph as deterministic sidecars on their 
 status: in review
 owner: Zhachory1
 card: t_e2bd0b59
-revision: v1
+revision: v2
 date: 2026-10-22
 prs:
-  - Zhachory1/docs#4   # v1
+  - Zhachory1/docs#4   # v1, v2
 ---
 
 # Move the fleet's producers into Ralph as deterministic sidecars on their own board, with five purpose-built lenses that cannot post, and spend bounded in four places
@@ -64,8 +64,8 @@ Source: Kanban card `t_e2bd0b59`.
 **Council dissent.**
 
 No council was convened: this profile has no `delegate_task`, and inventing personas to disagree
-with would be theatre. The critics here are the sources, which contradict each other in four
-places. Each is resolved, and three of the resolutions changed the design.
+with would be theatre. The critics here are the sources, which contradict each other in five
+places. Each is resolved, and four of the resolutions changed the design.
 
 1. **The fleet's design document says production is disabled; the live board says it is running.**
    The document states "offline implementation only; production route remains disabled"
@@ -97,13 +97,36 @@ places. Each is resolved, and three of the resolutions changed the design.
    more than the model, and it is not a reason to reopen a decision you made over many real runs.
    Resolution: `gpt-6-luna` lenses and `gpt-6-sol` synthesis as settled, recorded in section 5 as
    the lever to pull *first* if the measured cost comes in above the model — not re-decided here.
+5. **Your instruction says the specialists run `gpt-6-luna`; every fleet record says the generalist
+   runs `gpt-6-sol`.** The brief states the split as "the specialists run `gpt-6-luna` and synthesis
+   runs `gpt-6-sol`, because that configuration is proven over many real runs in the fleet." The
+   fleet's own records disagree about exactly one role. `profile-generalist-config.yaml:6` and
+   `profile-synthesis-config.yaml:6` both read `default: gpt-6-sol`, and the design document and the
+   PRD each say it in words: "`gpt-6-sol` for generalist and synthesis, `gpt-6-luna` for reliability,
+   MVP, and optional security" [FLEET-DD:32; FLEET-PRD:16]. So "proven over many real runs" is true
+   of four roles out of five. **Generalist-on-`luna` has never run anywhere.** Resolution: I follow
+   your instruction — the generalist is a specialist, and it lands on `gpt-6-luna` in section 2 —
+   because choosing the split is yours and re-deciding it is out of scope for me. What is *not* out
+   of scope is saying out loud that for this one role the port is a **change, not a port**: section 3
+   no longer claims the generalist is a one-line provider swap, PR 2 measures and exercises that
+   exact configuration by hand before any producer exists, section 5 prices both answers, and the
+   revert is one line in one profile config. If "specialists" meant "the three roles already on
+   `luna`", say the word and the generalist goes back to `gpt-6-sol` at about $0.25 more per group.
 
 **Scope: large.** Ten pull requests in four phases: bound what exists (1), the review council
 (2-6), the fleet's retirement and the maintenance queue (7-9), the inbox replier (10). Each is
 reviewable alone; section 9 says why. Only PR 6 can spend money unattended, and it is sixth for
 that reason.
 
-**Changed since the last revision:** nothing — this is v1.
+**Changed since v1** (PR #4, commit `3f8d238`; agent review by `ralph-reviewer`, one blocking
+finding): the generalist's model is no longer asserted silently. v1's section 2 put
+`lens-generalist` on `gpt-6-luna` while section 3 described every profile as the fleet's config
+with one provider line changed — which, applied to the pinned generalist config, keeps
+`gpt-6-sol`. The two could not both be true. v2 keeps your split (generalist on `gpt-6-luna`) and
+names the divergence instead of burying it: new council dissent 5, a corrected section 3, a new
+load-bearing assumption 4, a sensitivity line and a both-ways busy day in section 5, an extra
+verification in PR 2, a new risk row, and open question 6. No other section changed, and no
+decision moved.
 
 ---
 
@@ -148,11 +171,20 @@ graph LR
 
 | Card | Profile | Model | Idempotency key | Reads | Writes |
 | --- | --- | --- | --- | --- | --- |
-| generalist | `lens-generalist` | `gpt-6-luna` | `<op>-generalist` | staged evidence | result file, own card |
+| generalist | `lens-generalist` | `gpt-6-luna` † | `<op>-generalist` | staged evidence | result file, own card |
 | reliability | `lens-reliability` | `gpt-6-luna` | `<op>-reliability` | staged evidence | result file, own card |
 | MVP/scope | `lens-mvp` | `gpt-6-luna` | `<op>-mvp` | staged evidence | result file, own card |
 | security *(conditional)* | `lens-security` | `gpt-6-luna` | `<op>-security` | staged evidence | result file, own card |
 | synthesis | `review-synthesis` | `gpt-6-sol` | `<op>-synthesis` | parent handoffs + evidence | result file, own card |
+
+**† The generalist's model is the one line in this table that is a change rather than a port.**
+Your instruction puts every specialist on `gpt-6-luna`, and the generalist is a specialist, so that
+is what this table says. But the fleet runs that role on `gpt-6-sol` today — the pinned config
+reads `default: gpt-6-sol` [PROFILES:generalist:6], and both fleet documents assign `gpt-6-sol` to
+generalist and synthesis [FLEET-DD:32; FLEET-PRD:16]. Four of these five rows are proven in
+production at the model shown; this one is not proven at any model other than `gpt-6-sol`. It is
+followed through in dissent 5, assumption 4, the PR 2 verification, and the risk table, and it
+reverts with one line.
 
 The security card is created only when a changed path contains an auth, secret, credential, IAM,
 crypto or permission segment, and at most one is ever created [FLEET-DD:32]. Observed rate: 6 of 17
@@ -196,11 +228,15 @@ agent: no model, no prompt, no judgement.
 
 ## 3. Five new profiles, and why Ralph's nine cannot be lenses
 
-New: `lens-generalist`, `lens-reliability`, `lens-mvp`, `lens-security`, `review-synthesis`. Each
-is the fleet's config with `provider: openai-codex` changed to `openai-api` — the credential is
-already installed in the running stack — plus the path of the restricted tool server. The SOULs
-move verbatim for the generalist and synthesis; the other three lose their `gh api` evidence
-paragraph and gain the generalist's, per dissent 3.
+New: `lens-generalist`, `lens-reliability`, `lens-mvp`, `lens-security`, `review-synthesis`. Four
+of the five are the fleet's config with `provider: openai-codex` changed to `openai-api` — the
+credential is already installed in the running stack — plus the path of the restricted tool server.
+`lens-generalist` takes **two** changed lines, not one: the provider, and `default: gpt-6-sol` →
+`gpt-6-luna`, because your split puts the specialists on `luna` and the fleet's generalist config
+is on `sol` [PROFILES:generalist:6]. That second line is the only model change in the port, and it
+is the subject of dissent 5; `review-synthesis` keeps `gpt-6-sol` and changes one line like the
+rest. The SOULs move verbatim for the generalist and synthesis; the other three lose their `gh api`
+evidence paragraph and gain the generalist's, per dissent 3.
 
 **Ralph's existing nine cannot serve as lenses, for three independent reasons, and any one of them
 would be enough.**
@@ -320,9 +356,19 @@ every parent handoff). A mean group is therefore 3.35 × $0.35 + $0.60 = **$1.77
 
 **A busy day costs about $84**, and the caps make that a ceiling rather than an average: a day with
 more work queues the surplus for tomorrow instead of billing for it today. A month of 22 busy
-weekdays plus quiet weekends is **≈$2,000**, against a $3,000 envelope and the $3,500 provider cap
-— so the model has to be 1.75× wrong before anything trips, and 5× wrong before the ceiling itself
-is in question, at which point bound 4 has already stopped it.
+weekdays plus quiet weekends is **≈$1,840**, against a $3,000 envelope and the $3,500 provider cap
+— so the model has to be 1.6× wrong before the envelope is gone, 1.9× wrong before the cap trips,
+and 5× wrong before the ceiling itself is in question, at which point bound 4 has already stopped
+it.
+
+**The generalist's price is the one unit cost that depends on an open question** (dissent 5). The
+table above prices it as a `luna` lens at $0.35, which follows your split. If the generalist goes
+back to `gpt-6-sol` — the model the fleet actually runs it on — it prices as a second synthesis-
+class card at $0.60, and the arithmetic becomes 2.35 × $0.35 + $0.60 + $0.60 = **$2.02** a group,
+planned at **$2.75**: a busy day of **$89.75** and a month of **≈$1,975**. That is the whole blast
+radius of that question in money: about $140 a month, inside the envelope either way, and no cap,
+bound or phase in this document moves. I am recording it so the answer can be given on its merits
+rather than on a budget surprise.
 
 The caps are also consistent with the clock: 6 concurrent workers × 480 s ≈ 45 card-slots an hour,
 so a full day's 109 review cards drain in about 2.5 hours. The queue is bounded by money, not by
@@ -449,7 +495,7 @@ estimates against Ralph's "one concern, preferably under 400 lines" convention
 | # | Lands | Reviewable alone because | Size | Unattended spend |
 | --- | --- | --- | --- | --- |
 | 1 | `max_in_progress: 6`, `max_in_progress_per_profile: 2`, per-profile run budgets, a producer kill switch nothing uses yet, the provider cap written down | Config only. No new behaviour; makes today's silent derived cap explicit | ~60 | no |
-| 2 | The five lens profiles, SOULs, provider line | A human creates one group by hand. Proves the models are reachable, the refusals are gone, and **measures the per-card cost** that section 5 assumes | ~250 | no |
+| 2 | The five lens profiles, SOULs, provider line | A human creates one group by hand. Proves the models are reachable, the refusals are gone, and **measures the per-card cost** that section 5 assumes. Also the first run anywhere of `lens-generalist` on `gpt-6-luna` — the one role whose model this design changes (dissent 5) — read by a human against a pull request whose defects are already known, so a weaker generalist shows up here and not in production | ~250 | no |
 | 3 | The restricted tool server and the evidence staging contract: work root, pinned worktree, `context.json`, `0600` result files | Driven by hand with `--once`. Nothing creates cards | ~350 | no |
 | 4 | The graph builder: deterministic card creation, idempotency keys, conditional security lens, `--once --repo <r> --pr <n>` | Builds a graph for one named pull request. No GitHub write exists yet | ~300 | no |
 | 5 | The publisher: marker search, head re-check, receipts, reconcile path. Dry-run default; posting behind a flag | The first GitHub write, reviewed on its own, with the flag off | ~350 | no |
@@ -468,6 +514,7 @@ estimates against Ralph's "one concern, preferably under 400 lines" convention
 | A lens holds a GitHub token and posts | One unreviewed agent comment in your name, and the single-publisher guarantee silently stops being true | No terminal, no network, no credential — enforced by the tool list (section 3) |
 | Private code reaches a card body, a log, or the chat webhook — the notifier posts a card's reason text verbatim to chat [NOTIFIER:142-159] | Private source in a third-party chat log, not retractable | Results in `0600` files, metadata carries `result_path` only, queue cards on a board the notifier does not poll |
 | The cost model is 3× low | ≈$6,000/month, most of the remaining ceiling | Measured in PR 2 before PR 6; bound 4 stops it at $3,500 and stops only the queues |
+| `lens-generalist` on `gpt-6-luna` is materially worse than on the `gpt-6-sol` the fleet runs it on (dissent 5) | The broadest lens is the weakest one, and it is the role most likely to be the only reader of a given file. A missed defect behind a review that looks like coverage — the same cost as the synthesis risk below, arriving more quietly. In money it is the cheaper direction: reverting costs ≈$140/month (section 5) | Never runs unattended before PR 2 reads its output by hand on a known pull request; four other lenses and synthesis see the same diff; the revert is one line in one profile config, with no other part of the design depending on which way it goes |
 | Synthesis approves on incomplete evidence | A defect merged behind a review that looks like coverage and is not. Worse than no review | Missing or malformed parent handoff is needs-info, never approve [FLEET-PRD:21-22] |
 | Queue cards starve Ralph's own work under the host cap | Your hand-written card waits behind 20 machine cards; the system feels broken | `max_in_progress_per_profile: 2`, and producer cards created at negative priority so a human card is dispatched first |
 | Maintenance pushes something wrong to an open pull request | A bad commit on your own branch, visible to reviewers; recoverable but public | No force-push, no merge, head branches of your own pull requests only, 3-round cap |
@@ -475,7 +522,9 @@ estimates against Ralph's "one concern, preferably under 400 lines" convention
 
 ## Non-goals
 
-- **Re-deciding the model split.** `gpt-6-luna` lenses, `gpt-6-sol` synthesis, as settled.
+- **Re-deciding the model split.** `gpt-6-luna` lenses, `gpt-6-sol` synthesis, as settled. The one
+  divergence that follows from it — the generalist moving off the `gpt-6-sol` the fleet runs it on —
+  is named in dissent 5 and priced in section 5, not re-argued.
 - **Building a dispatcher.** Hermes dispatches every board every 60 seconds already
   [HERMES:kanban_watchers_dispatcher.py:122-126].
 - **Re-litigating whether the council works.** Seventeen groups on the live board answer it.
@@ -497,7 +546,8 @@ Every inference the brief did not state, ordered by weight.
    runs. Every number downstream — the busy day, the monthly figure, the caps themselves — is
    derived from these two. PR 2 measures them on real cards before PR 6 can spend anything
    unattended, and the caps are expressed in cards per day precisely so that a measurement changes
-   one number rather than the design.
+   one number rather than the design. Which of the two prices the generalist card is itself open —
+   see assumption 4.
 2. **Load-bearing: the generalist and synthesis roles on the live board run under the legacy
    `pr-review-v1` profile.** The arithmetic is 34 cards over 17 groups [BOARD] and nothing else
    accounts for two cards per group. If those 34 are something else entirely, then the production
@@ -507,26 +557,37 @@ Every inference the brief did not state, ordered by weight.
    directly today [PROFILES:reliability-SOUL:1]. I moved them because of the credential argument in
    dissent 3, and the cost is that a lens can no longer fetch something nobody staged. PR 3's
    `context.json` is where that bill comes due.
-4. **Moderate: the `openai-api` provider is reachable from the gateway container with the installed
+4. **Load-bearing: "the specialists run `gpt-6-luna`" includes the generalist.** The brief's model
+   sentence and the fleet's four records disagree about this one role (dissent 5): the pinned
+   config, the fleet's design document and its PRD all put the generalist on `gpt-6-sol`
+   [PROFILES:generalist:6; FLEET-DD:32; FLEET-PRD:16]. I read "specialists" as the role set — the
+   three-or-four cards that review a diff, generalist included — and placed it on `gpt-6-luna`. If
+   you meant "the three roles already running `luna`", this assumption is wrong, and with it
+   section 2's first row, section 3's two-line port, and section 5's $0.35 generalist card.
+   Nothing else depends on it: no bound, no phase, no ordering, no guarantee. Unlike the three
+   lenses that are already `luna` in production, this configuration has **no production
+   precedent**: the role has never run on `luna`, and the roles that do run on `luna` are the three
+   narrow ones — which is why PR 2 exercises it by hand before anything automatic exists.
+5. **Moderate: the `openai-api` provider is reachable from the gateway container with the installed
    key.** The brief states both models were verified reachable; I did not re-run it, and the
    credential pool does list an `openai-api` entry [RALPH-AUTH].
-5. **Moderate: the maintenance worker belongs on Anthropic, not `gpt-6-luna`.** Your model decision
+6. **Moderate: the maintenance worker belongs on Anthropic, not `gpt-6-luna`.** Your model decision
    named specialists and synthesis. Maintenance writes code in Ralph's repositories, which is what
    Ralph's builder already does on Anthropic.
-6. **Moderate: $3,000 a month is the right envelope for all three queues.** A guess at 30% of the
+7. **Moderate: $3,000 a month is the right envelope for all three queues.** A guess at 30% of the
    ceiling, made without knowing what the nine profiles spend. Decision 3.
-7. **Moderate: `max_in_progress: 6` rather than the derived 8.** 512 MiB per worker is Hermes' own
+8. **Moderate: `max_in_progress: 6` rather than the derived 8.** 512 MiB per worker is Hermes' own
    assumption [HERMES:kanban_db_dispatch.py:1810]; 8 workers is 4 GiB on a 5.77 GiB host that also
    runs the gateway, the web UI and sandbox containers. 6 leaves room, and the memory-pressure
    guard stays a backstop rather than a load-bearing part of the plan.
-8. **Moderate: an explicit repository allowlist, pending decision 1.** The fleet's board engine
+9. **Moderate: an explicit repository allowlist, pending decision 1.** The fleet's board engine
    searches everything accessible [PRODUCER:186-192]; I designed the narrower default because the
    wider one cannot be undone from the GitHub side once reviews are posted.
-9. **Moderate: a reserved mail label is an acceptable opt-in gesture.** It is one click per thread.
-   If that is too much friction you will stop using it, and a replier nobody feeds is better than
-   one fed by a heuristic.
-10. **Low weight: the second board should be called `queues`.** A name, not a decision.
-11. **Low weight: `--max-retries 1` on queue cards.** The default of 2 pays twice for a timeout
+10. **Moderate: a reserved mail label is an acceptable opt-in gesture.** It is one click per
+    thread. If that is too much friction you will stop using it, and a replier nobody feeds is
+    better than one fed by a heuristic.
+11. **Low weight: the second board should be called `queues`.** A name, not a decision.
+12. **Low weight: `--max-retries 1` on queue cards.** The default of 2 pays twice for a timeout
     [HERMES:kanban_db_dispatch.py:37]. Blocking on first failure is the right trade for a lens and
     may be wrong for maintenance, which is one flag at PR 8.
 
@@ -562,6 +623,10 @@ Every inference the brief did not state, ordered by weight.
 5. **Should the publisher post as `<work-account>` or as a separate bot identity?** The fleet posts
    as the account. A separate identity makes agent reviews filterable by other people, at the cost
    of another credential. Not blocking; PR 5 can land either way.
+6. **Did "the specialists run `gpt-6-luna`" mean the generalist too?** One word from you closes it.
+   I have built on yes (section 2, assumption 4); no costs ≈$140 a month and one config line, and
+   changes nothing else. Not blocking: PR 2 is where it would first matter, and PR 2 has a human
+   reading the output.
 
 ## Sources
 
@@ -571,14 +636,16 @@ Every inference the brief did not state, ordered by weight.
 - **[FLEET-PRD] / [FLEET-DD]** — the fleet's product and design documents for the review council, as
   pinned to this card. Cited by line: the stale status line (DD:4), the graph and role set (DD:32),
   the publisher contract (DD:34), the identity and ingress rules (DD:26,44), the verdict rules
-  (PRD:21-22), the 480-second card cap (PRD:16).
+  (PRD:21-22), the 480-second card cap and the per-role model assignment (PRD:16).
 - **[PRODUCER]** — the fleet's discovery producer, pinned as `fleet-hermes-pr-producer.sh`, 356
   lines. Cited by line: review/maintain modes (15-19), the feedback snapshot and its digest
   (78-115), the 3-round cap (146,150), the authority allowlist and the board engine's bypass of it
   (186-192), the 1000-result search (204-206), the already-reviewed-at-this-head skip (268-280), the
   operation identity (344-346).
 - **[PROFILES]** — the fleet's five reviewer profiles, configs and SOULs, as pinned. Cited:
-  the generalist's disabled toolsets and `tools.include` list (config:23,43-44), the reliability
+  the generalist's and synthesis's `model.default: gpt-6-sol` and the other three configs'
+  `gpt-6-luna` (config:6 in each), the generalist's disabled toolsets and `tools.include` list
+  (config:23,43-44), the reliability
   SOUL's `gh api` evidence path and `result_path`-only metadata (SOUL:1-2), the synthesis SOUL's
   parent-handoff rule.
 - **[RALPH-COMPOSE] / [RALPH-CONFIG] / [RALPH-AGENTS] / [NOTIFIER] / [RALPH-REVIEWER-*]** — Ralph's
