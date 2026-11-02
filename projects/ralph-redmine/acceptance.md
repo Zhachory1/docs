@@ -9,34 +9,37 @@ pull_requests:
 
 # Acceptance tests: Redmine as the canonical issue tracker
 
-Status: in review, v2. Nothing here has been run. No build authorised.
+Status: in review, v3. Nothing here has been run. No build authorised.
 Covers [the PRD](prd.md) and [design](design.md). Card: t_021bba46.
 
 ## Review header
 
-**Decisions needed from you (4).**
-1. A1 to A7 run against a scratch Redmine project, not the real one. Confirm you will
+**Decisions needed from you (2).**
+1. A1 to A8 run against a scratch Redmine project, not the real one. Confirm you will
    create a `Work Requests (test)` project for this, or accept that nothing is proven
    before first live use.
 2. A4 needs a human in the loop by definition. Confirm you will answer one test prompt.
-3. A1 gives the requester no acknowledgement, by design. Your comment asked for one, and
-   providing one means lifting a non-goal, so it is **prd.md D6**, costed there.
-4. A6 tests a client-side `REDMINE_PROJECT_ALLOWLIST`. Your comment said that check is
-   not required; it was cut off mid-word, and the two readings differ in size, so it is
-   **prd.md D7**, with both readings there.
 
-**Council dissent.** Independent review card t_1f1c1c9a reported no blockers. Your
-round-1 review requested changes, and all three comments landed on this file. All three
-are answered: two as prd.md D6 and D7, one as design.md decision 4.
+v2's other two were your round-1 comments, and your round-2 answers closed both. They are
+tests again rather than questions: A1 asserts the acknowledgement path you named, A6
+asserts the server refusing instead of the client.
 
-**Scope rating.** Seven tests. A1 to A3 are one end-to-end run. A5 to A7 are tool-layer
-tests and need no Redmine round trip beyond a stub.
+**Council dissent.** Independent review card t_1f1c1c9a reported no blockers. All three
+of your round-1 comments landed on this file and all three are now answered by you, not
+deferred by me. One of them cost this file a test it did not have: A8 exists because
+deleting the client-side allowlist moves the whole boundary onto Redmine roles, and a
+boundary nothing tests is a claim.
 
-**Changes since last revision (v1 to v2).** A1, A3 and A6 gained the notes your three
-comments asked for. The full text of two of those decisions was written here first; it
-now lives in prd.md as D6 and D7, with only a pointer left behind, because answering
-either changes the PRD rather than the test. A3 now points at the design's argument for
-why an execution card holds no Redmine tool, and carries the gap that argument exposed.
+**Scope rating.** Eight tests. A1 to A3 are one end-to-end run. A5 to A7 are tool-layer
+tests and need no Redmine round trip beyond a stub. A8 needs a live instance, because
+what it tests is a Redmine role.
+
+**Changes since last revision (v2 to v3).** A1 drops the open question and asserts the
+issue URL in the intake card's metadata, which is what a human needs to write the
+acknowledgement (prd.md D6). A3 asserts `In Progress` while the execution card runs, set
+by the orchestrator, and its "Open" note is gone. A6 is rewritten: no client-side
+allowlist survives, so it asserts Redmine's 403. A8 is new, covering the orchestrator's
+Redmine role.
 
 ## How to read these
 
@@ -61,14 +64,16 @@ against the real Work Requests project.
 - `ralph_source_threads` contains `T1`.
 - `ralph_create_op` equals the operation id for `T1`/`M1`.
 - `ralph_next_action` is not empty.
-- The intake card completed with metadata carrying the issue id.
+- The intake card completed with metadata carrying the issue id **and the issue URL**.
+  The URL is the acknowledgement path: you settled that a human comment is the
+  acknowledgement (prd.md D6), and a human should not have to search for the issue to
+  write one.
 
 **Must not.**
 - No second issue.
-- No Chat message sent. Nothing in this system can send one (prd.md, "Non-goals"). The
-  only trace of this request outside Redmine is the intake card's completion metadata,
-  which carries the issue id and which no requester reads. Whether that is enough, and
-  what should replace it if not, is prd.md D6.
+- No Chat message and no mail sent by us. Nothing in this system can send either (prd.md,
+  "Non-goals"), and nothing should: the acknowledgement is a person writing a comment.
+  A test that passes while something automated acknowledges the requester is a failure.
 
 ---
 
@@ -105,22 +110,25 @@ message `M2`, whose text does not repeat the first one word for word.
 - The execution card is promoted only after the intake card is done.
 - Its worker context contains the intake handoff, including the issue id.
 - Its completion metadata names the issue id.
+- **The issue reads `In Progress` while the execution card runs**, set by the
+  orchestrator in the same run that created the card, and attributed in the journal to
+  the orchestrator's Redmine account rather than the maintainer's. v2 could assert no
+  status here at all; your answer gave the status a writer.
 - The report card, child of the execution card, runs after it and adds exactly one note
   to the issue.
 
 **Must not.**
 - The execution card holds no Redmine credential and calls no Redmine tool. Check its
-  resolved toolset, not its behaviour on one run. An execution card that needs the
-  issue updated does not get its own Redmine access: it reports through its completion
-  metadata, and the report card — the only other card besides the intake card that
-  runs as `ralph-issue-maintainer` and holds `redmine-tools` — reads that metadata and
-  writes the note. design.md, "Who can update an issue", argues why it is kept that way.
+  resolved toolset, not its behaviour on one run. It reports through its completion
+  metadata, which the orchestrator and the report card read. design.md, "Why the
+  orchestrator may, and the executing cards may not", argues where that line falls: the
+  orchestrator reads a brief two profiles have filtered, a builder reads a repository
+  nobody has.
+- The orchestrator must not create, relate, or resolve anything. A8 tests that properly,
+  against its Redmine role; here it is enough that the only journal entry it leaves is
+  the status change.
 - No poller, cron entry, or watcher process is involved. If one is needed to pass this
   test, the design failed.
-
-**Open.** This test asserts no status at all between A1's New and the report card's
-note, because nothing in the design sets `In Progress` while the execution cards run.
-See design.md decision 4; whichever writer you pick, a status assertion belongs here.
 
 ---
 
@@ -166,28 +174,31 @@ See design.md decision 4; whichever writer you pick, a status assertion belongs 
 
 ---
 
-## A6. An out-of-scope project is rejected
+## A6. A project the account cannot write to is refused by Redmine
 
-Written as the design currently stands, and open: prd.md D7 asks whether the client-side
-allowlist survives at all. Under its narrow reading this test still exists but asserts
-that Redmine refuses, not that the tool refuses first.
+Rewritten in v3. You deleted the client-side allowlist (prd.md D7), so this test asserts
+that the server refuses, not that the client refuses first. It needs a live instance now;
+a stub transport cannot prove a permission that lives in Redmine.
 
-**Setup.** Two projects exist in Redmine. Only one is in `REDMINE_PROJECT_ALLOWLIST`.
+**Setup.** Two projects exist. The maintainer's account is a member of one of them.
 
-**Do.** Drive the tool toward the project that is not allowlisted, by whatever argument
-reaches it, and by a direct call with the id if the model cannot express it.
+**Do.** Drive the tool at the project it is not a member of, through the `project`
+argument on `issue_create`, and by a direct call with the project id if the model cannot
+express it.
 
 **Must be true.**
-- The call fails.
-- No HTTP request leaves the process. Assert on the stub transport, not on Redmine's
-  response, because the point is that the client refuses first.
+- The call fails on Redmine's 403.
+- It surfaces to the model as a permission error and is not retried: a permission error
+  is a configuration bug, not a transient (design.md, "Failure and audit").
 - The refusal is logged.
+- The non-member project has no new issue afterwards. Assert on Redmine, not on the
+  tool's return value.
 
 **Must not.**
-- The error must not include the API key, the base URL with credentials, or the
-  allowlist contents.
-- Removing the allowlist check must make this test fail. If the Redmine membership alone
-  still passes it, the second layer is untested and must be tested separately.
+- The error must not include the API key or the base URL with credentials.
+- No fallback: not to another credential, not to another project, and above all not to
+  the project the account *is* a member of. Writing the issue somewhere it is allowed is
+  the failure this test exists to catch, because it looks like success from the card.
 
 ---
 
@@ -210,6 +221,37 @@ contains a token-shaped string.
 - This must fail if the model is instructed to paste the transcript. Write that test:
   the boundary is the tool, and a test that only checks the well-behaved path proves
   nothing about the boundary.
+
+---
+
+## A8. The orchestrator can set a status and nothing else
+
+New in v3. The orchestrator is the second holder of a Redmine key, by your answer, and
+with the client-side allowlist gone its Redmine role is the only thing that bounds it.
+A boundary nothing tests is a claim.
+
+**Setup.** The issue from A1. The orchestrator's own Redmine account and key.
+
+**Do.** Three things:
+1. From the orchestrator profile, set the issue to `In Progress`.
+2. From the same profile, attempt to create an issue and to add a relation.
+3. With the orchestrator's key directly, outside the tool, POST a new issue to the
+   project it can read.
+
+**Must be true.**
+- Step 1 succeeds, and the journal attributes it to the orchestrator's account, not the
+  maintainer's. Two writers, two names in the history, or the audit trail is a guess.
+- Step 2 fails because `issue_create` and `issue_relation_add` are not in its resolved
+  toolset at all. Assert on the toolset, not on a refusal at call time.
+- Step 3 fails with Redmine's 403. This is the one that matters: it tests the role rather
+  than our code, and the role is what survives a bug in our code.
+
+**Must not.**
+- The orchestrator must not be able to set `Resolved`, `Closed`, `Rejected`, or
+  `Needs Owner`. `In Progress` is its whole status budget (design.md, "Who can update an
+  issue").
+- It must not share the maintainer's key. If step 3 passes, the two profiles are one
+  account and the separation in the design does not exist.
 
 ---
 

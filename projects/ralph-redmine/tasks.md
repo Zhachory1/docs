@@ -9,7 +9,7 @@ pull_requests:
 
 # Task list: staged build slices
 
-Status: in review, v2. Design only.
+Status: in review, v3. Design only.
 
 > ## HUMAN APPROVAL REQUIRED
 >
@@ -34,9 +34,16 @@ Card: t_021bba46. Covers prd.md, design.md, acceptance.md.
 **Scope rating.** Three code slices after one human slice. Each is one PR. Slice 1 is
 the only one that is more than a day's work.
 
-**Changes since last revision (v1 to v2).** The approval gate above named a Hermes card
-that does not own this pull request; it now names the pull request. No slice, file list,
-or dependency changed.
+**Changes since last revision (v2 to v3).** Your round-2 answers reach the slices. Slice
+0 gains the orchestrator's Redmine account, its role, and its workflow row. Slice 1 loses
+the client-side allowlist and its test. Slice 2 loses `REDMINE_PROJECT_ALLOWLIST` from the
+overlay job. Slice 3 gains the orchestrator's narrow tool and the `In Progress` write, and
+now covers A8. The last section no longer says no other profile gets a credential, because
+one does.
+
+**Changes in v1 to v2.** The approval gate above named a Hermes card that does not own
+this pull request; it now names the pull request. No slice, file list, or dependency
+changed.
 
 ---
 
@@ -53,13 +60,21 @@ Blocks everything below. None of it is reviewable code and none of it is agent w
   the maintainer's role.
 - Create the user `ralph-issue-maintainer`, a role with exactly `view_issues`,
   `add_issues`, `edit_issues`, `add_issue_notes`, `manage_issue_relations`, and a
-  membership on `Work Requests` only.
+  membership on `Work Requests` only. Membership is now the only boundary on where it can
+  write, since prd.md D7 deleted the client-side allowlist; treat widening it as a
+  security change.
+- Create the user `ralph-orchestrator`, a second role with exactly `view_issues`,
+  `edit_issues`, `add_issue_notes`, and the same membership. No `add_issues`, no
+  `manage_issue_relations`: it sets `In Progress` and writes notes, and the role is what
+  makes that true rather than its tool allowlist.
+- Give the orchestrator's role the New to In Progress workflow row, and nothing else.
 - Create a scratch project `Work Requests (test)` for the acceptance tests.
 - Record the numeric ids of trackers, statuses, and custom fields. They are
   instance-specific and are install options, not code.
 
-**Done when** a `curl` with the service key lists issues in `Work Requests` and fails
-on any other project.
+**Done when** a `curl` with the maintainer key lists issues in `Work Requests` and fails
+on a project it is not a member of, and a `curl` with the orchestrator key sets a status
+there but fails to create an issue.
 
 ---
 
@@ -71,10 +86,12 @@ Plausible files:
 - `bootstrap/redmine-tools` — the stdio MCP server. Modelled on `bootstrap/lens-tools`:
   same bounds, same binding-file shape (`.redmine-tools.json`), same refusal to take
   identity from the model.
-- `evals/test_redmine_tools.py` — the allowlist, the project refusal, the byte cap, the
-  op-id lock, the journal pre-check. Against a stub transport, no live instance.
+- `evals/test_redmine_tools.py` — the tool allowlist, the byte cap, the op-id lock, the
+  journal pre-check. Against a stub transport, no live instance. No client-side project
+  check: prd.md D7 deleted it, so there is nothing here to test and A6 moved to the live
+  instance.
 
-Covers acceptance A5, A6, A7.
+Covers acceptance A5 and A7, and A6 once slice 0 exists to run it against.
 
 Settle the unproven API behaviour here, against the scratch project, before the shape
 is locked: items 1, 2 and 3 in design.md, "Unproven Redmine behaviour".
@@ -95,8 +112,8 @@ Plausible files:
   board write, and its config text contains no credential name.
 - The producer change that creates the intake card with the operation id as its
   idempotency key.
-- A private overlay job carrying `REDMINE_URL`, `REDMINE_API_KEY`,
-  `REDMINE_PROJECT_ALLOWLIST` into that profile's `.env` and no other's.
+- A private overlay job carrying `REDMINE_URL` and `REDMINE_API_KEY` into that profile's
+  `.env` and no other's. No `REDMINE_PROJECT_ALLOWLIST`: prd.md D7 deleted it.
 
 Covers acceptance A1, A2, A4.
 
@@ -109,12 +126,20 @@ One PR, smallest of the three.
 Plausible files:
 - The orchestrator change: execution cards get `parents=[intake card]`, and one report
   card gets `parents=[execution cards]`.
+- `profiles/orchestrator/config.yaml` — `mcp_servers` gains `redmine-tools` with
+  `tools.include` of exactly `issue_get`, `issue_status_set`, `issue_note_add`, and the
+  orchestrator's own key arrives through its own overlay job. New in v3, from your answer
+  on A3.
+- The orchestrator sets `In Progress` in the run that fans the execution cards out.
 - `evals/test_orchestration.py` — extend: the execution card sees the issue id in its
-  parent handoff, and the report card does not promote early.
+  parent handoff, the report card does not promote early, and the orchestrator's resolved
+  toolset contains no `issue_create` or `issue_relation_add`.
 
-Covers acceptance A3.
+Covers acceptance A3 and A8.
 
-Depends on prd.md decision D2 for whether the report run may set Resolved.
+Depends on prd.md decision D2 for whether the report run may set Resolved, and for
+whether the orchestrator may set `In Progress` at all: if agents may not touch status,
+neither of them may.
 
 ---
 
@@ -135,4 +160,5 @@ Depends on prd.md decision D2 for whether the report run may set Resolved.
 - A poller, watcher, or cron job for results. design.md refuses it.
 - A sidecar container. design.md rejects it.
 - Migrating history into Redmine.
-- Giving any other profile a Redmine credential.
+- Giving any profile besides `ralph-issue-maintainer` and `ralph-orchestrator` a Redmine
+  credential. Executing profiles report through card metadata and nothing else.

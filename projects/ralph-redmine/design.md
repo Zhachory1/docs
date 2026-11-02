@@ -9,54 +9,64 @@ pull_requests:
 
 # Design: Redmine as the canonical issue tracker
 
-Status: in review, v2. No build authorised. Covers [the PRD](prd.md) and nothing else.
+Status: in review, v3. No build authorised. Covers [the PRD](prd.md) and nothing else.
 Card: t_021bba46. Research: [public research notes](research-notes.md).
 Public Ralph source read for current behaviour: /ralph/bootstrap/{inbox-producer,
 inbox-writer,install,install-overlay-jobs,lens-tools}, /ralph/evals/test_profile_config.py.
 
 ## Review header
 
-**Decisions needed from you (4, plus the 7 in prd.md).**
+**Decisions needed from you (3, plus the 5 in prd.md).**
 1. The maintainer writes to Redmine from inside the container, rather than a host-side
    writer holding the key the way inbox-writer holds the Gmail token. Justification is
    in "Why not a host-side writer". Accept or reject.
-2. The orchestrator links execution cards under the intake card. That makes the
-   orchestrator part of this flow. If you want the orchestrator untouched, say so and
-   the alternative is a poller, which this design refuses.
+2. The orchestrator links execution cards under the intake card, and in v3 it also holds
+   a narrow Redmine tool and its own Redmine account. That makes it the second key
+   holder. Accept or reject; the alternative to the linking half is a poller, which this
+   design refuses.
 3. Three custom fields get added to the project by hand (source threads, next action,
    create op). Confirm you are willing to maintain them.
-4. Nothing in this design sets the `In Progress` status that prd.md defines, so an issue
-   reads New for as long as the work runs. Your review comment on A3 is what found it.
-   Pick a writer for that status; the three options are in "Who can update an issue".
+
+v2's decision 4, "nothing sets `In Progress`", is closed. Your comment on A3 is what
+found the hole and your answer is what picked the writer: the orchestrator.
 
 **Council dissent.** Independent review card t_1f1c1c9a reported no blockers. Your
-round-1 review requested changes. The comment that lands on this document asked why an
-execution card may not hold the Redmine tool; the answer was in here only by implication,
-and chasing it down surfaced decision 4 above, which is a real hole rather than a missing
-cross-reference.
+round-1 review asked why an execution card may not hold the Redmine tool, and v2 argued
+untrusted input. Your round-2 answer rejected half of that argument: a request reaches
+the orchestrator only after the chat maintainer and the issue maintainer have handled it,
+and "not having any agent talk to the issue tracker is stupid because no work will get
+tracked." v3 takes it. The argument survives only where it is still true, which is the
+executing cards, and "Why the orchestrator may, and the executing cards may not" says
+where the line now falls.
 
 **Scope rating.** Small-to-medium. Three slices, one PR each. Slice 0 is yours and
 blocks everything.
 
-**Changes since last revision (v1 to v2).** "Who can update an issue" gained the argument
-for why neither the orchestrator nor an executing card holds a Redmine tool, and names
-`In Progress` as unowned. Nothing else changed; your other two comments became D6 and D7
-in prd.md.
+**Changes since last revision (v2 to v3).** Two of your answers land here. The
+orchestrator holds `redmine-tools` narrowed to read, status and note, under its own
+Redmine account, and sets `In Progress` when it fans out. The client-side
+`REDMINE_PROJECT_ALLOWLIST` check is deleted and `issue_create` takes a project argument
+(prd.md D7). Shape, tool surface, account, flows, failure handling and install options
+moved with those two; nothing else changed.
 
 ## Shape
 
 ```
-Chat thread ──(host producer, existing pattern)──► intake card ──► ralph-issue-maintainer
-                                                        │               │
-                                                        │               └─ redmine-tools (MCP stdio,
-                                                        │                   holds the API key)
-                                                        │                        │
-                                                        ▼                        ▼
-                                          orchestrator fans out          Redmine issue #NNN
-                                          execution cards as children         (canonical)
-                                                        │                        ▲
-                                                        ▼                        │
-                                              report card (child) ──► maintainer writes one note
+Chat thread
+   │  host producer (existing pattern)
+   ▼
+intake card ──► ralph-issue-maintainer ──► redmine-tools (full surface, maintainer key)
+   │                                              │  creates the issue
+   │                                              ▼
+   ▼                                     Redmine issue #NNN  (canonical record)
+orchestrator card ──► redmine-tools               ▲
+   │                  (get, status, note,         │
+   │                   orchestrator key) ─────────┤  sets In Progress
+   ▼                                              │
+execution cards (children)                        │
+   │  completion metadata only, no Redmine access │
+   ▼                                              │
+report card (child) ──► ralph-issue-maintainer ───┘  writes one note
 ```
 
 Hermes cards execute. The Redmine issue records. Neither drives the other.
@@ -64,7 +74,7 @@ Hermes cards execute. The Redmine issue records. Neither drives the other.
 ## Where the Redmine tool runs, and why
 
 **Decision: a stdio MCP server, `redmine-tools`, running inside the existing Hermes
-container, launched by the maintainer profile's `mcp_servers` block.**
+container, launched from the `mcp_servers` block of each profile that holds it.**
 
 This is not a new pattern for this stack. `/ralph/bootstrap/lens-tools` is already
 exactly this: a stdio MCP server in the existing container that stands between an agent
@@ -118,11 +128,17 @@ extra hop, a host cron to run it, and nothing else changes.
 
 The allowlist is the permission. Anything not listed does not exist for this profile.
 
+Two profiles hold the tool, with different allowlists. The maintainer gets the full
+surface below. The orchestrator gets three calls — `issue_get`, `issue_status_set`
+restricted to `In Progress`, and `issue_note_add` — and its Redmine role cannot do the
+rest either, so the narrowing is enforced twice.
+
 - `issue_search(text?, thread_id?, status?, limit)` — read. Returns id, subject, status,
   updated_on, source threads, next action. Never returns journals in bulk.
 - `issue_get(issue_id)` — read, one issue, including relations and journals.
-- `issue_create(tracker, subject, summary, source_thread_id)` — write. Project is not an
-  argument; see "Account and allowlist".
+- `issue_create(tracker, project, subject, summary, source_thread_id)` — write. `project`
+  became an argument in v3, when you deleted the allowlist (prd.md D7); what bounds it is
+  the account's Redmine membership, nothing in this process.
 - `issue_note_add(issue_id, note, next_action?)` — write, append only.
 - `issue_status_set(issue_id, status)` — write, restricted to the transitions in
   prd.md. `Closed` and `Rejected` are not accepted values.
@@ -139,23 +155,35 @@ create, any endpoint outside `/issues` and `/search`.
 id, run id, and claim lock from the environment rather than from the model. The model
 cannot forge, reuse, or omit it.
 
-## Account and allowlist
+## Accounts and permissions
 
 One Redmine user, `ralph-issue-maintainer`, not an administrator. Its API key is its
 own per-user key, so every write is attributed to it in the journal
 (research-notes.md §1).
 
-Its role grants, on the allowlisted project only: `view_issues`, `add_issues`,
-`edit_issues`, `add_issue_notes`, `manage_issue_relations`. Nothing else. It is a member
-of no other project, so Redmine itself rejects a write anywhere else, independent of
-anything in our code.
+Its role grants, on the projects it is a member of: `view_issues`, `add_issues`,
+`edit_issues`, `add_issue_notes`, `manage_issue_relations`. Nothing else. Membership is
+what bounds where it can write, and Redmine enforces that independent of anything in our
+code.
 
-The project allowlist is also enforced in the tool layer, from
-`REDMINE_PROJECT_ALLOWLIST`, before any HTTP request leaves the process. Two layers,
-because the server-side one depends on a membership a human could widen by accident,
-and the client-side one depends on code review. Neither is sufficient alone.
+**There is no client-side project allowlist.** v2 had one, from
+`REDMINE_PROJECT_ALLOWLIST`, checked before any HTTP request left the process; you asked
+for it deleted (prd.md D7) and v3 deletes it from the tool, the install options and the
+overlay job. What is left is the server-side layer, and it is the better of the two: it
+is enforced where the data is, it survives a bug in our code, and you administer it in
+the web UI where you can see it. What it costs is the thing the second layer was for —
+widening the account's membership now widens what the agent can write and nothing in our
+code will notice. Membership changes become the review point.
 
-The key reaches the MCP process through the profile's `.env`, written at install time
+**The orchestrator gets its own Redmine user**, `ralph-orchestrator`, whose role grants
+`view_issues`, `edit_issues` and `add_issue_notes` and nothing more: no `add_issues`, no
+`manage_issue_relations`. Its tool allowlist says the same thing, but the role is what
+makes it true. That matters more in v3 than it did in v2: with the client-side check
+gone, the server is the boundary, so a profile that may not create issues should be
+unable to rather than merely disallowed. It costs a second account and a second key to
+rotate, both of them slice 0 work.
+
+Each key reaches its MCP process through that profile's `.env`, written at install time
 with mode 600 by the existing overlay-job mechanism (`/ralph/bootstrap/install-overlay-
 jobs`, which writes named options into one profile's `.env` and no other's). It is never
 on a command line, never in a card body, never in a log line.
@@ -199,9 +227,12 @@ No local state file. Nothing to resync after a restore.
 
 **New request.** Producer stages the event and creates the intake card. The maintainer
 searches by thread id, finds nothing, searches by text, finds nothing above the match
-bar, creates the issue with status New, writes the summary and the thread id, sets
-`ralph_next_action`, and completes its card with metadata `{redmine_issue: NNN,
-op_id: ...}`.
+bar, creates the issue in the project it judges right, with status New, writes the
+summary and the thread id, sets `ralph_next_action`, and completes its card with metadata
+`{redmine_issue: NNN, redmine_url: ..., op_id: ...}`. It then creates the orchestrator
+card as a child of its own, which is what starts the work. The URL is in the metadata
+because the acknowledgement to the requester is a human comment (prd.md D6) and a human
+needs one click to get to the issue.
 
 **Same thread, repeat message.** New operation id, new intake card. The maintainer
 queries `cf_ralph_source_threads` for the thread id, gets exactly one issue, and appends
@@ -235,6 +266,10 @@ each one in `todo` until the intake card is done, then promotes it with the inta
 handoff attached, which is where the execution card learns `#NNN`. That is how it can
 reference the issue id in its own work, and acceptance test A3 checks it.
 
+In the same run, before the first execution card can report anything, the orchestrator
+sets the issue to `In Progress`. That is its whole write budget and it is the state the
+rest of this flow could not express.
+
 The orchestrator also creates one report card assigned to `ralph-issue-maintainer`, with
 `parents=[the execution cards]`. The kernel promotes it when they finish. The maintainer
 reads their completion handoffs, writes one note summarising what happened, updates
@@ -242,15 +277,18 @@ reads their completion handoffs, writes one note summarising what happened, upda
 
 Executing profiles get no Redmine tool, no Redmine key, and no Redmine account. They
 write their results where they already write them: the card completion metadata the
-kernel carries for free. Nothing polls, nothing watches a directory, nothing runs on a
-timer, and there is no new daemon to keep alive.
+kernel carries for free, which the orchestrator and the report card read. Nothing polls,
+nothing watches a directory, nothing runs on a timer, and there is no new daemon to keep
+alive.
 
 ## Who can update an issue
 
 - `ralph-issue-maintainer`, through `redmine-tools`, within the allowlist above.
+- `ralph-orchestrator`, through the same tool narrowed to `issue_get`,
+  `issue_status_set` for `In Progress`, and `issue_note_add`, under its own account.
 - Humans, through the Redmine web UI, with their own accounts.
 
-That is the whole list. No other profile and no other service.
+That is the whole list. No executing profile and no other service.
 
 Because humans edit the same issues, the maintainer must never assume it is the last
 writer. Two rules follow, and they are enforceable in the tool, not just advice:
@@ -259,45 +297,43 @@ writer. Two rules follow, and they are enforceable in the tool, not just advice:
   and status within its allowed transitions. The subject and description are written
   once at create and never edited again, so a human's correction survives.
 
-**Why not the orchestrator, and why not the executing cards.** Two reasons; the second
-is the one that decides it.
+**Why the orchestrator may, and the executing cards may not.** v2 refused both, on the
+grounds that a card which reads untrusted text and can also write the canonical record
+can be talked by that text into writing anything. You rejected that for the orchestrator,
+and you were right about where the chain of custody ends. A request reaches the
+orchestrator only after the chat maintainer has read the untrusted thread and the issue
+maintainer has turned it into a summary. What the orchestrator reads is a card brief two
+profiles have already filtered. Refusing it the tracker buys nothing and costs what you
+said it costs: no work gets tracked while it runs.
 
-The weak reason is blast radius. Every profile holding `redmine-tools` is another process
-the key is trusted to and another `config.yaml` whose allowlist must be re-reviewed on
-every change. That argues for few holders, not for exactly one.
+The executing cards sit on the other side of that line, and the line is not seniority, it
+is input. A builder opens the repository, the dependency tree, the web page named in the
+issue. None of that has passed a filter, because filtering it is not possible — reading
+it is the job. Containing exactly that is why `lens-tools` exists and why this design puts
+the key behind a process boundary at all ("Where the Redmine tool runs, and why"). The
+maintainer's surface, and the orchestrator's three calls, are small enough to review line
+by line. A builder's is not.
 
-The strong reason is that executing cards read untrusted input: repositories, web pages,
-and the text of the request itself. A card that can both read untrusted text and write
-the canonical record can be talked by that text into writing whatever it says. Containing
-exactly that is why `lens-tools` exists, and why this design puts the key behind a
-process boundary at all ("Where the Redmine tool runs, and why"). The maintainer's
-surface is small enough to review line by line. A builder's is not.
+So an execution card that needs the issue updated still does not get its own access. It
+writes what it learned into its completion metadata, and the orchestrator or the report
+card — which runs as `ralph-issue-maintainer` — puts it on the issue. That hop costs one
+card promotion the kernel already performs.
 
-So an execution card that needs the issue updated does not get its own access. It writes
-what it learned into its completion metadata, and the report card — which runs as
-`ralph-issue-maintainer` and does hold `redmine-tools` — reads that and writes one note.
-The orchestrator gets nothing for the same reason, plus one of its own: it has no
-judgment to add about an issue it never read.
+The weak reason v2 gave, blast radius, is still true and is why this stops at two holders
+rather than becoming a general permission. Each holder is another key to rotate and
+another `config.yaml` whose allowlist must be re-read on every change.
 
-**What that argument leaves unowned: `In Progress`.** prd.md defines the status as "a
-Hermes card for this issue is running", and nothing in this design sets it. The intake
-card creates the issue as New. The report card writes the result and may set Resolved.
-Between the two, the issue reads New while the work runs, which is the one state a reader
-would most want the tracker to be honest about. Three ways to close it, none chosen here:
+**`In Progress` has an owner now.** prd.md defines it as "a Hermes card for this issue is
+running", and in v2 nothing set it: the issue read New for as long as the work ran, which
+is the one state a reader would most want the tracker to be honest about. The orchestrator
+sets it, in the same run that creates the execution cards, and that is the only status it
+sets. Resolved stays with the report card, Needs Owner with the maintainer, Closed and
+Rejected with you. Of v2's three options this is the third, which your answer picked; it
+is cheaper than option 1 by one card per request, and it is the second key holder option 3
+warned about, now authorised.
 
-1. The orchestrator creates one short card assigned to `ralph-issue-maintainer` alongside
-   the execution cards, which sets `In Progress` and does nothing else. One extra card
-   per request, no new holder of the key, and the single-writer rule above survives
-   intact. It is the only option consistent with the rest of this document.
-2. Drop `In Progress` from the agent flow. The issue stays New until the report card
-   writes, and "is this running" is answered by the board, which already knows. Costs the
-   status filter that prd.md D2 calls most of the point of using a tracker.
-3. Give the orchestrator `redmine-tools` with `issue_status_set` and nothing else. Fewest
-   cards, but a second key holder, a second profile config to re-review on every change,
-   and it lands on the one profile that touches every card on the board.
-
-This depends on prd.md D2. If the maintainer may not set status at all, option 2 is the
-only one left standing.
+This still depends on prd.md D2. If the maintainer may not set status at all, the
+orchestrator may not either, and the issue reads New until the report card writes.
 
 ## Failure and audit
 
@@ -313,7 +349,9 @@ Failure handling:
   actionable, for example a required custom field that is missing.
 - 5xx or connection refused: retry three times with backoff, then fail the card. The
   intake card retries under the same operation id, so no duplicate is possible.
-- Project outside the allowlist: refuse before the request is made, and log the refusal.
+- A project the account is not a member of: Redmine answers 403 and it fails like any
+  other permission error. There is no client-side pre-check to refuse it first; you
+  deleted it (prd.md D7).
 - Redmine API disabled: every call fails identically; the card blocks with that reason.
 
 The durable audit trail is Redmine's own journal. Every write is attributed to the
@@ -348,9 +386,10 @@ Public, lives in the repository, no secrets, reviewable by anyone:
   `SOUL.md` and `config.yaml`, and the documented names of the three custom fields.
 
 Per-instance, never committed:
-- The Redmine base URL, the API key, the project allowlist, and the numeric ids of the
-  trackers, statuses, and custom fields. Numeric ids are instance-specific and must be
-  resolved at startup or supplied as options, not hard-coded.
+- The Redmine base URL, the two API keys (maintainer and orchestrator), and the numeric
+  ids of the trackers, statuses, and custom fields. Numeric ids are instance-specific and
+  must be resolved at startup or supplied as options, not hard-coded. No project
+  allowlist: it is gone as of v3.
 
 These travel through the mechanism that already exists for this: a private overlay job
 naming its `OPTIONS`, whose values are read from the instance env file and written into
@@ -378,7 +417,9 @@ expensive to discover in slice 2.
 4. **Workflow transitions.** The workflow matrix is per role and tracker, and the error
    shape when the API attempts a disallowed transition was not established
    (research-notes.md, "What I could not establish"). Build the status allowlist to match
-   the configured workflow, and treat a rejected transition as a configuration bug.
+   the configured workflow, and treat a rejected transition as a configuration bug. v3
+   adds a second role to this: the orchestrator's role needs the New to In Progress row,
+   and nothing else, or it cannot do the one thing it holds the tool for.
 5. **The Search resource is marked Alpha** (research-notes.md §1). Cross-thread matching
    should prefer the Issues resource with filters, which is marked Stable, and use
    `/search` only as a fallback.
