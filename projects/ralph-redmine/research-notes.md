@@ -3,7 +3,8 @@ id: redmine-issue-tracking-research
 status: in review
 owner: Zhachory1
 kanban_card: t_8dbf7367
-pull_requests: []
+pull_requests:
+  - https://github.com/Zhachory1/docs/pull/5
 ---
 
 # Redmine REST API & Hermes integration — public-source research notes

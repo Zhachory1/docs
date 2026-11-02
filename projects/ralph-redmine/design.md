@@ -3,19 +3,20 @@ id: redmine-issue-tracking-design
 status: in review
 owner: Zhachory1
 kanban_card: t_021bba46
-pull_requests: []
+pull_requests:
+  - https://github.com/Zhachory1/docs/pull/5
 ---
 
 # Design: Redmine as the canonical issue tracker
 
-Status: in review, v1. No build authorised. Covers [the PRD](prd.md) and nothing else.
+Status: in review, v2. No build authorised. Covers [the PRD](prd.md) and nothing else.
 Card: t_021bba46. Research: [public research notes](research-notes.md).
 Public Ralph source read for current behaviour: /ralph/bootstrap/{inbox-producer,
 inbox-writer,install,install-overlay-jobs,lens-tools}, /ralph/evals/test_profile_config.py.
 
 ## Review header
 
-**Decisions needed from you (3, plus the 5 in prd.md).**
+**Decisions needed from you (4, plus the 7 in prd.md).**
 1. The maintainer writes to Redmine from inside the container, rather than a host-side
    writer holding the key the way inbox-writer holds the Gmail token. Justification is
    in "Why not a host-side writer". Accept or reject.
@@ -24,13 +25,23 @@ inbox-writer,install,install-overlay-jobs,lens-tools}, /ralph/evals/test_profile
    the alternative is a poller, which this design refuses.
 3. Three custom fields get added to the project by hand (source threads, next action,
    create op). Confirm you are willing to maintain them.
+4. Nothing in this design sets the `In Progress` status that prd.md defines, so an issue
+   reads New for as long as the work runs. Your review comment on A3 is what found it.
+   Pick a writer for that status; the three options are in "Who can update an issue".
 
-**Council dissent.** None. No critic lens ran. Card t_1f1c1c9a is the first critique.
+**Council dissent.** Independent review card t_1f1c1c9a reported no blockers. Your
+round-1 review requested changes. The comment that lands on this document asked why an
+execution card may not hold the Redmine tool; the answer was in here only by implication,
+and chasing it down surfaced decision 4 above, which is a real hole rather than a missing
+cross-reference.
 
 **Scope rating.** Small-to-medium. Three slices, one PR each. Slice 0 is yours and
 blocks everything.
 
-**Changes since last revision.** First revision.
+**Changes since last revision (v1 to v2).** "Who can update an issue" gained the argument
+for why neither the orchestrator nor an executing card holds a Redmine tool, and names
+`In Progress` as unowned. Nothing else changed; your other two comments became D6 and D7
+in prd.md.
 
 ## Shape
 
@@ -247,6 +258,46 @@ writer. Two rules follow, and they are enforceable in the tool, not just advice:
 - It overwrites only the fields it owns: `ralph_next_action`, `ralph_source_threads`,
   and status within its allowed transitions. The subject and description are written
   once at create and never edited again, so a human's correction survives.
+
+**Why not the orchestrator, and why not the executing cards.** Two reasons; the second
+is the one that decides it.
+
+The weak reason is blast radius. Every profile holding `redmine-tools` is another process
+the key is trusted to and another `config.yaml` whose allowlist must be re-reviewed on
+every change. That argues for few holders, not for exactly one.
+
+The strong reason is that executing cards read untrusted input: repositories, web pages,
+and the text of the request itself. A card that can both read untrusted text and write
+the canonical record can be talked by that text into writing whatever it says. Containing
+exactly that is why `lens-tools` exists, and why this design puts the key behind a
+process boundary at all ("Where the Redmine tool runs, and why"). The maintainer's
+surface is small enough to review line by line. A builder's is not.
+
+So an execution card that needs the issue updated does not get its own access. It writes
+what it learned into its completion metadata, and the report card — which runs as
+`ralph-issue-maintainer` and does hold `redmine-tools` — reads that and writes one note.
+The orchestrator gets nothing for the same reason, plus one of its own: it has no
+judgment to add about an issue it never read.
+
+**What that argument leaves unowned: `In Progress`.** prd.md defines the status as "a
+Hermes card for this issue is running", and nothing in this design sets it. The intake
+card creates the issue as New. The report card writes the result and may set Resolved.
+Between the two, the issue reads New while the work runs, which is the one state a reader
+would most want the tracker to be honest about. Three ways to close it, none chosen here:
+
+1. The orchestrator creates one short card assigned to `ralph-issue-maintainer` alongside
+   the execution cards, which sets `In Progress` and does nothing else. One extra card
+   per request, no new holder of the key, and the single-writer rule above survives
+   intact. It is the only option consistent with the rest of this document.
+2. Drop `In Progress` from the agent flow. The issue stays New until the report card
+   writes, and "is this running" is answered by the board, which already knows. Costs the
+   status filter that prd.md D2 calls most of the point of using a tracker.
+3. Give the orchestrator `redmine-tools` with `issue_status_set` and nothing else. Fewest
+   cards, but a second key holder, a second profile config to re-review on every change,
+   and it lands on the one profile that touches every card on the board.
+
+This depends on prd.md D2. If the maintainer may not set status at all, option 2 is the
+only one left standing.
 
 ## Failure and audit
 

@@ -3,12 +3,13 @@ id: redmine-issue-tracking-acceptance
 status: in review
 owner: Zhachory1
 kanban_card: t_021bba46
-pull_requests: []
+pull_requests:
+  - https://github.com/Zhachory1/docs/pull/5
 ---
 
 # Acceptance tests: Redmine as the canonical issue tracker
 
-Status: in review, v1. Nothing here has been run. No build authorised.
+Status: in review, v2. Nothing here has been run. No build authorised.
 Covers [the PRD](prd.md) and [design](design.md). Card: t_021bba46.
 
 ## Review header
@@ -18,24 +19,24 @@ Covers [the PRD](prd.md) and [design](design.md). Card: t_021bba46.
    create a `Work Requests (test)` project for this, or accept that nothing is proven
    before first live use.
 2. A4 needs a human in the loop by definition. Confirm you will answer one test prompt.
-3. A1's only trace of a request outside Redmine is the intake card's completion
-   metadata (see A1, "Must not"); nothing visible reaches the requester, because
-   `prd.md` names "no Chat writing" a non-goal. A review comment asked for "some
-   acknowledgement here." Confirm whether the existing trace is enough, or say what
-   acknowledgement you want and where it should live.
-4. A6 assumes a client-side `REDMINE_PROJECT_ALLOWLIST` on top of Redmine's own
-   per-project role membership (design.md, "Account and allowlist"). A review comment
-   said this check "is not required" and that the maintainer should decide project
-   scope itself, but the comment was cut off before naming the replacement mechanism.
-   Confirm whether to drop the client-side allowlist and, if so, what should test A6
-   in its place.
+3. A1 gives the requester no acknowledgement, by design. Your comment asked for one, and
+   providing one means lifting a non-goal, so it is **prd.md D6**, costed there.
+4. A6 tests a client-side `REDMINE_PROJECT_ALLOWLIST`. Your comment said that check is
+   not required; it was cut off mid-word, and the two readings differ in size, so it is
+   **prd.md D7**, with both readings there.
 
-**Council dissent.** None. No critic lens ran.
+**Council dissent.** Independent review card t_1f1c1c9a reported no blockers. Your
+round-1 review requested changes, and all three comments landed on this file. All three
+are answered: two as prd.md D6 and D7, one as design.md decision 4.
 
 **Scope rating.** Seven tests. A1 to A3 are one end-to-end run. A5 to A7 are tool-layer
 tests and need no Redmine round trip beyond a stub.
 
-**Changes since last revision.** First revision.
+**Changes since last revision (v1 to v2).** A1, A3 and A6 gained the notes your three
+comments asked for. The full text of two of those decisions was written here first; it
+now lives in prd.md as D6 and D7, with only a pointer left behind, because answering
+either changes the PRD rather than the test. A3 now points at the design's argument for
+why an execution card holds no Redmine tool, and carries the gap that argument exposed.
 
 ## How to read these
 
@@ -66,8 +67,8 @@ against the real Work Requests project.
 - No second issue.
 - No Chat message sent. Nothing in this system can send one (prd.md, "Non-goals"). The
   only trace of this request outside Redmine is the intake card's completion metadata,
-  which carries the issue id — see "Decisions needed from you" item 3 above for
-  whether that is enough.
+  which carries the issue id and which no requester reads. Whether that is enough, and
+  what should replace it if not, is prd.md D6.
 
 ---
 
@@ -113,9 +114,13 @@ message `M2`, whose text does not repeat the first one word for word.
   issue updated does not get its own Redmine access: it reports through its completion
   metadata, and the report card — the only other card besides the intake card that
   runs as `ralph-issue-maintainer` and holds `redmine-tools` — reads that metadata and
-  writes the note (design.md, "How other profiles' results reach the issue").
+  writes the note. design.md, "Who can update an issue", argues why it is kept that way.
 - No poller, cron entry, or watcher process is involved. If one is needed to pass this
   test, the design failed.
+
+**Open.** This test asserts no status at all between A1's New and the report card's
+note, because nothing in the design sets `In Progress` while the execution cards run.
+See design.md decision 4; whichever writer you pick, a status assertion belongs here.
 
 ---
 
@@ -163,8 +168,9 @@ message `M2`, whose text does not repeat the first one word for word.
 
 ## A6. An out-of-scope project is rejected
 
-See "Decisions needed from you" item 4 above: a review comment questioned whether this
-client-side allowlist is needed at all.
+Written as the design currently stands, and open: prd.md D7 asks whether the client-side
+allowlist survives at all. Under its narrow reading this test still exists but asserts
+that Redmine refuses, not that the tool refuses first.
 
 **Setup.** Two projects exist in Redmine. Only one is in `REDMINE_PROJECT_ALLOWLIST`.
 

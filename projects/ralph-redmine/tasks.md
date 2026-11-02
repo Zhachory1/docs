@@ -3,18 +3,21 @@ id: redmine-issue-tracking-tasks
 status: in review
 owner: Zhachory1
 kanban_card: t_021bba46
-pull_requests: []
+pull_requests:
+  - https://github.com/Zhachory1/docs/pull/5
 ---
 
 # Task list: staged build slices
 
-Status: in review, v1. Design only.
+Status: in review, v2. Design only.
 
 > ## HUMAN APPROVAL REQUIRED
 >
 > Nothing in this file may start. No build card exists for any of it, and none should be
-> created until the owner approves the design on card t_ea5dfb5f. Slice 0 is a human
-> action on a live instance and no agent performs any part of it.
+> created until the owner approves the design. That approval is the owner's and arrives
+> on the pull request — https://github.com/Zhachory1/docs/pull/5 — not on any Hermes
+> card. Slice 0 is a human action on a live instance and no agent performs any part of
+> it.
 
 Card: t_021bba46. Covers prd.md, design.md, acceptance.md.
 
@@ -31,7 +34,9 @@ Card: t_021bba46. Covers prd.md, design.md, acceptance.md.
 **Scope rating.** Three code slices after one human slice. Each is one PR. Slice 1 is
 the only one that is more than a day's work.
 
-**Changes since last revision.** First revision.
+**Changes since last revision (v1 to v2).** The approval gate above named a Hermes card
+that does not own this pull request; it now names the pull request. No slice, file list,
+or dependency changed.
 
 ---
 
