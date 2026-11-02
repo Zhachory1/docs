@@ -9,7 +9,7 @@ pull_requests:
 
 # PRD: Redmine as the canonical issue tracker
 
-Status: in review, v2. No build authorised.
+Status: in review, v3. No build authorised.
 Card: t_021bba46. Research: [public research notes](research-notes.md).
 
 Since this draft was written, the owner created the private `Work Requests` project and one manual document-migration issue. The REST API remains disabled; no agent issue integration is running.
@@ -36,10 +36,15 @@ why neither has a recommendation: the non-goal is yours to lift, not mine.
 alone. See tasks.md. The largest risk is not size, it is that the REST API is off
 today, so slice 0 is a human action and nothing downstream can be proven until it lands.
 
-**Changes since last revision (v1 to v2).** Added D6 (acknowledgement to the requester)
-and D7 (the client-side project allowlist), from your review comments on acceptance.md
-A1 and A6. Nothing else in this document changed; no recommendation, scope line, or
-non-goal was altered, because both comments ask to change a non-goal and that is your
+**Changes since last revision (v2 to v3).** The Assumptions section now carries all
+sixteen assumptions in the document itself. Until v3 it pointed at a Kanban card
+summary, which a reader of this repository cannot open, so the assumptions the design
+rests on were effectively missing. No decision, recommendation, scope line, or non-goal
+moved; the seven decisions below are the same seven you already have.
+
+**Changes in v1 to v2.** Added D6 (acknowledgement to the requester) and D7 (the
+client-side project allowlist), from your review comments on acceptance.md A1 and A6.
+Nothing else changed, because both comments ask to change a non-goal and that is your
 call.
 
 ## Problem
@@ -235,6 +240,45 @@ reading would hand the agent project scope you have not granted.
 
 ## Assumptions
 
-Listed in full in the completion summary for card t_021bba46. The load-bearing ones:
-the Redmine instance is local and single-tenant, REST can be enabled, and the existing
-Hermes container can reach it over the network.
+Nothing in the brief or the research stated these. Each one is a place the design breaks
+if it is wrong. The first twelve date from v1; the last four were made while answering
+your round-1 review.
+
+1. The Redmine instance is local, single-tenant, and reachable over the network from the
+   existing Hermes container. The brief says the instance exists; it does not say the
+   container can route to it.
+2. The REST API can be enabled. It is off today. If instance policy forbids turning it
+   on, this design has no path and must be rethought. That is D4.
+3. Enabling REST is instance-wide, not per-project. Taken from the Administration >
+   Settings > API location in the research note; not proven for the target version.
+4. The target Redmine supports classic per-user API keys (documented since 1.1.0).
+   Personal access tokens are assumed absent: the research could not date them.
+5. `cf_<id>=<value>` filters as an exact match. Only `~` substring matching is
+   documented. The tool compares the returned value, but the query shape is unverified.
+6. A `multiple=true` custom field can be filtered on at all. Not documented in the pages
+   read. A fallback is named in design.md.
+7. Redmine enforces no uniqueness on custom field values, so dedupe rests on a file lock
+   plus a pre-check, not on the database.
+8. The existing Chat-to-card producer follows the inbox-producer shape: host-side
+   credential, staged evidence, operation id of thread id plus latest message id. Read
+   from the public inbox-producer; the Chat producer itself was never read and may
+   differ.
+9. `ralph-orchestrator` is willing to take on the card-linking role in design.md. That
+   is the only change this design asks of an existing profile.
+10. The private overlay job mechanism is the right carrier for `REDMINE_URL`,
+    `REDMINE_API_KEY`, and `REDMINE_PROJECT_ALLOWLIST`. Inferred from how `GH_TOKEN` is
+    handled; no instance configuration was inspected.
+11. A per-user API key attributes writes to that user in the issue journal. Keys are
+    documented as per-user and role-scoped; journal attribution is an inference.
+12. One project is enough today. The brief states the instance has no projects; the "no
+    second reader to protect" half is an inference about your situation.
+13. "There should be some acknowledgement here" means the requester is the audience, not
+    the board or the owner. D6 answers the requester reading; say so if you meant
+    another.
+14. The truncated allowlist comment must not be read broadly without your confirmation.
+    The broad reading reverses a non-goal, so D7 writes out both and applies neither.
+15. `watcher_user_ids` is the cheapest acknowledgement path, but this instance's mail
+    configuration was never read, so D6 marks the mail half unproven.
+16. Nothing in the current design sets **In Progress**, so an issue reads New for as long
+    as the work runs. Found while answering your tool-access comment; design.md
+    decision 4.
