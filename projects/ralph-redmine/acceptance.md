@@ -13,11 +13,22 @@ Covers [the PRD](prd.md) and [design](design.md). Card: t_021bba46.
 
 ## Review header
 
-**Decisions needed from you (2).**
+**Decisions needed from you (4).**
 1. A1 to A7 run against a scratch Redmine project, not the real one. Confirm you will
    create a `Work Requests (test)` project for this, or accept that nothing is proven
    before first live use.
 2. A4 needs a human in the loop by definition. Confirm you will answer one test prompt.
+3. A1's only trace of a request outside Redmine is the intake card's completion
+   metadata (see A1, "Must not"); nothing visible reaches the requester, because
+   `prd.md` names "no Chat writing" a non-goal. A review comment asked for "some
+   acknowledgement here." Confirm whether the existing trace is enough, or say what
+   acknowledgement you want and where it should live.
+4. A6 assumes a client-side `REDMINE_PROJECT_ALLOWLIST` on top of Redmine's own
+   per-project role membership (design.md, "Account and allowlist"). A review comment
+   said this check "is not required" and that the maintainer should decide project
+   scope itself, but the comment was cut off before naming the replacement mechanism.
+   Confirm whether to drop the client-side allowlist and, if so, what should test A6
+   in its place.
 
 **Council dissent.** None. No critic lens ran.
 
@@ -53,7 +64,10 @@ against the real Work Requests project.
 
 **Must not.**
 - No second issue.
-- No Chat message sent. Nothing in this system can send one.
+- No Chat message sent. Nothing in this system can send one (prd.md, "Non-goals"). The
+  only trace of this request outside Redmine is the intake card's completion metadata,
+  which carries the issue id — see "Decisions needed from you" item 3 above for
+  whether that is enough.
 
 ---
 
@@ -95,7 +109,11 @@ message `M2`, whose text does not repeat the first one word for word.
 
 **Must not.**
 - The execution card holds no Redmine credential and calls no Redmine tool. Check its
-  resolved toolset, not its behaviour on one run.
+  resolved toolset, not its behaviour on one run. An execution card that needs the
+  issue updated does not get its own Redmine access: it reports through its completion
+  metadata, and the report card — the only other card besides the intake card that
+  runs as `ralph-issue-maintainer` and holds `redmine-tools` — reads that metadata and
+  writes the note (design.md, "How other profiles' results reach the issue").
 - No poller, cron entry, or watcher process is involved. If one is needed to pass this
   test, the design failed.
 
@@ -144,6 +162,9 @@ message `M2`, whose text does not repeat the first one word for word.
 ---
 
 ## A6. An out-of-scope project is rejected
+
+See "Decisions needed from you" item 4 above: a review comment questioned whether this
+client-side allowlist is needed at all.
 
 **Setup.** Two projects exist in Redmine. Only one is in `REDMINE_PROJECT_ALLOWLIST`.
 
