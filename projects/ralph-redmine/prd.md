@@ -1,17 +1,17 @@
 ---
 id: prd-ralph-redmine
-title: Ralph keeps work requests in a private tracker only the owner and Ralph can read, and answers the requester in their own chat thread — once when it starts, once when it has actually succeeded
+title: Ralph keeps work requests in a private tracker only the owner and Ralph can read, and replies in the requester's own chat thread — once when it starts, and once with the outcome itself
 status: in review
 owner: Zhachory1
 card: t_8e5a6fa4
-revision: v3
+revision: v4
 date: 2026-11-02
 prs:
-  - Zhachory1/docs#6   # v1, v2, v3
+  - Zhachory1/docs#6   # v1, v2, v3, v4
 supersedes: none
 ---
 
-# Ralph keeps work requests in a private tracker only the owner and Ralph can read, and answers the requester in their own chat thread — once when it starts, once when it has actually succeeded
+# Ralph keeps work requests in a private tracker only the owner and Ralph can read, and replies in the requester's own chat thread — once when it starts, and once with the outcome itself
 
 > **This repository is public.** No employer, person, space, address or message
 > content appears here. The requester is "a requester", the tracker is "the work
@@ -34,18 +34,21 @@ specification. Its assumptions are not carried forward.
 
 ### Decisions needed from you: one, and merging is how you make it
 
-**May Ralph send three fixed messages without asking you each time?** R15 names
-them: an acceptance reply (R6), a no-fit reply (R7), and one success sentence
-(R11). Each is fixed wording, each at most once, each into the thread the
-request arrived in. Nothing else may be sent automatically.
+**May Ralph reply automatically, and may the closing reply carry the work's own
+output?** Three messages, named in R15: an acceptance reply (R6), a no-fit
+reply (R7), and one closing reply that delivers the outcome (R11) — the answer
+to a question, the finding of a bug investigation, the pull requests a feature
+request produced. Each at most once, each into the thread the request arrived
+in, each drawn only from this request's own work (R19).
 
-Your comment on this pull request preauthorized the first two. The third does
-not come from this pull request: it comes from your follow-up instruction —
-always preauthorize a reply, Ralph is meant to be automatic — relayed through
-card `t_b8869aff`. So this document **proposes** that grant instead of
-recording it as already given. Merging is how you grant it. A comment saying
-"acknowledgement only" is how you refuse it, and R11 then becomes a message you
-send by hand.
+This is **wider than v3**, which proposed one fixed success sentence. Your
+inline comment on `prd.md:66` is why: *"A question gets answered. A bug
+investigation gets a report. A feature request gets a slew of PRs. Context gets
+an acknowledgement. What other closing message is required?"* A fixed sentence
+cannot deliver an answer, so v3's narrowing would have thrown away the thing
+you asked for. The cost of the wider form is stated plainly: text Ralph composes
+reaches a requester without you reading it first, which is exactly what R15 and
+design unknown 5 exist to bound.
 
 **No sending permission is live today, and merging does not create one.**
 `SKILL.md:44` still forbids automatic send and this document does not edit it.
@@ -53,30 +56,27 @@ There is no chat producer, no writer and no credential on this path. The grant
 is a product requirement; the design must define the authorization boundary and
 test it before anything can send (R15, R17, unknown 5).
 
-Three smaller choices I made rather than asking you a third time. Each is an
-assumption, and each is one comment away from changing:
+Two things I chose rather than asking you again. Each is an assumption, and each
+is one comment away from changing:
 
 | I chose | Instead of | Say this to change it |
 |---|---|---|
-| A12 — surface: your direct messages, plus the spaces you put Ralph in; in a space with other people, only messages that @mention Ralph | Acting on every message in those spaces | "act on everything in the rooms" |
-| A13 — the trusted-sender gate stays for work; an untrusted human in that surface still gets the no-fit reply, which starts nothing | Silence for anyone not on your allowlist | "untrusted senders get silence" |
-| A14 — one fixed success sentence, on genuine success only, with no composed text anywhere in the feature | A message written per outcome, able to carry a question's answer or a reason for stopping | "let the second message be written per outcome" |
-
-A14 has a cost worth naming: an accepted **question** is tracked and worked,
-and its answer never reaches the requester in chat. You read it in the tracker
-and answer by hand. That is the price of having no generated outbound text.
+| A12 — in a space with other people, only a message that @mentions you or Ralph is eligible; in a direct message every human message is | Acting on every message in those spaces | "act on everything in the rooms" |
+| A14 — a request that ends **without** succeeding is silent toward the requester; you are told and you decide what to say | An automatic "this did not work out" | "tell them when it fails too" |
 
 ### Council dissent
 
-An independent agent review of v2 found one blocking issue and two non-blocking
+An independent agent review of v3 found one blocking issue and no non-blocking
 notes.
 
 | Finding | Resolution |
 |---|---|
-| **Blocking.** R15 claimed you preauthorized three message kinds. Your comment names only the acknowledgement and the no-fit reply; answer 3 never says the second message is sent without permission. A silent merge would have invented a grant. | Accepted. R15 now separates what you said, where you said it, and what this document proposes. The success message is proposed, and the header says merging is the grant. |
-| **Blocking, second half.** O3's default — one message on any close, composed to fit the outcome — was the widest grant in the document and was set to bind by silence. | Accepted, and narrowed rather than asked again. One fixed sentence, on success only (R11, R19). No composed outbound text exists anywhere in the feature. |
-| R7's "at most one no-fit reply per thread, ever" is an inference from "reply once", written as a requirement rather than an assumption. | Fixed. It is A15, and R7 points at it. |
-| The Unverified table cited `run-notifier:18-27,35-41`; lines 25-27 are the unrelated `GH_TOKEN` branch. | Fixed: `:18-23,35-41`. |
+| **Blocking.** v3 said "your answers did not mention" the sender gate, and rested the fixed success sentence on an off-pull-request instruction — while your inline comments on `prd.md:64` and `prd.md:66`, posted before v3 was pushed, answered both questions directly. A provenance claim that is checkable against this pull request and wrong is the same defect the v2 blocker named. | Accepted in full. Line 64 is now the source of R18, which replaces the allowlist reasoning entirely. Line 66 is now the source of R11, which replaces the fixed sentence with the outcome itself. Both are quoted and cited, in the table under [Decisions you have already made](#decisions-you-have-already-made). |
+
+Earlier findings, carried: v2's blocker about R15 claiming a grant you had not
+given stays fixed — R15 still separates what you said, where you said it, and
+what this document proposes (below). A15 and the `run-notifier:18-23,35-41`
+citation range stay as corrected in v3.
 
 The reviewer's load-bearing assumption is unchanged: A6, that "the existing host
 sender" means the chat skill's OAuth token and not the digest webhook. The
@@ -86,25 +86,27 @@ does not exist yet. It is design unknown 3, and the first thing to confirm.
 
 ### Scope: medium
 
-One tracker, one thread, three fixed sentences. Smaller than v2: composed text
-is gone, which removes the only path by which Ralph could have written
-something unpredictable to a requester. **Breakdown:** the design document
-decides it, and nothing starts before this document is merged.
+One tracker, one thread, two replies per request. **Breakdown:** the design
+document decides it, and nothing starts before this document is merged.
 
-### What changed since v2
+### What changed since v3
 
-- **R15 no longer claims a grant you did not give.** It separates your public
-  comment, your follow-up instruction, and what this document proposes.
-- **The second message is one fixed sentence, on real success only** (R11).
-  A request that failed, was refused, was abandoned, or was folded into other
-  work gets nothing (E11). No composed text anywhere (R19).
-- **The three open decisions are gone,** replaced by three narrow choices with
-  their costs named (A12-A14), editable by one comment here.
-- **The eligible surface is a requirement now** (R18), from your inline comment
-  that it is "all chats for a user and rooms that they can define themselves".
-- Two reviewer notes folded in: A15, and the `run-notifier` citation range.
-- Acceptance examples are relabelled **E1-E13**, so they stop colliding with
-  the assumption ids A1-A16 they shared in v1 and v2.
+- **The sender boundary is yours, quoted** (R18): "the user or anyone who
+  mentions the user in google chat", for an initial v1. The existing
+  trusted-sender allowlist is **narrower than that** and is no longer kept
+  silently in the background — the conflict is named, and reconciling it is
+  design unknown 11.
+- **The closing reply carries the outcome** (R11), shaped by what was asked:
+  an answer, a finding, the pull requests. An update gets nothing further,
+  because the acceptance reply already was the acknowledgement you described.
+- **v3's "no composed outbound text" rule is gone.** R19 replaces it with a
+  content bound: the work's own output, nothing from the tracker, nothing from
+  another thread, and no reference the requester cannot already reach.
+- **v3's trusted-sender assumption is withdrawn.** It kept the allowlist as a
+  gate on work while letting untrusted senders get a courtesy reply. That is
+  not what line 64 says. (The id A13 now names a different assumption.)
+- R15 widens to match R11, and says so, rather than letting a merge quietly
+  approve more than v3 described.
 
 ---
 
@@ -115,9 +117,9 @@ because a chat thread is not a list.
 
 **The requester is not a user of this system.** They never see the tracker,
 never get a link to it, never get an account, never get an email. The only thing
-that reaches a requester is short text in the thread they already wrote in. That
-is the main constraint below: anything that would make a requester go somewhere
-or sign in is out of scope.
+that reaches a requester is text in the thread they already wrote in. That is
+the main constraint below: anything that would make a requester go somewhere or
+sign in is out of scope.
 
 ---
 
@@ -191,7 +193,13 @@ every draft and sends it or doesn't. You never send as the owner."
 whose `destination` is "fixed by the host; you cannot change it"
 (`SOUL.md:11,18`). `ignore` covers bot notices and acknowledgements with an
 empty body (`:19`). So an automatic acceptance reply, a "not sure how to help"
-reply and a success message are each a new path, not a setting.
+reply and a closing reply are each a new path, not a setting.
+
+**No sender set matching R18.** `sender_trusted` comes from the owner's
+allowlist (`SOUL.md:9`) and `route` is refused without it (`:21`). R18's
+boundary — the owner, or anyone who @mentions the owner — is wider than an
+allowlist and is not expressible today. This is a conflict, not a detail; see
+unknown 11.
 
 **No threaded-reply guarantee.** `gchat.py:249` sets
 `messageReplyOption = "REPLY_MESSAGE_FALLBACK_TO_NEW_THREAD"`. That is the exact
@@ -225,11 +233,12 @@ item in the work tracker, readable without opening chat. Ralph runs it from
 arrival to close without asking the owner to choose a project, pick an issue, or
 settle an ambiguous match. The owner hears about genuine failures only.
 
-**For the requester.** At most two short fixed sentences, in the thread they
-wrote in: one meaning received and being worked, one when the work has actually
-succeeded. A human message Ralph will not act on gets one honest "I am not sure
-how to help with that". Nothing else, ever — and if the work fails or is
-abandoned, nothing at all.
+**For the requester.** Two messages in the thread they wrote in: one short
+acknowledgement when the work is accepted and recorded, and one closing reply
+that is the outcome itself — the answer, the finding, or the pull requests. An
+update gets the acknowledgement and nothing after it. A human message Ralph
+will not act on gets one honest "I am not sure how to help with that". If the
+work fails or is abandoned, nothing (A14).
 
 **For everyone else.** Nothing. No account, no portal, no notification, no mail.
 
@@ -261,16 +270,17 @@ tracked. "Other" is not.
 that already exists (R12).
 
 **R6 — One acceptance reply, in the thread the message arrived in, only after
-the work is accepted and recorded.** One short fixed sentence, saying Ralph has
-it and is working it (R19). Never before the item exists. Never a tracker link,
-identifier, account or email.
+the work is accepted and recorded.** One short sentence saying Ralph has it and
+is working it. Never before the item exists. Never a tracker link, identifier,
+account or email. For an **update**, this is the whole of the conversation: the
+acknowledgement you described, and nothing after it (R11).
 
 **R7 — A human message Ralph will not act on gets one short no-fit reply.**
-"I am not sure how to help with that", fixed wording (R19). This covers both a
-message classified "other" and a message from a sender the allowlist does not
-trust (R18). **No item is created to justify the reply,** and the reply never
-says anything is underway. At most one no-fit reply per thread; a thread that
-already got one stays silent after that (A15).
+"I am not sure how to help with that", short and plain. This covers a message
+classified "other" inside the eligible surface (R18). **No item is created to
+justify the reply,** and the reply never says anything is underway. At most one
+no-fit reply per thread; a thread that already got one stays silent after that
+(A15).
 
 **R8 — No new-thread fallback, ever.** If a reply cannot land in the thread it
 belongs to, nothing is sent anywhere. The failure surfaces to the owner. A new
@@ -284,13 +294,23 @@ worse than silence, because the requester stops chasing.
 Ralph's own messages, bot messages and duplicate deliveries of one message
 produce nothing — no item, no reply. This is what keeps a reply loop impossible.
 
-**R11 — One success message, one fixed sentence, only when the request has
-actually succeeded.** Sent into the originating thread, at most once per
-request. Succeeded is not the same as stopped: a request that failed, was
-refused, was abandoned or was folded into other work gets **no message at all**,
-and the owner decides what to say, by hand (E11, A14). An intermediate Hermes
-card finishing is **not** the request finishing. A request that was never
-acknowledged never gets one either.
+**R11 — One closing reply, and it carries the outcome.** Sent into the
+originating thread, at most once per request, only when the request has actually
+been worked to a result. What it says is decided by what was asked — your words
+on `prd.md:66`:
+
+| Kind | What closes it in the thread |
+|---|---|
+| Question | The answer. |
+| Bug investigation | The finding: what was wrong, and what was done or is recommended. |
+| Feature request | The pull requests it produced — named, and linked only where the requester can already reach them (R19). |
+| Update | Nothing further. The acceptance reply (R6) was the acknowledgement. |
+
+Succeeded is not the same as stopped: a request that failed, was refused, was
+abandoned or was folded into other work gets **no message at all**, and the
+owner decides what to say, by hand (E11, A14). An intermediate Hermes card
+finishing is **not** the request finishing. A request that was never
+acknowledged never gets a closing reply either.
 
 **R12 — A later message can join existing work.** A request restated in another
 thread, or a follow-up elsewhere, attaches to the item that already exists.
@@ -305,7 +325,7 @@ the answer a human reads.
 **R14 — No new datastore.** The tracker and the existing Kanban board are what
 exist. A sidecar database is not assumed and not authorized here.
 
-**R15 — Automatic sending is bounded to three fixed messages, and merging this
+**R15 — Automatic sending is bounded to three replies, and merging this
 document is the grant.** What was said, and where, because the difference is
 the whole of this requirement:
 
@@ -314,56 +334,70 @@ the whole of this requirement:
   manual-send rule must not be treated as already changed.
 - The same comment's answer 3 asks for a second message on real completion,
   delivered through the chat-maintainer path. It does **not** say that message
-  is sent without per-message permission, and it does not authorize generated
-  text.
+  is sent without per-message permission.
+- The owner's inline comment on `prd.md:66` says what that message is for: a
+  question gets answered, a bug investigation gets a report, a feature request
+  gets its pull requests. That is content, not a fixed sentence.
 - The owner's follow-up instruction, relayed through card `t_b8869aff` and not
   posted here: always preauthorize a reply, Ralph is meant to be automatic.
 
 **What this document proposes, and a merge approves:** R6, R7 and R11 may be
-sent without per-message human permission. Each is fixed wording (R19), each is
-at most once, each goes into the thread the request arrived in. Any other
-outbound chat still needs the owner, per message.
+sent without per-message human permission, with R11 carrying text Ralph composed
+from this request's own work output, bounded by R19. Each is at most once, each
+goes into the thread the request arrived in. Any other outbound chat still needs
+the owner, per message.
 
 **What a merge does not do.** It creates no sending permission. `SKILL.md:44`
 is unedited and in force; no chat producer, writer or credential exists on this
-path. The design must state exactly how the bound is enforced — a writer able
-to emit only these three shapes, a destination fixed by the host
-(`SOUL.md:11`), a test that fails the build if anything else can be sent, or
-some combination — and must demonstrate it before anything sends (unknown 5,
-R17).
+path. The design must state exactly how the bound is enforced — a writer that
+can emit only an acceptance reply, a no-fit reply, or one closing reply per
+request; a destination fixed by the host (`SOUL.md:11`); a check that the
+closing reply's content came from this request's own artifacts; a test that
+fails the build if anything else can be sent — and must demonstrate it before
+anything sends (unknown 5, R17).
 
 **R16 — Chat content stays data.** A message asking for a reply is not an
 instruction to reply (`SKILL.md:46-48`, `SOUL.md:23`). This feature may not
 become a path by which message text causes a send it did not independently earn,
-or changes a destination.
+changes a destination, or decides what the closing reply says.
 
 **R17 — Nothing in this document authorizes a change.** No scope enlargement, no
 REST enablement, no policy edit, no message sent. Those follow an approved
 design, one at a time.
 
-**R18 — The eligible surface is the owner's own chats and the spaces the owner
-put Ralph in.** The automation sees nothing else. In a direct message every
-human message is eligible; in a space with other people, only a message that
-@mentions Ralph is (A12). Membership is the owner's control, and this feature
-adds no second list. The existing trusted-sender gate (`SOUL.md:9,21`) still
-decides whose message becomes work; it does not decide who gets the no-fit
-reply (A13).
+**R18 — The eligible surface is the owner, and anyone who @mentions the owner,
+in Google Chat.** Your inline comment on `prd.md:64`: "It will just be the user
+or anyone who mentions the user in google chat. This is fine for an initial v1."
+So: the owner's own chats, and the spaces the owner put Ralph in; in a direct
+message every human message is eligible, and in a space with other people only a
+message that @mentions the owner or Ralph is (A12). Membership and the @mention
+are the control, and **this feature adds no allowlist of its own**.
 
-**R19 — No composed outbound text.** All three messages are fixed sentences
-carrying no detail from the request, the item, the tracker, or any private
-document. Nothing Ralph writes reaches a requester. A consequence to accept
-with this: an accepted question is tracked and worked, and its answer does not
-reach the requester in chat (A14).
+That is wider than what exists. `sender_trusted` (`SOUL.md:9`) comes from the
+owner's allowlist and `route` is refused without it (`:21`), so a stranger who
+@mentions the owner is eligible under R18 and refused by the current gate. The
+owner's boundary is the requirement; reconciling the gate with it is design
+unknown 11. **The consequence, stated:** anyone who can @mention the owner in a
+space Ralph is in can create a tracked item. The owner accepted that for a first
+version in the same comment.
+
+**R19 — Outbound text is the work's own output, and nothing else.** The closing
+reply may carry the answer, the finding, or the pull requests produced *for this
+request*. It may not carry: anything from the work tracker — no link, no
+identifier, no field (R1); anything from another request, another thread or
+another requester; anything from a private document the requester has no access
+to; or a reference the requester cannot already reach. When the artifact is not
+reachable by the requester, Ralph names the outcome in words and omits the link.
 
 ---
 
 ## Acceptance examples
 
-Public-safe and deliberately generic. Referenced elsewhere as E1-E13.
+Public-safe and deliberately generic. Referenced elsewhere as E1-E14.
 
-**E1 — the ordinary case.** A trusted human sends an actionable request inside
-the eligible surface. **Then** one item exists with requester, ask, owner, state
-and next action; and exactly one short fixed reply appears in that same thread.
+**E1 — the ordinary case.** A human sends an actionable request inside the
+eligible surface. **Then** one item exists with requester, ask, owner, state and
+next action; and exactly one short acceptance reply appears in that same thread.
 No link, no identifier, no account invitation.
 
 **E2 — the same message, twice.** One message is delivered to the pipeline
@@ -388,28 +422,32 @@ reply failed and for which item. A reply in a new thread is a defect.
 **E7 — an intermediate card finishes.** One Hermes card in a multi-card request
 completes. **Then** the requester hears nothing.
 
-**E8 — the request succeeds.** The item reaches a successful closed state.
-**Then** exactly one fixed success sentence in the originating thread, and never
-a second one.
+**E8 — a question is answered.** The item closes with an answer. **Then** one
+closing reply in the originating thread carrying that answer, and never a second
+one. The answer is what was worked out for this request — not a tracker field
+and not a quote from a private document (R19).
 
-**E9 — the owner audits.** The owner opens the tracker cold, with no chat open.
-**Then** every open item reads: who asked, what, who owns it, what state, what
-next, and where it came from.
+**E9 — a feature request ships.** The work produced pull requests. **Then** one
+closing reply naming them, with links only where the requester can already open
+them; otherwise the outcome in words and no link.
 
-**E10 — an ambiguous match.** A message might be the same work as an open item,
-and might not. **Then** Ralph proceeds on its own judgement and the request is
-not left waiting on the owner.
+**E10 — an update arrives.** Someone sends context, not a request for work.
+**Then** one acceptance reply, an item recorded, and **no closing reply**.
 
 **E11 — the request ends without succeeding.** The item closes as failed,
 refused, abandoned, or folded into other work. **Then** no message reaches the
 requester at all. The owner is told, and the owner decides whether to say
 anything.
 
-**E12 — an untrusted human in the eligible surface.** Someone not on the
-allowlist writes in a space Ralph is in and @mentions it. **Then** no item and
-no routing, and one no-fit reply that claims nothing is underway.
+**E12 — the owner audits.** The owner opens the tracker cold, with no chat open.
+**Then** every open item reads: who asked, what, who owns it, what state, what
+next, and where it came from.
 
-**E13 — a human message in a space, with no @mention.** **Then** nothing: it is
+**E13 — an ambiguous match.** A message might be the same work as an open item,
+and might not. **Then** Ralph proceeds on its own judgement and the request is
+not left waiting on the owner.
+
+**E14 — a human message in a space, with no @mention.** **Then** nothing: it is
 outside the eligible surface, so there is no item and no reply of either kind.
 
 ---
@@ -417,56 +455,49 @@ outside the eligible surface, so there is no item and no reply of either kind.
 ## Decisions you have already made
 
 Recorded so the design cannot quietly re-open them. From your comment on this
-pull request, 2026-11-02.
+pull request and your three inline comments on it, all 2026-11-02.
 
-| v1 asked | You answered | Now |
+| Where you said it | What you said | Where it lives now |
 |---|---|---|
-| D1: which messages are eligible | Classify human messages as question, update, feature request, bug investigation, or other; track the first four; reply once in the same thread; "other" gets one no-fit reply and no item; ignore Ralph's own messages, bots and duplicates | R4, R7, R10. The surface your answer did not reach is settled by your inline comment on this pull request — "all chats for a user and rooms that they can define themselves" — and is now R18 |
-| D2: do you preauthorize the acknowledgement | Yes, bounded, for the acknowledgement and the fallback reply. Ralph operates without per-message permission. The skill rule must not be treated as already changed; the design must show the bound | R15, first two message kinds |
-| D3: what may the reply say, and is there a second message | Yes to a second message, on real completion, at most one, prepared and delivered through the chat-maintainer path; an intermediate card finishing is not completion | R11, R19. Whether it is sent without per-message permission is the one thing merging decides (R15) |
-| D4: who links a follow-up | Ralph. No routine questions to the owner. If reuse is not confident, record a new item and reconcile or link later | R2, R12, E10 |
+| Comment, answer 1 | Classify human messages as question, update, feature request, bug investigation, or other; track the first four; reply once in the same thread; "other" gets one no-fit reply and no item; ignore Ralph's own messages, bots and duplicates | R4, R5, R7, R10 |
+| Comment, answer 2 | Yes, bounded preauthorization for the acknowledgement and the fallback reply. Ralph operates without per-message permission. The skill rule must not be treated as already changed; the design must show the bound | R15, first two replies |
+| Comment, answer 3 | A second message on real completion, at most one, prepared and delivered through the chat-maintainer path; an intermediate card finishing is not completion | R11 |
+| Comment, answer 4 | Ralph links follow-ups and runs the lifecycle. No routine questions. If reuse is not confident, record a new item and reconcile or link later | R2, R12, E13 |
+| Inline, `prd.md:62` | "it's all chats for a user and rooms that they can define themselves" | R18, first paragraph |
+| Inline, `prd.md:64` | "It will just be the user or anyone who mentions the user in google chat. This is fine for an initial v1." | R18. This is why there is no allowlist in this feature, and why the existing gate's conflict is named rather than carried quietly |
+| Inline, `prd.md:66` | "A question gets answered. A bug investigation gets a report. A feature request gets a slew of PRs. Context gets an acknowledgement. What other closing message is required?" | R11's table, and R19's content bound. It is also why v3's fixed success sentence is gone |
 
 Two instructions reached me outside this pull request, through card
 `t_b8869aff`: always preauthorize a reply because Ralph is meant to be
-automatic, and stop asking routine questions. They shaped R15 and the three
-choices below. Neither is on the public record here, which is why R15 asks your
-merge to confirm the first rather than citing it as already given.
+automatic, and stop asking routine questions. They shaped R15. Neither is on the
+public record here, which is why R15 asks your merge to confirm the first rather
+than citing it as already given.
 
 ---
 
 ## Choices I made for you
 
-You said to stop asking routine questions. Three things were left over. Each is
+You said to stop asking routine questions. Two things were left over. Each is
 narrow, each costs something I name here, and each is one comment away from
 being changed.
 
-### A12 — surface: your own chats, plus the spaces you put Ralph in
+### A12 — in a shared space, an @mention is what makes a message eligible
 
-Your inline comment on this pull request settles it: "all chats for a user and
-rooms that they can define themselves". So membership is the control, and this
-feature adds no list of its own (R18). One narrowing is mine, not yours: in a
-space with other people, Ralph acts only on a message that @mentions it.
-Without that, R7 would answer ordinary conversation, which the brief forbids.
-**Cost:** a request written in a shared space with no @mention is not seen. In
-a direct message no @mention is needed.
+Your line-64 comment says "the user or anyone who mentions the user". In a
+direct message there is nobody to mention, so every human message there is
+eligible. In a space with other people, requiring the @mention is mine, not
+yours: without it, R7 would answer ordinary conversation in a shared room, which
+the original brief forbids. I read a mention of Ralph as equivalent to a mention
+of you, since Ralph is acting for you. **Cost:** a request written in a shared
+space that mentions neither is not seen.
 
-### A13 — the trusted-sender gate stays for work, not for courtesy
+### A14 — a request that ends without succeeding is silent toward the requester
 
-`SOUL.md:9,21` gates on your allowlist and your answers did not mention it, so
-it stays: an untrusted sender creates no item and routes nothing. Inside the
-eligible surface they still get the no-fit reply, which starts nothing and
-claims nothing (R7). **Cost:** it tells a stranger in one of your spaces that
-something automatic is listening. Say "silence" if you would rather they got
-nothing at all.
-
-### A14 — one fixed success sentence, on success only
-
-No composed outbound text anywhere (R19), and nothing at all when a request
-ends without succeeding (R11, E11). This is the narrowest form of the second
-message you asked for, and the narrowest is the only form that is safe to bind
-by a merge, because a merge is silent about wording. **Cost, stated plainly:**
-an accepted question is tracked and worked, and its answer never reaches the
-requester in chat. You answer it by hand or not at all.
+Your line-66 comment lists outcomes that exist — an answer, a report, pull
+requests. It does not say what a requester hears when there is no outcome. I
+kept silence: Ralph tells you, and you decide. **Cost:** a requester whose
+request quietly failed is left waiting, and only you can close that loop. Say
+"tell them when it fails too" and R11 gains a failure case.
 
 ---
 
@@ -475,13 +506,14 @@ requester in chat. You answer it by hand or not at all.
 - **A multi-user portal.** No requester accounts, no self-service, no queue view.
   If a requirement would make a requester log in, it is out.
 - **Email.** No notifications, no ingestion, no digests to requesters.
-- **A general chat auto-responder.** Three fixed sentences, bounded by R15. Not
-  conversation, not status-on-demand, not a chatbot.
-- **Composed or generated text to a requester** (R19). Including the answer to
-  an accepted question.
-- **Telling a requester that work stopped.** A request that does not succeed is
-  silent towards the requester (R11, E11); the owner handles it.
-- **Progress updates.** The requester hears twice: start and end. Nothing in
+- **A general chat auto-responder.** Two replies per request and one no-fit
+  reply, bounded by R15. Not conversation, not status-on-demand, not a chatbot.
+- **A conversation after the closing reply.** A requester who writes back starts
+  a new request under R4 and R12; it is not a continuing dialogue.
+- **Any tracker content reaching a requester** (R1, R19). The outcome travels;
+  the record does not.
+- **Telling a requester that work stopped** (A14). The owner handles it.
+- **Progress updates.** The requester hears twice: start and outcome. Nothing in
   between, however long it runs.
 - **Replacing Kanban.** Cards still do the work (R13).
 - **A new database or sidecar store** (R14).
@@ -511,9 +543,10 @@ Listed so they are not quietly decided by whoever implements first.
    that does not exist yet.
 4. **Whether `REPLY_MESSAGE_OR_FAIL` behaves as R8 needs** against a thread
    identifier captured earlier, and how stale an identifier may be.
-5. **How R15's bound is enforced and proven,** so that the three permitted
-   fixed messages are sendable and nothing else is — a writer that can only
-   emit those shapes, a host-fixed destination (`SOUL.md:11`), an eval like
+5. **How R15's bound is enforced and proven,** so that exactly these three
+   replies are sendable and nothing else is — a writer that can emit only those
+   shapes, a host-fixed destination (`SOUL.md:11`), a check that the closing
+   reply's content came from this request's own artifacts, an eval like
    `inbox-writer`'s (`:7-8`), or some combination. The exact edit to
    `SKILL.md:44` is part of this, and so is the test that fails if the bound
    leaks. Nothing sends before this is settled and demonstrated.
@@ -521,14 +554,22 @@ Listed so they are not quietly decided by whoever implements first.
    classifies (`SOUL.md:15`) and the five kinds in R4 do not exist anywhere.
    Whether the chat profile gains decisions, or a classifier sits in front of
    it, is open.
-7. **Which tracker states count as success,** what "the request is finished"
-   means mechanically, and which component notices (R11, E7, E8, E11). Getting
-   this wrong is how a failed request gets told it succeeded.
+7. **Which tracker states count as a worked result,** what "the request is
+   finished" means mechanically, and which component notices (R11, E7, E8, E11).
+   Getting this wrong is how a failed request gets told it succeeded.
 8. **What chat-derived data may be stored in an item,** and for how long. R3
    wants a legible requester; R1 and public safety constrain what that means.
 9. **How the owner sees a failed reply** (E6) and a genuine failure generally.
 10. **Whether `inbox-writer`'s single-write eval has a chat equivalent,** and
     what it asserts.
+11. **How R18's boundary is expressed against `sender_trusted`.** The gate at
+    `SOUL.md:9,21` is narrower than R18 and would refuse an eligible requester.
+    Widening the host's list, bypassing the gate for this path, or deriving
+    eligibility from the @mention are all options; the design picks one and says
+    what it costs.
+12. **How the closing reply's content is assembled and checked** against R19 —
+    in particular how "the requester can already reach this reference" is
+    decided for a pull request or any other artifact.
 
 ---
 
@@ -542,34 +583,35 @@ line each, referenced elsewhere as A1-A16 in list order.
    two as unrelated despite the shared word.
 2. **"Accepted" means the item exists and Ralph intends to work it** — not
    merely that the message was understood. R6 and R9 rest on that reading.
-3. **The success message goes to the thread where the request was first
+3. **The closing reply goes to the thread where the request was first
    accepted,** when the work was discussed in more than one.
 4. **A follow-up in a new thread that joins existing work gets its own
    acceptance reply** in that new thread, so the requester is not ignored there;
-   it does not get its own success message (R11 is per request, not per thread).
+   it does not get its own closing reply (R11 is per request, not per thread).
 5. **One item per request, not per thread.**
 6. **The chat skill at `/ralph/skills/ops/google-chat/` is the sender meant by
    "reuse the existing host sender".** The card also names a read-only digest
    token I could not read. Flagged by review as the most load-bearing assumption
    here; it is also design unknown 3.
-7. **The requester allowlist is the owner's existing trusted-sender list**
-   (`SOUL.md:9`), not a new list built for this feature (A13).
-8. **All three messages are fixed form** (R19). Nothing in this feature is
-   composed per message, per requester or per outcome.
+7. **"Mentions the user" means an @mention in the message,** not any textual
+   reference to the owner by name (R18).
+8. **Your line-66 comment is an instruction about content, not a question I
+   must answer back.** I read "What other closing message is required?" as "the
+   outcome is the message" and wrote R11 accordingly, rather than replying with
+   a fourth question.
 9. **The tracker is self-hosted Redmine** on the owner's machine, per the card.
 10. **Nothing is time-critical.** No latency target is stated and none is
     assumed.
 11. **`/ralph` as mounted here matches the deployed tree.** It is not a git
     checkout, so I cannot prove it. The design must re-verify against a commit.
-12. **In a space with other people, only an @mention is eligible** (R18). Your
-    inline comment names the spaces, not which messages inside them; without
-    this narrowing R7 would answer ordinary conversation.
-13. **The trusted-sender gate stays for work and not for the no-fit reply**
-    (R7, R18). Your answers did not mention the allowlist, so I kept it where
-    it decides work and did not extend it to a reply that starts nothing.
-14. **The success message is one fixed sentence, sent only on success** (R11,
-    R19). Answer 3 asked for a second message and did not say what it may
-    contain; this is the narrowest reading that still delivers it.
+12. **In a space with other people, only an @mention is eligible,** and a
+    mention of Ralph counts as a mention of the owner (R18).
+13. **"Context" in your line-66 comment is the "update" kind of R4,** so an
+    update's acknowledgement is R6's acceptance reply and nothing follows it
+    (R11).
+14. **A request that ends without succeeding is silent toward the requester**
+    (R11, E11). Your comments name outcomes that exist and not the absence of
+    one; this is the narrow reading.
 15. **"Reply once" to a non-actionable message means once per thread, ever,**
     not once per message (R7). A thread that already got the no-fit reply stays
     silent. The wider reading would let a chatty thread collect many of them.
