@@ -7,7 +7,7 @@ card: t_8e5a6fa4
 revision: v1
 date: 2026-11-02
 prs:
-  - Zhachory1/docs#PR   # v1
+  - Zhachory1/docs#6   # v1
 supersedes: none
 ---
 
