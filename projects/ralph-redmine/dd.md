@@ -4,11 +4,11 @@ title: The host sends, the agent only decides — two host scripts carry a chat 
 status: in review
 owner: Zhachory1
 card: t_b5db2cf0
-revision: v1
+revision: v2
 date: 2026-11-03
 implements: prd-ralph-redmine
 prs:
-  - Zhachory1/docs#7   # v1
+  - Zhachory1/docs#7   # v1, v2
 supersedes: none
 ---
 
@@ -39,20 +39,41 @@ and are marked; your instance was not inspected and must not be.
 
 ### Decisions needed from you: four
 
+Three of them are the gates in the title — nothing runs until each is open. The
+fourth shapes the surface and does not block anything.
+
 | # | Decision | Why it is yours | If you say no |
 |---|---|---|---|
 | **D1** | **Enable the tracker's REST API and give Ralph its own tracker account.** | R17 forbids a runtime change without your word, and the REST setting is instance-wide: it affects every account on the instance, not just Ralph's. | The fallback is a shell on the tracker host running `rails runner` (§6.1), which is worse: it skips the application's own validation and needs a second credential. Everything tracker-side stays inert until you choose. |
 | **D2** | **Approve the exact `SKILL.md:44` edit in §5.6.** | It is the policy line the PRD protected. The edit adds a paragraph and changes none of the existing sentence: the agent-facing rule stays "never auto-send", and the one exception is named as host code that no agent may invoke. | No reply of any kind is sendable. PRs 1-4 and 7 still have value (the tracker side works); PRs 5, 6 and 8 do not ship. |
 | **D3** | **Install a host timer running the producer and the writer as your user.** | The chat token's encryption key is derived from the machine id, your username and the app id (`gchat.py:100-108`), so this code **cannot run in a container** and cannot be scheduled by the compose stack. It runs on your machine as you, or it does not run. | The design still works, run by hand, exactly as the inbox pair is run today (`compose/README.md:261`). But R20's clarification exchange then advances only when you run a script, which is not "automatic". |
-| **D4** | **Accept that anyone who can @mention you in a space Ralph is in can create tracked work, with no rate limit — or ask for a cap.** | R18 made that surface yours and this design does not narrow it. What R18 did not settle is volume: one person can create a hundred items and spend a hundred model runs. A per-sender daily cap is cheap to add and is the only thing here that resembles the allowlist R18 refused. | Say "cap it" and §4 gains a counter keyed on sender, enforced by the host, not by the agent. |
+| **D4** | **The eligible surface. Two things sit outside what R18 settled: (a) while a clarification question is open, that one thread is eligible for that one requester even with no @mention (§4.3); (b) there is no volume cap on who may create work.** | (a) is needed or E16 fails in every shared space — a requester answering a question rarely @mentions anyone — but it is still a widening of a surface you defined, so it is yours and not mine. (b) R18 settled who, not how much: one person can create a hundred items and spend a hundred model runs. | Say "no, mentions only" and R20's exchange works in direct messages and not in spaces. Say "cap it" and §4 gains a per-sender daily counter, enforced by the host. |
+
+**One pre-launch action is also yours** and is not a design decision: before the
+first real send, run one threaded reply in a space of your own, because R8
+depends on behaviour I may not test from here (§5.5, A11).
 
 ### Council dissent
 
-**None yet — this is v1.** Independent agent review was requested on the pull
-request when it opened; v2 will carry the findings and their resolution in this
-table. The reviewer's first job is named for them: the load-bearing claim in
-this document is §5.3, that a per-request reply count can live on the tracker
-item without a new store and without a double-send window wide enough to matter.
+An independent agent review of v1 found **three blocking issues** and four
+non-blocking notes. It verified every other code citation against `b41c99d` and
+found them exact.
+
+| Finding | Resolution |
+|---|---|
+| **Blocking.** §6.5 cited `inbox-writer:25-29` as the precedent for blocking a card on failure. The mail writer never blocks a card: it prints to stderr and exits non-zero (`inbox-writer:72,77,82,91`). The real precedent is `maintain-pr:371-384`. | Accepted and fixed. §6.5 now cites `maintain-pr:371-384` for the block, adds `maintain-pr:288-300`'s best-effort webhook so you hear at once instead of on the next poll, and the mail writer's silent failure is listed as an observation (§11). |
+| **Blocking.** §5.3's `flock` was scoped to the operation directory, but §4.3 lets several messages in one open-question thread become separate operations. Two of them could each pass the per-request ceiling before either confirmed, and send two follow-ups where A17 allows one. | Accepted and fixed. The lock is now keyed on the **item**, not the operation, and is taken before the ledger is read. §5.3 says so, and the eval asserts it. |
+| **Blocking.** §4.3's thread-scoped eligibility widens the surface R18 defined, and was settled in prose while the smaller volume question was escalated as D4. | Accepted. It is now part of D4, stated as a widening with its cost, and §4.3 defers to it rather than claiming to settle it. The cost of the alternative is stated too: E16 then fails in every shared space. |
+| Non-blocking. §4.2 overstated the likeness of the chat idempotency key to `inbox-producer:123,152` — one is per message, the other per thread-plus-latest-message. | Fixed in §4.2: same idea, different key, said plainly. |
+| Non-blocking. §6.5's poller citation pointed at `render()` and `post()`, not the once-only logic. | Fixed: `poller.py:121-122` for `unannounced`. |
+| Non-blocking. §5.1 and §6.8 described the acceptance trigger at different precision. | Fixed: both now say the same sentence — the transition into `In progress`. |
+| Non-blocking. A11's live thread-reply check is an owner action buried in the assumptions. | Fixed: it now sits under the decisions table as the one pre-launch action. |
+
+The reviewer named five load-bearing assumptions: A1, A3, A6, A7 and A10. A3
+(mention annotations and `sender.type` are returned by the API) is the one that
+would change the design rather than a detail, because §3's eligibility and
+R10's bot filter both rest on it; confirming it costs one read-only API call
+and is the first thing PR 2 does.
 
 ### Scope: large — eight pull requests
 
@@ -64,9 +85,16 @@ proven is not wired to CI, so the bound R15 asks to prove is currently
 unenforced between hand runs (§5.7). Breakdown in §8; each PR is inert until a
 gate named in the table there.
 
-### What changed since the last revision
+### What changed since v1
 
-v1. Nothing yet.
+- **D4 now covers the whole eligible surface**, not just the volume question:
+  §4.3's thread-scoped eligibility is escalated rather than settled.
+- **The writer's lock moved from the operation to the item** (§5.3), closing a
+  race that could have sent two clarification follow-ups.
+- **§6.5 cites the right precedent** and adds an immediate webhook alert, so a
+  failed reply does not wait for the next poller tick.
+- The pre-launch live check is in the review header; three citation and wording
+  corrections (§4.2, §5.1, §6.8); one new observation (§11).
 
 ---
 
@@ -232,7 +260,10 @@ R18. Two guards, in order:
 
 Duplicate delivery of one message (E2) is handled before either: the operation
 id is space + thread + message resource name, used as the card's idempotency
-key, exactly as `inbox-producer:123,152` keys on thread plus latest message.
+key. That is the same idea as `inbox-producer:123,152` and not the same key —
+mail keys on a thread plus its latest message, because a mail reply answers a
+thread; chat keys on the message itself, because each eligible message is its
+own request or its own answer.
 
 ### 4.3 Unknown 13 — noticing the requester's answer
 
@@ -240,18 +271,21 @@ A requester answering a clarification question in a shared space will usually
 not @mention anyone. Under §3's rule their answer is invisible, and E16 fails
 in every space. The PRD did not see this; it follows from R20 plus A12.
 
-**Settled: an open question makes its own thread eligible, and only for its own
-requester.** While a request is in the tracker's `Waiting on requester` state,
-the thread recorded on that item is eligible regardless of mentions, and within
-it only messages from the sender who opened the request count as the answer.
-Anything else in that thread is ignored. The thread stops being eligible the
-moment the item leaves that state, and A18 means it leaves only when an answer
-arrives or you move it.
+**Proposed, and escalated as D4(a) rather than settled here:** an open question
+makes its own thread eligible, and only for its own requester. While a request
+is in the tracker's `Waiting on requester` state, the thread recorded on that
+item is eligible regardless of mentions, and within it only messages from the
+sender who opened the request count as the answer. Anything else in that thread
+is ignored. The thread stops being eligible the moment the item leaves that
+state, and A18 means it leaves only when an answer arrives or you move it.
 
-This is not a sender allowlist: it is scoped to one thread, one sender, one
-open question, and it exists because your own words at 23:41 put the answer
-"in that same thread". **Cost:** between asking and being answered, Ralph reads
-that one requester's messages in that one thread without a mention.
+It is not a sender allowlist — one thread, one sender, one open question — and
+it follows from your own words at 23:41, which put the answer "in that same
+thread". But it is still a surface you defined and I would be widening, so it
+is a decision and not an assumption. **Cost of taking it:** between asking and
+being answered, Ralph reads that one requester's messages in that thread
+without a mention. **Cost of refusing it:** E16 works in direct messages and
+fails in every shared space, so R20's exchange is a direct-message feature.
 
 **Delay:** whatever the timer's period is. A10 says nothing is time-critical;
 `run-notifier:10` defaults to 900s and the same period is a sane default here.
@@ -271,13 +305,14 @@ anything else sends nothing and exits.
 | Kind | Chosen by | Body |
 |---|---|---|
 | clarification (R20) | the agent, decision `clarify` | **agent text**: one question, composed from this request's evidence only |
-| acceptance (R6) | **nobody** — the writer emits it when, and only when, a tracker record was just created or updated for this request | **a constant in the writer's source** |
+| acceptance (R6) | **nobody** — the writer emits it on the item's transition into `In progress`, and on no other event | **a constant in the writer's source** |
 | no-fit (R7) | the agent, decision `no_fit` | **a constant in the writer's source** |
 | closing (R11) | the agent, decision `close`, on a closure card (§6.7) | **agent text**: the outcome, bounded by §5.4 |
 
 Two consequences worth naming. First, **the agent cannot ask for an
-acknowledgement**: R6's reply is a side effect of a record landing, so "Ralph
-says work is underway" and "work is recorded" cannot come apart (R9, E1).
+acknowledgement**: R6's reply is a side effect of the item entering
+`In progress` (§6.8), so "Ralph says work is underway" and "work is recorded"
+cannot come apart (R9, E1).
 Second, **half of R15's grant carries no composed text at all** — R6 and R7 are
 fixed sentences, so the text-Ralph-wrote surface you are being asked to approve
 is two replies, not four. R7's constant is the sentence you wrote: "I am not
@@ -314,10 +349,17 @@ a thread already containing it is never staged for a no-fit again (E3).
 writes the *intent* to the item first, sends, then confirms. If a later run
 finds an intent with no confirmation, it **refuses to send and surfaces to you**
 (§6.5) rather than retrying. R9 and R10 make a missing reply much cheaper than
-a double one, so the failure is deliberately biased that way. A `flock` on the
-operation directory, as `inbox-writer:102-103` already does, keeps two writers
-on one host out of each other's way; nothing defends against two hosts, and
-nothing should, because there is one host (§2).
+a double one, so the failure is deliberately biased that way.
+
+**The lock is on the item, not on the operation.** `inbox-writer:102-103` locks
+the operation directory, which is enough for mail because one thread produces
+one operation at a time. Chat is not like that: §4.3 makes several messages in
+one open-question thread eligible, each becoming its own operation on the *same*
+item, so two operation-scoped locks would not see each other and could each
+pass the follow-up ceiling. So the writer takes `flock` on a lock file named
+after the item id, before it reads the ledger and until it has confirmed the
+send — one request, one lock, whatever the operation. Nothing defends against
+two hosts, and nothing should, because there is one host (§2, A6).
 
 ### 5.4 R19 — the content bound on the two composed replies
 
@@ -399,6 +441,7 @@ comments and docstrings stripped (the `code_only` helper at
 | a body containing `spaces/...` or a thread name does not change the parent or thread | R16, §5.2 |
 | acceptance and no-fit bodies equal the writer's constants whatever the agent returned | §5.1 |
 | a second call for the same request and kind sends nothing | A17, R10, E2 |
+| two operations on one item serialise: the lock is named after the item, not the operation | A17, §5.3 |
 | a close body containing a tracker reference, or a URL outside the staged reachable list, is refused and sends nothing | R1, R19 |
 | a returned thread different from the staged thread is reported, not accepted | R8, §5.5 |
 
@@ -485,15 +528,28 @@ is the mechanical reason E7 holds.
 
 ### 6.5 Unknown 9 — how you see a failure
 
-No new path. `notifier/poller.py:29` already polls `blocked` and `review`,
-recovers a reason from the review summary, a `BLOCKED:` comment or a blocked
-event (`:81-102`), and announces it once to your webhook (`:142-143,152-159`).
-So on any refusal or failure — send error, wrong thread returned, R19 refusal,
-tracker write failure, an intent with no confirmation — the writer blocks the
-request's card with `BLOCKED: chat reply failed: <kind>, item <n>, <reason>`
-using the same `hermes kanban` helper the mail writer uses
-(`inbox-writer:25-29`). You hear about it on the next notifier tick, in the
-channel you already watch. E6 is satisfied with zero new machinery.
+No new path, and two existing ones, both already proven by
+`bootstrap/maintain-pr`:
+
+1. **Block the card.** On any refusal or failure — send error, wrong thread
+   returned, R19 refusal, tracker write failure, an intent with no confirmation
+   — the writer blocks the request's card with a reason naming the kind, the
+   item and the cause, exactly as `maintain-pr:371-384` blocks a card through
+   `hermes kanban block` when its circuit breaker trips.
+2. **Say so at once.** It also calls the best-effort webhook post of
+   `maintain-pr:288-300`, which uses `RALPH_NOTIFY_URL` or `GCHAT_WEBHOOK_URL`
+   and treats a failed alert as non-fatal. So you hear in the channel you
+   already watch, in seconds rather than on the next tick.
+
+`notifier/poller.py` is then the backstop rather than the mechanism: it polls
+`blocked` and `review` (`:29`), recovers the reason from a review summary, a
+`BLOCKED:` comment or a blocked event (`:81-102`), and announces each reason
+once (`:121-122`). E6 is satisfied with zero new machinery.
+
+**The correction this replaces.** v1 cited `inbox-writer:25-29` here. The mail
+writer has the `hermes` helper but never blocks anything: every failure path
+prints to stderr and exits non-zero (`:72,77,82,91`). Copying it would have made
+a failed reply invisible — see §11.
 
 ### 6.6 Unknown 8 — what chat data the item holds, and for how long
 
@@ -545,9 +601,9 @@ is never swept** (A18) — no reminder, no second question, no automatic close.
 One saved query in the tracker, sorted by age, is how you see the pile; building
 that query is your click, not Ralph's write.
 
-A pending item is never acceptance (R5): the acceptance reply is emitted only on
-the transition into `In progress`, which is §5.1's rule restated in tracker
-terms.
+A pending item is never acceptance (R5): the acceptance reply is emitted on the
+item's transition into `In progress`, and on no other event — the same sentence
+as §5.1, deliberately.
 
 ---
 
@@ -639,8 +695,10 @@ Every inference the PRD, the card and the verified source did not state.
 5. **The board is a durable enough ledger** for §4.2's suppression, i.e. chat
    cards are not archived faster than the producer's message window reaches
    back.
-6. **One host, one writer.** `flock` is sufficient because there is exactly one
-   machine holding the token (§2).
+6. **One host, one writer.** An item-scoped `flock` (§5.3) is sufficient
+   because there is exactly one machine holding the token (§2). Two hosts would
+   break it, and nothing in this design prevents a second host; nothing should,
+   because a second host cannot decrypt the token anyway.
 7. **"Resolved plus an outcome" is what you mean by worked to a result**
    (§6.4). The PRD names the concept and not a status.
 8. **A public GitHub repository is a sufficient proxy for "the requester can
@@ -651,7 +709,8 @@ Every inference the PRD, the card and the verified source did not state.
 10. **Changing `SOUL.md:9`'s wording is not a behaviour change**, because no
     code ever set the field it describes (§3).
 11. **You will run the one live thread-reply check** in a space of your own
-    before the first real send (§5.5). I may not.
+    before the first real send (§5.5). I may not. This is the pre-launch action
+    named under the decisions table.
 12. **The `queues` board is the right board** for chat cards, as it is for mail
     cards (`inbox-producer:95`).
 
@@ -672,6 +731,9 @@ One line each. Reported, not fixed.
   `b41c99d`.
 - `gchat.py:216-234` drops `sender.type` and message annotations, so any future
   consumer of the skill's read output cannot tell a bot from a human either.
+- `bootstrap/inbox-writer` reports every failure to stderr and exits non-zero
+  (`:72,77,82,91`) and blocks nothing, so a mail draft that never happened is
+  invisible unless somebody reads the output of a hand-run script.
 - `ralph-chat-maintainer` has been configured and inert since at least
   2026-10-30 with no producer; PRs 2-4 are what make it live, or it should be
   deleted.
