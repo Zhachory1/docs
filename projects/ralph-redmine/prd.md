@@ -4,10 +4,11 @@ title: Ralph keeps work requests in a private tracker only the owner and Ralph c
 status: in review
 owner: Zhachory1
 card: t_8e5a6fa4
-revision: v5
-date: 2026-11-03
+revision: v6
+date: 2026-11-06
 prs:
   - Zhachory1/docs#6   # v1, v2, v3, v4, v5
+  - Zhachory1/docs#PRNUM   # v6, this reconciliation
 supersedes: none
 ---
 
@@ -19,20 +20,44 @@ supersedes: none
 > a vendor name and is named. Host paths are the public Ralph source tree and the
 > local profile install, cited as found.
 
-Status: **in review** — a requirements document, awaiting the owner's approval.
-Nothing is built. No chat message has been sent, no scope changed, no REST API
-enabled, no tracker touched. Merging this pull request is the approval, and it
-is also the one grant R15 asks for.
+Status: **in review** — v5 was merged at `Zhachory1/docs#6` on 2026-11-03, and
+that merge is the approval, and the one grant R15 asks for. **v6 asks for
+nothing new.** It is a reconciliation: four statements below described behaviour
+that the owner's own later decisions overruled, and this revision makes them say
+what was decided. Nothing is built. No chat message has been sent, no scope
+changed, no REST API enabled, no tracker touched.
 
-Source: Kanban card `t_8e5a6fa4`. The earlier combined document at
-`Zhachory1/docs#5` was closed without merge and is **not** an approved
-specification. Its assumptions are not carried forward.
+Source: Kanban cards `t_8e5a6fa4` (v1-v5) and `t_73bf3c94` (v6). The earlier
+combined document at `Zhachory1/docs#5` was closed without merge and is **not**
+an approved specification. Its assumptions are not carried forward.
 
 ---
 
 ## Review header
 
-### Decisions needed from you: one, and merging is how you make it
+### Decisions needed from you: one, and it is about this revision's standing
+
+**v6 contains no new product decision.** Every change is one of your own
+decisions written down: **D2** and **D6** on design `dd-ralph-redmine`, both
+2026-11-06. The four edits are listed under "What changed since v5".
+
+**The one thing only you can settle: is this reconciliation still what you
+want?** `dd-ralph-redmine`, the design that recorded D2 and D6, was **closed
+without merging** on 2026-11-06 at your direction, and is being split into two
+successor designs. So these amendments rest on your own quoted words and on
+shipped code at a named commit — not on a merged design. Your closing note says
+the decisions "carry over", and v6 takes that at face value. If you would rather
+leave the PRD at v5 until the successor designs land, close this pull request;
+nothing is lost, because every edit is recorded here and on the design's branch.
+
+**A fifth divergence exists and v6 deliberately does not touch it.** R15 and the
+"Current state, verified" section still say no chat sender exists on this path
+and that `SKILL.md:44` is unedited. `dd-ralph-redmine` found both already
+shipped. Card `t_73bf3c94` scoped v6 to four items and said not to reopen R15,
+so this is reported under observations and not fixed. One sentence from you puts
+it in a v7.
+
+#### What the v5 merge already granted
 
 **May Ralph reply automatically, and may those replies carry text it wrote?**
 Four messages, named in R15:
@@ -40,8 +65,8 @@ Four messages, named in R15:
 | Reply | When | What it carries |
 |---|---|---|
 | Clarification (R20) | The ask is not understood well enough to work it | A short receipt and **one** specific question. Never "I am working on it". |
-| Acceptance (R6) | The work is understood, accepted and recorded | One short sentence: Ralph has it. |
-| No-fit (R7) | A message Ralph understands and will not act on | "I am not sure how to help with that." |
+| Acceptance (R6) | The work is understood, accepted and recorded | Ralph's own words: what it understood, and that it is working on it (your D2). |
+| No-fit (R7) | A message Ralph understands and will not act on | A plain refusal: the reason, and where to go instead (your D2). |
 | Closing (R11) | The request was actually worked to a result | The outcome itself — the answer, the finding, the pull requests. |
 
 Each at most once per request, except that the clarification question may have
@@ -63,13 +88,14 @@ There is no chat producer, no writer and no credential on this path. The grant
 is a product requirement; the design must define the authorization boundary and
 test it before anything can send (R15, R17, unknown 5).
 
-Four things I chose rather than asking you again. Each is an assumption, and
-each is one comment away from changing:
+Four things I chose rather than asking you again. **You have since answered two
+of them** — the first two rows — and the other two still stand, each one comment
+away from changing:
 
 | I chose | Instead of | Say this to change it |
 |---|---|---|
-| A12 — in a space with other people, only a message that @mentions you or Ralph is eligible; in a direct message every human message is | Acting on every message in those spaces | "act on everything in the rooms" |
-| A14 — a request that ends **without** succeeding is silent toward the requester; you are told and you decide what to say | An automatic "this did not work out" | "tell them when it fails too" |
+| A12 — ~~in a space with other people, only a message that @mentions you or Ralph is eligible~~ **Retired by your D6:** eligibility is the approved space list and nothing else | Acting on every message in those spaces | Settled — you chose "act on everything in the rooms". See R18 |
+| A14 — ~~a request that ends **without** succeeding is silent toward the requester~~ **Amended by your D2:** silence when the work never finished, one honest reply when it finished badly | An automatic "this did not work out" | Settled — you chose "tell them when it fails too" for the finished-badly case. See A14 |
 | A17 — one open clarification question at a time, and one follow-up at most; then Ralph acts on what it has or tells you | An unbounded back-and-forth with the requester | "keep asking until it is clear" |
 | A18 — a clarification question that is never answered is never re-sent; the request stays pending and silent | A reminder after some time | "nudge them if they go quiet" |
 
@@ -81,7 +107,7 @@ non-blocking notes.
 | Finding | Resolution |
 |---|---|
 | Non-blocking. Unknown 3 called `run-notifier:18,35` "the digest's webhook". Line 18 gates the board alert and line 35 the daily digest; both use the same fixed destination, so the substance held and only the label overclaimed. | Fixed: unknown 3 now says "the host notifier's webhook". |
-| Non-blocking. R18's "this feature adds no allowlist of its own" nudges unknown 11 away from one option it lists — a sender list local to this feature. | Named rather than reworked. Unknown 11 now says that if the design concludes a list is the only safe reconciliation, that contradicts R18 and comes back to you as a change, instead of being settled inside the design. |
+| Non-blocking. R18's "this feature adds no allowlist of its own" nudges unknown 11 away from one option it lists — a sender list local to this feature. | Named rather than reworked in v5. **Overtaken by your D6 (2026-11-06):** an approved list of spaces is now the surface itself, so unknown 11 is closed rather than constrained, and R18 no longer forbids a list. The reviewer was right that the clause was doing work; it stopped being true rather than being argued away. |
 
 Earlier blockers stay fixed. v2's was R15 claiming a grant you had not given:
 R15 still separates what you said, where you said it, and what this document
@@ -95,35 +121,45 @@ webhook sends to one fixed destination and cannot reply into a thread at all,
 so if it is the only sender available, all three messages need a sender that
 does not exist yet. It is design unknown 3, and the first thing to confirm.
 
-### Scope: medium
+### Scope: the feature stays medium; this revision is small
 
-One tracker, one thread, and at most three messages to a requester: a question
-if the ask is unclear, an acknowledgement when work starts, the outcome at the
-close. **Breakdown:** the design document decides it, and nothing starts before
-this document is merged.
+**The feature, unchanged.** One tracker, one thread, and at most three messages
+to a requester: a question if the ask is unclear, an acknowledgement when work
+starts, the outcome at the close. The design decides the implementation
+breakdown, and v6 changes nothing about it.
 
-### What changed since v4
+**This revision.** One file, prose only, no new requirement: `prd.md` from v5 to
+v6, reconciling four statements to decisions you already made. **Breakdown: one
+pull request, and it is this one.** There is no second part and nothing follows
+it — the implementation pull requests belong to the successor designs, not here.
 
-- **Ralph asks before it starts** (R20, new): when the ask is not understood,
-  a short receipt and one specific question in the same thread — no claim that
-  work is underway, no work begun, no acceptance reported. Your inline comment
-  on `prd.md:39` and your comment of 23:41.
-- **The acceptance reply moved** (R6): it now comes only after the ask is
-  *understood* and the work is recorded, not merely after an item exists.
-- **The no-fit reply narrowed** (R7): it is for a message Ralph understands and
-  will not act on. A merely unclear message gets R20's question instead, so
-  "I am not sure how to help with that" is never the answer to a request that
-  was only badly phrased.
-- **Pending is a real state** (R5, R11, E17): a request waiting on an answer may
-  be recorded with its next action, is not acceptance, and can never be reported
-  complete or successful.
-- **The loop guard covers the new exchange** (R10, R16): Ralph's own question
-  never re-enters as a request, and a requester's answer is context — never an
-  instruction about what Ralph may send, or where.
-- **R15 widens from three replies to four, and says so.** The clarification
-  question is inside the grant and inside the bound the design must prove.
-- Four new acceptance examples (E15-E18), two new design unknowns (13, 14), and
-  both of the v4 review's non-blocking notes fixed.
+### What changed since v5
+
+Four statements, and nothing else. Each one described behaviour your own later
+decision overruled; each now says what you chose. No requirement gained or lost
+scope, and no ceiling moved.
+
+| # | What v5 said | What you decided | Where |
+|---|---|---|---|
+| 1 | **R6** — the acceptance reply is "one short sentence saying Ralph has it and is working it" | **D2**, 2026-11-06: Ralph writes the acknowledgement in its own words. The bound moved from the sentence to the sender's refusal checks | R6, and the replies table above |
+| 2 | **R7** — the no-fit reply is the fixed sentence "I am not sure how to help with that" | **D2**, 2026-11-06: a plain refusal carrying the reason and where to go instead | R7, E3 |
+| 3 | **A14** — a request that ends without succeeding is silent toward the requester, in every case | **D2**, 2026-11-06: silence when the work **never finished**; one honest reply when it **finished badly** | A14, R11, E11, non-goals |
+| 4 | **R18** — the surface is a direct message or an @mention of the owner, and "this feature adds no allowlist of its own" | **D6**, 2026-11-06: *"Keep it only to approved chat rooms please"* / *"@ mentions and direct messages can come later"* — every human message in an approved space, no mention needed, no direct messages in v1 | R18, A12, E14, unknown 11, assumptions 7 and 12 |
+
+**Why these moved at all.** Items 1-3 are places where v5 specified a *sentence*
+and the code that shipped writes *text*; you chose the shipped behaviour. Item 4
+is the one that most needed fixing, because v5's R18 and your D6 contradict each
+other in **both** directions — v5 was narrower inside a room and wider outside
+one — so a reader could not tell which was current.
+
+**What else this revision touched, and why.** The four edits are restated in
+other places, and leaving those would make the document contradict itself. So
+also updated: the two review-header tables, "For the requester", R11's failure
+sentence, E3, E11, E14, the non-goals for failure and for deferred surfaces,
+design unknown 11, assumptions 7, 12 and 14, and the decisions table — plus four
+new assumptions (19-22) for the inferences v6 itself makes. Every one is a
+consequence of the four, not a new requirement. **Deliberately not touched:**
+R15, R19, A17, the per-thread ceilings, and the fifth divergence named above.
 
 ---
 
@@ -213,11 +249,14 @@ empty body (`:19`). So a clarification question, an automatic acceptance reply,
 a "not sure how to help" reply and a closing reply are each a new path, not a
 setting. Nothing today can ask a requester anything.
 
-**No sender set matching R18.** `sender_trusted` comes from the owner's
-allowlist (`SOUL.md:9`) and `route` is refused without it (`:21`). R18's
-boundary — the owner, or anyone who @mentions the owner — is wider than an
-allowlist and is not expressible today. This is a conflict, not a detail; see
-unknown 11.
+**A sender set narrower than v5's R18 — since settled the other way.**
+`sender_trusted` comes from the owner's allowlist (`SOUL.md:9`) and `route` is
+refused without it (`:21`). v5's R18 — the owner, or anyone who @mentions the
+owner — was wider than an allowlist and was not expressible here, which v5
+recorded as a conflict and as unknown 11. **Your D6 of 2026-11-06 settled it the
+other way:** an approved list of spaces is the surface, so the gate and the
+requirement now agree and unknown 11 is closed. The finding stands as a record
+of what was true on 2026-11-02; it is no longer a conflict.
 
 **No threaded-reply guarantee.** `gchat.py:249` sets
 `messageReplyOption = "REPLY_MESSAGE_FALLBACK_TO_NEW_THREAD"`. That is the exact
@@ -257,13 +296,14 @@ hears about genuine failures only.
 **For the requester.** At most three messages, all in the thread they wrote in.
 If Ralph cannot work the ask as written, a short receipt and one specific
 question, and nothing that claims work has started (R20). When the work is
-understood, accepted and recorded, one short acknowledgement (R6). When it has
-actually been worked to a result, one closing reply that is the outcome itself —
-the answer, the finding, or the pull requests (R11). An update gets the
-acknowledgement and nothing after it. A human message Ralph understands and will
-not act on gets one honest "I am not sure how to help with that" (R7). If the
-work fails, is abandoned, or the question is never answered, nothing more
-(A14, A18).
+understood, accepted and recorded, one short acknowledgement in Ralph's own words
+(R6). When it has actually been worked to a result, one closing reply that is
+the outcome itself — the answer, the finding, or the pull requests (R11). An
+update gets the acknowledgement and nothing after it. A human message Ralph
+understands and will not act on gets one plain refusal with the reason and where
+to go instead (R7). If the work finished and finished badly, one honest reply
+saying so. If it never finished at all, or the question is never answered,
+nothing more (A14, A18).
 
 **For everyone else.** Nothing. No account, no portal, no notification, no mail.
 
@@ -301,20 +341,32 @@ answer may be recorded as pending, with its next action, so it is not lost
 never described to the requester, and it can never close as a success (R11).
 
 **R6 — One acceptance reply, in the thread the message arrived in, only after
-the ask is understood and the work is accepted and recorded.** One short
-sentence saying Ralph has it and is working it. Never before the item exists,
-and never while a clarification question is still open (R20). Never a tracker
-link, identifier, account or email. For an **update**, this is the whole of the
-conversation: the acknowledgement you described, and nothing after it (R11).
+the ask is understood and the work is accepted and recorded.** Ralph writes it
+in its own words: what it understood the ask to be, and that it is working on it
+— not a fixed sentence. Your **D2** of 2026-11-06 on design `dd-ralph-redmine`,
+"let's go with the recommendation", chose the behaviour that shipped at
+`Zhachory1/ralph@95bd4d9`, where `profiles/chat-maintainer/SOUL.md:17` says the
+acknowledgement is "your short reply to the requester, in your own words, saying
+what you understood and that you are working on it". Short, and never a promise
+of a date or of a result the work has not produced. What bounds its content is
+no longer the sentence but the sender's refusal checks, which `dd-ralph-redmine`
+defines. **Never before the item exists, and never while a clarification
+question is still open (R20). Never a tracker link, identifier, account or
+email.** For an **update**, this is the whole of the conversation: the
+acknowledgement you described, and nothing after it (R11).
 
 **R7 — A human message Ralph understands and will not act on gets one short
-no-fit reply.** "I am not sure how to help with that", short and plain. This
-covers a message classified "other" inside the eligible surface (R18). A message
-that is merely unclear is **not** this case: it gets R20's question first, and
-reaches R7 only if it is understood afterwards and is still not work. **No item
-is created to justify the reply,** and the reply never says anything is
-underway. At most one no-fit reply per thread; a thread that already got one
-stays silent after that (A15).
+no-fit reply.** A plain refusal in Ralph's own words, carrying the reason and
+where the requester could go instead — not a fixed sentence. Your **D2** of
+2026-11-06 on design `dd-ralph-redmine` chose the shipped behaviour, where
+`SOUL.md:18` at `Zhachory1/ralph@95bd4d9` calls for "a plain 'I can't help with
+this' with the reason and where they could go instead". It stays short, and it
+stays plain. This covers a message classified "other" inside the eligible
+surface (R18). A message that is merely unclear is **not** this case: it gets
+R20's question first, and reaches R7 only if it is understood afterwards and is
+still not work. **No item is created to justify the reply,** and the reply never
+says anything is underway. At most one no-fit reply per thread; a thread that
+already got one stays silent after that (A15).
 
 **R8 — No new-thread fallback, ever.** If a reply cannot land in the thread it
 belongs to, nothing is sent anywhere. The failure surfaces to the owner. A new
@@ -345,9 +397,12 @@ on `prd.md:66`:
 | Feature request | The pull requests it produced — named, and linked only where the requester can already reach them (R19). |
 | Update | Nothing further. The acceptance reply (R6) was the acknowledgement. |
 
-Succeeded is not the same as stopped: a request that failed, was refused, was
-abandoned or was folded into other work gets **no message at all**, and the
-owner decides what to say, by hand (E11, A14). An intermediate Hermes card
+Succeeded is not the same as stopped, and since your **D2** of 2026-11-06 the
+two failing cases differ. A request that **never finished** — blocked,
+abandoned, refused before work, or folded into other work — gets **no message at
+all**, and the owner decides what to say, by hand. A request that **did finish
+and finished badly** gets one honest reply saying so plainly and what is
+missing, never a claimed result (E11, A14). An intermediate Hermes card
 finishing is **not** the request finishing. A request that was never
 acknowledged never gets a closing reply either, and a request still waiting on a
 clarification answer has not been worked to a result: it stays pending and is
@@ -415,21 +470,41 @@ or to whom (R20).
 REST enablement, no policy edit, no message sent. Those follow an approved
 design, one at a time.
 
-**R18 — The eligible surface is the owner, and anyone who @mentions the owner,
-in Google Chat.** Your inline comment on `prd.md:64`: "It will just be the user
-or anyone who mentions the user in google chat. This is fine for an initial v1."
-So: the owner's own chats, and the spaces the owner put Ralph in; in a direct
-message every human message is eligible, and in a space with other people only a
-message that @mentions the owner or Ralph is (A12). Membership and the @mention
-are the control, and **this feature adds no allowlist of its own**.
+**R18 — The eligible surface is every human message in a chat space the owner
+has approved.** Your **D6** of 2026-11-06 on design `dd-ralph-redmine`: *"Keep
+it only to approved chat rooms please"*, and *"@ mentions and direct messages can
+come later"*. So for v1 a message is eligible because of **where** it was sent,
+not because of who it names: every message from a human sender, in one of the
+spaces on the owner's approved list, inside the recent-message window the design
+sets (five minutes, your D4). Nothing is asked about who the human is, and
+nothing is asked about what the message says. This is consistent with your
+earlier inline comment on `prd.md:62` — "it's all chats for a user and rooms that
+they can define themselves".
 
-That is wider than what exists. `sender_trusted` (`SOUL.md:9`) comes from the
-owner's allowlist and `route` is refused without it (`:21`), so a stranger who
-@mentions the owner is eligible under R18 and refused by the current gate. The
-owner's boundary is the requirement; reconciling the gate with it is design
-unknown 11. **The consequence, stated:** anyone who can @mention the owner in a
-space Ralph is in can create a tracked item. The owner accepted that for a first
-version in the same comment.
+**Both halves of what this replaced, stated plainly.** v5 said the surface was a
+direct message or an @mention of the owner, and that "this feature adds no
+allowlist of its own". v1 as you decided it is the opposite on both counts: an
+approved list of spaces **is** the surface, and no mention is needed inside one.
+So R18 both **widens** — an unmentioned message in an approved space is now
+eligible — and **narrows**: a direct message is not a surface in v1 at all,
+because a direct message is not one of the approved spaces. The @mention test
+and direct messages are **deferred to a later design, not refused**; "later" is
+your word, and your inline comment on `prd.md:64` is superseded rather than
+contradicted.
+
+**The consequence, stated:** every human message in an approved space becomes a
+tracked operation and one unit of Ralph's attention, including a conversation
+between two other people that has nothing to do with Ralph. The non-actionable
+ones end at one no-fit reply or at nothing (R7, R10), and the per-thread
+ceilings still cap what any one thread can be told, but nothing bounds the
+volume. **So an approved space should be one the owner is willing to have Ralph
+read in full.** One sentence puts the @mention test back.
+
+This no longer conflicts with the host gate. `sender_trusted` (`SOUL.md:9,11`)
+is set by the host "from the approved intake policy", and the approved space
+list **is** that policy — so the gate and the requirement now say the same
+thing, and design unknown 11 is closed. The list itself stays the owner's: it
+lives in an instance file on the owner's machine, not in the code.
 
 **R19 — Outbound text is the work's own output, and nothing else.** The closing
 reply may carry the answer, the finding, or the pull requests produced *for this
@@ -484,9 +559,9 @@ invitation, and no clarification question.
 twice. **Then** one item, one reply.
 
 **E3 — a human message that is understood and is not work.** Small talk,
-thanks, an FYI. **Then** one short "I am not sure how to help with that" in that
-thread, **and no item**. A second such message in the same thread gets nothing.
-A message that is merely unclear is E15, not this one.
+thanks, an FYI. **Then** one short, plain refusal in that thread — the reason,
+and where to go instead — **and no item**. A second such message in the same
+thread gets nothing. A message that is merely unclear is E15, not this one.
 
 **E4 — Ralph's own message, or a bot.** **Then** nothing. No item, no reply,
 and in particular no reply to Ralph's own acceptance reply.
@@ -515,10 +590,13 @@ them; otherwise the outcome in words and no link.
 **E10 — an update arrives.** Someone sends context, not a request for work.
 **Then** one acceptance reply, an item recorded, and **no closing reply**.
 
-**E11 — the request ends without succeeding.** The item closes as failed,
-refused, abandoned, or folded into other work. **Then** no message reaches the
-requester at all. The owner is told, and the owner decides whether to say
-anything.
+**E11 — the request ends without succeeding.** Two cases since your D2. If the
+work **never finished** — blocked, abandoned, refused before work, or folded
+into other work — **then** no message reaches the requester at all; the owner is
+told and decides whether to say anything. If the work **finished badly** — it
+ran to an end, and the end was a failure or is incomplete — **then** exactly one
+honest reply in that thread, saying so plainly and saying what is missing, and
+never a claimed result.
 
 **E12 — the owner audits.** The owner opens the tracker cold, with no chat open.
 **Then** every open item reads: who asked, what, who owns it, what state, what
@@ -528,9 +606,12 @@ next, and where it came from.
 and might not. **Then** Ralph proceeds on its own judgement and the request is
 not left waiting on the owner.
 
-**E14 — a human message in a space, with no @mention.** **Then** nothing: it is
-outside the eligible surface, so there is no item, no question and no reply of
-any kind.
+**E14 — a human message in a space that is not on the approved list.** **Then**
+nothing: it is outside the eligible surface, so there is no item, no question
+and no reply of any kind. A direct message is the same case in v1, because a
+direct message is not an approved space (R18, your D6). The converse is now also
+an example: an unmentioned human message **inside** an approved space is
+eligible, and is E1 or E3 by its content.
 
 **E15 — the ask is unclear.** A human sends a request inside the eligible
 surface that Ralph cannot work as written. **Then** one short receipt and
@@ -558,7 +639,8 @@ hears nothing further (A17).
 ## Decisions you have already made
 
 Recorded so the design cannot quietly re-open them. From your two comments on
-this pull request and your four inline comments on it, all 2026-11-02.
+`Zhachory1/docs#6` and your four inline comments on it, all 2026-11-02, and from
+your decisions on design `dd-ralph-redmine`, 2026-11-06.
 
 | Where you said it | What you said | Where it lives now |
 |---|---|---|
@@ -567,7 +649,10 @@ this pull request and your four inline comments on it, all 2026-11-02.
 | Comment, answer 3 | A second message on real completion, at most one, prepared and delivered through the chat-maintainer path; an intermediate card finishing is not completion | R11 |
 | Comment, answer 4 | Ralph links follow-ups and runs the lifecycle. No routine questions. If reuse is not confident, record a new item and reconcile or link later | R2, R12, E13 |
 | Inline, `prd.md:62` | "it's all chats for a user and rooms that they can define themselves" | R18, first paragraph |
-| Inline, `prd.md:64` | "It will just be the user or anyone who mentions the user in google chat. This is fine for an initial v1." | R18. This is why there is no allowlist in this feature, and why the existing gate's conflict is named rather than carried quietly |
+| Inline, `prd.md:64` | "It will just be the user or anyone who mentions the user in google chat. This is fine for an initial v1." | **Superseded by your D6 below.** It is why v5's R18 had no allowlist of its own. The @mention surface it describes is deferred, not refused |
+| `dd-ralph-redmine`, D2, 2026-11-06 | "Let's go with the recommendation" — where the shipped sender and this document disagreed, the shipped behaviour wins and the bound moves from the sentence to the sender | R6, R7, A14, R11, E3, E11 |
+| `dd-ralph-redmine`, D6, 2026-11-06 | "Keep it only to approved chat rooms please" / "@ mentions and direct messages can come later" | R18, A12, E14, unknown 11, assumptions 7 and 12 |
+| `dd-ralph-redmine`, D7, 2026-11-06 | "Approved. Update the PRD" | This revision exists because of it; card `t_73bf3c94` |
 | Inline, `prd.md:66` | "A question gets answered. A bug investigation gets a report. A feature request gets a slew of PRs. Context gets an acknowledgement. What other closing message is required?" | R11's table, and R19's content bound. It is also why v3's fixed success sentence is gone |
 | Inline, `prd.md:39` | "What about any clarification questions?I don't want ralph to start without clear understanding of what people are asking for." (quoted as written) | R20 |
 | Comment, 23:41 | Receipt, clarification and acceptance are different replies. An unclear request gets a short receipt and one specific question in the same original thread, with no claim of work underway and no work started; Ralph may track the pending request and its next action; the requester answers in that thread and the answer is context; a follow-up only if needed; the acknowledgement follows once the work is understood and recorded; with no answer the request stays pending and is never reported complete; own messages, bots and duplicates are ignored so this cannot loop; the polling and send mechanism belongs in the design | R20, and R5, R6, R9, R10, R11; unknown 13 |
@@ -586,23 +671,45 @@ You said to stop asking routine questions. Four things were left over. Each is
 narrow, each costs something I name here, and each is one comment away from
 being changed.
 
-### A12 — in a shared space, an @mention is what makes a message eligible
+### A12 — retired by your D6: the approved space is the whole test
 
-Your line-64 comment says "the user or anyone who mentions the user". In a
-direct message there is nobody to mention, so every human message there is
-eligible. In a space with other people, requiring the @mention is mine, not
-yours: without it, R7 would answer ordinary conversation in a shared room, which
-the original brief forbids. I read a mention of Ralph as equivalent to a mention
-of you, since Ralph is acting for you. **Cost:** a request written in a shared
-space that mentions neither is not seen.
+v5 assumed that in a shared space an @mention is what makes a message eligible,
+and that in a direct message every human message is. **Your D6 of 2026-11-06
+replaced both halves:** eligibility is the approved space list and nothing else,
+and direct messages are not a v1 surface. Nothing reads a mention now, so the
+cost v5 named here — "a request written in a shared space that mentions neither
+is not seen" — is gone, and the cost that replaces it is stated in R18: Ralph
+reads every human message in an approved space, including conversations that are
+not for it. The concern behind the old assumption was that R7 would answer
+ordinary conversation in a shared room; what answers it now is that an approved
+space is a space the owner chose, and that most such messages end in no reply at
+all. A12 is kept rather than deleted, because R18 and the assumptions list
+referred to it and a reader of v5 needs to find out what became of it.
 
-### A14 — a request that ends without succeeding is silent toward the requester
+### A14 — amended by your D2: silence when it never finished, one honest reply when it finished badly
 
-Your line-66 comment lists outcomes that exist — an answer, a report, pull
-requests. It does not say what a requester hears when there is no outcome. I
-kept silence: Ralph tells you, and you decide. **Cost:** a requester whose
-request quietly failed is left waiting, and only you can close that loop. Say
-"tell them when it fails too" and R11 gains a failure case.
+v5 kept silence toward the requester in every failing case, because your line-66
+comment listed outcomes that exist and not the absence of one. **Your D2 of
+2026-11-06 took the other reading,** so A14 splits in two rather than being
+deleted:
+
+- **The work never finished** — blocked, abandoned, refused before work, or
+  folded into other work. The requester hears nothing. This is less a rule Ralph
+  enforces than a consequence of how the work is sequenced: the step that would
+  send a closing reply never runs. You are told, and you decide what to say.
+- **The work finished badly** — it ran to an end, and the end was a failure or
+  is incomplete. The requester gets **one** honest reply saying so plainly and
+  saying what is missing, as `SOUL.md:23` at `Zhachory1/ralph@95bd4d9` already
+  requires of the shipped path. It sits inside R11's one-reply-per-request
+  ceiling and inside R19's content bound, and it never claims a result the work
+  did not produce.
+
+**Cost of the second case, which is new:** a requester can be told that Ralph
+tried and failed, in text Ralph composed, without you reading it first. That is
+the same exposure R15 already grants for the other replies, under the same
+bound. **Cost of the first case, unchanged:** a requester whose request died
+quietly is left waiting, and only you can close that loop. Say "tell them when
+nothing finished either" and the first case gains a reply too.
 
 ### A17 — one open question at a time, and one follow-up at most
 
@@ -638,7 +745,14 @@ if they go quiet" and R20 gains a reminder.
   a new request under R4 and R12; it is not a continuing dialogue.
 - **Any tracker content reaching a requester** (R1, R19). The outcome travels;
   the record does not.
-- **Telling a requester that work stopped** (A14). The owner handles it.
+- **Telling a requester that work never finished** (A14). A request that is
+  blocked, abandoned or folded into other work is silent toward the requester
+  and the owner handles it. A request that *did* finish and finished badly is
+  **not** this case: it gets one honest reply (your D2).
+- **Direct messages, and the @mention test** (R18, your D6). Neither is a v1
+  surface. Both are deferred to a later design, not refused: "@ mentions and
+  direct messages can come later" is your sentence. v1's surface is the approved
+  space list.
 - **Progress updates.** The requester hears when Ralph needs one thing to
   start, when work starts, and when it ends. Nothing in between, however long it
   runs.
@@ -692,13 +806,13 @@ Listed so they are not quietly decided by whoever implements first.
 9. **How the owner sees a failed reply** (E6) and a genuine failure generally.
 10. **Whether `inbox-writer`'s single-write eval has a chat equivalent,** and
     what it asserts.
-11. **How R18's boundary is expressed against `sender_trusted`.** The gate at
-    `SOUL.md:9,21` is narrower than R18 and would refuse an eligible requester.
-    Widening the host's list, bypassing the gate for this path, or deriving
-    eligibility from the @mention are all options; the design picks one and says
-    what it costs. If the design concludes that a sender list local to this
-    feature is the only safe reconciliation, that contradicts R18 and comes back
-    to the owner as a change — it is not settled inside the design.
+11. **Closed by your D6 (2026-11-06), not by a design.** While R18's surface was
+    an @mention, the gate at `SOUL.md:9,21` was narrower than the requirement and
+    would have refused an eligible requester. That is no longer so: the approved
+    space list is the surface, `SOUL.md:11` already has the host set
+    `sender_trusted` from "the approved intake policy", and that list is the
+    policy. No sender list local to this feature is needed and none is added.
+    Kept in place, numbered, so the unknowns below keep their numbers.
 12. **How the closing reply's content is assembled and checked** against R19 —
     in particular how "the requester can already reach this reference" is
     decided for a pull request or any other artifact.
@@ -716,7 +830,8 @@ Listed so they are not quietly decided by whoever implements first.
 ## Assumptions
 
 Every inference this card, the owner's answers and the brief did not state. One
-line each, referenced elsewhere as A1-A18 in list order.
+line each, referenced elsewhere as A1-A22 in list order. Numbers are never
+reused: an assumption your decision retired keeps its number and says so.
 
 1. **"Fallback reply" in your answer 2 means the no-fit reply of R7,** not a
    fallback to a new thread. R8 forbids the second absolutely, and I read the
@@ -734,8 +849,10 @@ line each, referenced elsewhere as A1-A18 in list order.
    "reuse the existing host sender".** The card also names a read-only digest
    token I could not read. Flagged by review as the most load-bearing assumption
    here; it is also design unknown 3.
-7. **"Mentions the user" means an @mention in the message,** not any textual
-   reference to the owner by name (R18).
+7. **Retired by your D6 (2026-11-06).** v5 read "mentions the user" as an
+   @mention in the message rather than any textual reference to the owner by
+   name. Nothing reads a mention now, so the reading no longer bears on any
+   requirement (R18, A12).
 8. **Your line-66 comment is an instruction about content, not a question I
    must answer back.** I read "What other closing message is required?" as "the
    outcome is the message" and wrote R11 accordingly, rather than replying with
@@ -745,14 +862,17 @@ line each, referenced elsewhere as A1-A18 in list order.
     assumed.
 11. **`/ralph` as mounted here matches the deployed tree.** It is not a git
     checkout, so I cannot prove it. The design must re-verify against a commit.
-12. **In a space with other people, only an @mention is eligible,** and a
-    mention of Ralph counts as a mention of the owner (R18).
+12. **Retired by your D6 (2026-11-06).** v5 assumed that in a shared space only
+    an @mention is eligible, and that a mention of Ralph counts as a mention of
+    the owner. Eligibility is now the approved space list alone (R18, A12).
 13. **"Context" in your line-66 comment is the "update" kind of R4,** so an
     update's acknowledgement is R6's acceptance reply and nothing follows it
     (R11).
-14. **A request that ends without succeeding is silent toward the requester**
-    (R11, E11). Your comments name outcomes that exist and not the absence of
-    one; this is the narrow reading.
+14. **Amended by your D2 (2026-11-06).** v5 assumed silence toward the requester
+    in every failing case, on the narrow reading of comments that named outcomes
+    which exist and not the absence of one. Silence now covers only work that
+    never finished; work that finished badly gets one honest reply (R11, E11,
+    A14).
 15. **"Reply once" to a non-actionable message means once per thread, ever,**
     not once per message (R7). A thread that already got the no-fit reply stays
     silent. The wider reading would let a chatty thread collect many of them.
@@ -767,6 +887,25 @@ line each, referenced elsewhere as A1-A18 in list order.
 18. **A clarification question that is never answered is never re-sent** (R20,
     E17). You said the request stays pending; you did not say whether to ask
     again, so there is no reminder and no expiry.
+
+New in v6. Four inferences this reconciliation itself makes:
+
+19. **Your decisions on `dd-ralph-redmine` still bind this document, even though
+    that design was closed without merging.** Your closing note says the
+    decisions "carry over", and your D7 — "Approved. Update the PRD" — is itself
+    one of them. If you meant the PRD to wait for the two successor designs
+    instead, close the v6 pull request and `prd.md` stays at v5.
+20. **"No other requirement is touched" permits editing the places where these
+    four rules are *restated*.** R11, E3, E11, E14, the two review-header
+    tables, the non-goals, unknown 11 and three assumptions all repeat a rule
+    that changed. Leaving them would make the document contradict itself, which
+    is the defect v6 exists to remove. No requirement gained or lost scope.
+21. **The five-minute recent-message window in R18 is the design's to set, not a
+    requirement.** Your D4 fixed the number; R18 names it so the surface is
+    legible, and the design owns it. A different window would not change R18.
+22. **This document's status stays `in review`.** The v5 merge approved v5. v6 is
+    not approved until you merge it, so the field is correct as it stands rather
+    than being advanced to `approved`.
 
 ---
 
@@ -786,3 +925,14 @@ One line each. Reported, not fixed.
   weight.
 - `/ralph/notifier/` is referenced by `run-notifier:19,26,37` but is not visible
   to this profile, so the approvals gate cannot be audited from here.
+- **New in v6, and the largest one.** R15 and "Current state, verified" both say
+  no chat sender exists on this path and that `SKILL.md:44` is unedited. Neither
+  is true at `Zhachory1/ralph@95bd4d9`: `bootstrap/chat-reply` ships and
+  `SKILL.md:44` already names it as the approved automatic sender. Card
+  `t_73bf3c94` scoped v6 to four items and said not to reopen R15, so this is
+  reported and not fixed. It is the fifth divergence, and it is a bigger one
+  than any of the four.
+- **New in v6.** `dd-ralph-redmine` was closed without merging on 2026-11-06 and
+  is being split into two successor designs. Until those exist, this document is
+  the only merged text in the project, and the four amendments above are the only
+  record in it of what was decided on that design.
