@@ -4,11 +4,11 @@ title: Build the work tracker onto the chat path Ralph already shipped — one p
 status: in review
 owner: Zhachory1
 card: t_b5db2cf0
-revision: v3
-date: 2026-11-05
+revision: v4
+date: 2026-11-06
 implements: prd-ralph-redmine
 prs:
-  - Zhachory1/docs#7   # v1, v2, v3
+  - Zhachory1/docs#7   # v1, v2, v3, v4
 supersedes: none
 ---
 
@@ -23,15 +23,18 @@ Status: **in review** — a design, awaiting your approval. Nothing is built, no
 chat message was sent or read, no REST API was enabled, no credential and no
 work instance was touched. Merging this pull request is the approval.
 
-Implements `prd-ralph-redmine` v5, merged at `Zhachory1/docs#6`. The PRD is not
-re-opened here, but §0 lists three places where shipped code now disagrees with
-it, and D2 asks you which one wins.
+Implements `prd-ralph-redmine` v5, merged at `Zhachory1/docs#6`. **You answered v3's
+four decisions on 2026-11-06; §0.1 records what each one moved.** Three decisions are
+left, and one of them is the PRD: your D2 answer makes three of its sentences
+describe behaviour that no longer exists.
 
 **Citations.** Every claim about Ralph is from a fresh clone of
 `Zhachory1/ralph` at commit `95bd4d960e9178a0ea00c8791afa75b851138e1c`
 (2026-11-05, `main`). v2 was written against `b41c99d` (2026-11-02). Thirty-eight
 commits landed between them and several of v2's central claims are no longer
-true. I read the code; I did not run it, send a message, or call any API.
+true. v4 re-read the same commit to answer your container question (§3.5) and to
+design the five-minute read (§3.4); no earlier claim moved. I read the code; I did
+not run it, send a message, or call any API.
 Claims about Redmine are general product knowledge and are marked; your
 instance was not inspected and must not be.
 
@@ -47,7 +50,7 @@ of beside it (Reuse first, `profiles/PRINCIPLES.md`).
 |---|---|---|
 | No chat sender exists; write `bootstrap/chat-writer` | `bootstrap/chat-reply` exists: a host script that scans completed chat-maintainer cards and posts `ack`, `reply` and `final` to the staged thread (`chat-reply:3-8,214-245`) | **`chat-writer` is dropped.** The tracker step and the ceilings go into `chat-reply`. |
 | `gchat.py` hard-codes the new-thread fallback (`:249`); the writer must make its own API call | `send` takes `--strict-thread` → `REPLY_MESSAGE_OR_FAIL`, `--request-id`, `--message-id` (`gchat.py:251-263,305-307`); `chat-reply` uses all three (`:129-134`) | R8's send half is **done**. v2 §5.5 shrinks to what is still unverified (§4.5). |
-| `SKILL.md:44` needs an owner-approved paragraph (D2) | `SKILL.md:44` already names `bootstrap/chat-reply` as the one automatic exception, "owner-approved", for "acknowledgement, reply and final response" | v2's D2 **no longer exists as a text edit.** What is left is a scope question (D2 below). |
+| `SKILL.md:44` needs an owner-approved paragraph (v2's D2) | `SKILL.md:44` already names `bootstrap/chat-reply` as the one automatic exception, "owner-approved", for "acknowledgement, reply and final response" | v2's D2 **no longer exists as a text edit.** What is left is a scope question (D2 below). |
 | The chat-maintainer has no network and no credential | It has the `terminal` toolset and a repository token on every instance, and the owner's own token on the personal instance (`profiles/chat-maintainer/config.yaml:6-16`; `docs/decisions/0001`, `0002`) | **v2's R19 argument no longer holds** (§4.4). The agent can read what the owner can read. |
 | `sender_trusted` has no host side at all | Still no code *sets* it. But `chat-reply` and `chat-route` now both *require* it `is True`, and `chat-reply` also requires the space to be in `CHAT_ROUTE_SPACES`, at most **eight** spaces (`chat-reply:44-50,78-80`; `chat-route:63-64`) | A real gate exists and it is **narrower than R18** (D4c). |
 | Own-message suppression needs a `SENT:` ledger on the board (v2 §4.2) | Replies carry a `client-ralph-*` message id "Ralph can recognize" (`gchat.py:31-33`; `chat-reply:134`), and `item.json` messages carry `from_ralph` (`SOUL.md:11`) | The ledger is **dropped**; the producer recognises Ralph's own messages by id (§3.2). |
@@ -55,58 +58,87 @@ of beside it (Reuse first, `profiles/PRINCIPLES.md`).
 | A closure producer polls the tracker for `Resolved` + outcome | The orchestrator ends every chat graph with one `ralph-chat-maintainer` card that depends on the work cards and writes the final reply (`profiles/orchestrator/SOUL.md:19`; `chat-route:89-92`) | **The closure producer is dropped.** The final card is the trigger (§4.6). |
 | Nothing is wired to CI | Still true: the workflows are `scope-check.yml` and `skills-public.yml`, and the latter runs two named evals (`skills-public.yml:22-23,33,36`). `evals/test_chat_reply.py`, `test_chat_route.py` and `test_gchat_send.py` are in neither | The bound R15 asks to prove is **still unenforced between hand runs** (§4.7). |
 | Inbound chat is read by a producer (v2 PRs 2-3) | **Still no producer.** `SKILL.md:46` says the host scan "does not start inbound Chat polling", and nothing in the repository writes `chat-inbox/<op>/evidence/item.json` | The producer is **still the largest missing piece**, and it now has a fixed schema to meet (§3). |
-| No tracker integration | None. `grep -ri redmine` over the clone finds nothing | Unchanged: D1. |
+| No tracker integration | None. `grep -ri redmine` over the clone finds nothing | Unchanged; the tracker work needed your D1, which you have now approved (§0.1). |
 
-**The three places shipped code and the PRD disagree** (decision D2):
+**The three places shipped code and the PRD disagree** (your D2 chose the shipped side; §0.1, and D7):
 
 1. **Acknowledgement text.** PRD R6: one short sentence that Ralph has it. v2 made it a writer constant. Shipped: the agent writes `ack` "in your own words, saying what you understood and that you are working on it" (`SOUL.md:17`).
 2. **The "cannot help" reply.** PRD R7: "I am not sure how to help with that." Shipped: the agent writes a plain refusal "with the reason and where they could go instead" (`SOUL.md:18`), and one decision, `reply`, covers a refusal, a direct answer and a clarifying question alike.
 3. **A request that fails.** PRD A14: silence toward the requester. Shipped: "If the work failed or is incomplete, say so plainly" (`SOUL.md:23`).
 
+## 0.1 What you decided, and what each answer moved
+
+Your review comment on `dd.md:72`, 2026-11-06. Quoted exactly, because three of
+these change the design rather than confirm it.
+
+| You said | It settles | What moved in this document |
+|---|---|---|
+| **D1 — Approved** | The tracker's REST API goes on, Ralph gets its own tracker account and a per-user API key. | §5.1's `rails runner` fallback is **dropped**, with it the second trust boundary and the "skips validation" cost. PRs 1 and 6 lose their gate; the only prerequisite left is the key file on the host, which is one line of PR 7's runbook. |
+| **D2 — Let's go with the recommendation** | Where shipped `chat-reply` and the PRD disagree, **the shipped behaviour wins and the safety moves from the sentence to the host.** Ralph keeps writing its own acknowledgement and refusal, and tells a requester when work failed. | §4.4's refusal checks are now the **whole** content bound, not one of two options; the conditional branches in §4.4 and §4.6 are gone. No `SOUL.md` line changes, so PR 4 shrinks. And the merged PRD now has three sentences (R6, R7, A14) that describe nothing that runs — **D3 below**. |
+| **D4 — Don't cap anything. Just check for chats from the last 5 minutes for the account from the room. We will expand to all chats later.** | (b) **No rate limit, ever** — §8 is now a flat non-goal, and the per-sender counter v3 offered is gone. (a) **Approved**: a thread with an open question is eligible for that requester without a mention (§3.3). (c) `CHAT_ROUTE_SPACES` **stays** as the v1 boundary; "all chats" is a later change and not this design. And new: the producer reads a **five-minute window** (§3.4), which fixes its scan shape, its tick, and what it loses. | §3.3 drops the conditional, §3.4 is new, §6's PR 2 gains the window, and two of v3's assumptions retire. |
+
+**What "don't cap anything" is *not* read as.** The per-thread reply ceilings in
+§4.2 — at most two clarifications, one decline, one acknowledgement, one final —
+stay. They are not a volume cap on requesters; they are the bound that makes R15
+grantable at all: the reason "Ralph may send to chat" is not the same sentence as
+"Ralph may send to chat as often as it likes". Removing them removes the only
+limit on how many times Ralph can message one person about one request. If you
+meant those too, say so and §4.2 goes with them — but then R15 has no host-side
+enforcement and the eval in §4.7 has nothing to assert.
+
 ---
 
 ## Review header
 
-### Decisions needed from you: four
+### Decisions needed from you: three
+
+Numbers never repeat across revisions. v3's **D1-D4 are answered** (§0.1); what
+is open is **D5-D7**.
 
 | # | Decision | Why it is yours | If you say no |
 |---|---|---|---|
-| **D1** | **Enable the tracker's REST API and give Ralph its own tracker account.** Unchanged from v2. | R17 forbids a runtime change without your word, and the setting is instance-wide. | The fallback is `rails runner` on the tracker host (§5.1), which skips the application's validation and needs a second credential. Nothing tracker-side runs until you choose; chat replies still work without it. |
-| **D2** | **Which wins where shipped `chat-reply` and the PRD disagree** (§0, items 1-3). **Recommended: the shipped behaviour, with the safety moved from the sentence to the host.** Ralph keeps writing its own acknowledgement and refusal text, and tells a requester when work failed. `chat-reply` then refuses any text that carries a tracker reference or a URL not on a public list (§4.4), and enforces the ceilings in §4.2. | You wrote or approved the shipped behaviour; the PRD says otherwise; I will not pick between two of your own decisions. Option A (recommended) trusts agent prose bounded by host checks. Option B restores the PRD: constants for R6 and R7, silence on failure — safer, and it removes behaviour you chose to ship. | Under B the shipped `SOUL.md` lines change and PR 4 grows by a few lines. Either way the PRD needs a v6 amendment, because R6, R7 and A14 would not describe what runs. |
-| **D3** | **Install a second host LaunchAgent for the producer**, beside the one for `chat-reply`. | `chat-reply` already has `bootstrap/install-chat-reply-launchd` (60-second scan). The same constraint holds for the producer: the chat credential's key is derived from the machine and the user (`gchat.py:72-76,112`), so it cannot run in a container. | Run it by hand. Replies already flow automatically once a card exists; only *noticing new messages* waits on you. |
-| **D4** | **The eligible surface. Three things sit outside what R18 settled.** (a) While a clarification question is open, that one thread is eligible for that one requester without an @mention (§3.3). (b) No volume cap on who can create work. **(c) New: the shipped gate is an explicit list of at most eight spaces (`CHAT_ROUTE_SPACES`), and a direct message is its own space.** PRD R18 and your `prd.md:62` comment say "all chats for a user and rooms they define". | (c) is the one that matters. As shipped, "all chats" is not reachable: a ninth conversation is refused by design. v3 keeps the list as the v1 boundary (smaller than R18, never wider) and makes the producer derive eligibility *inside* it. | Say "lift it" and the producer must derive the space set itself and the cap of eight goes. That removes the only host-side limit on volume. Say "cap it" for (b) and §3 gains a per-sender daily counter. |
+| **D5** | **Install a second host LaunchAgent for the producer**, beside the one for `chat-reply` (`bootstrap/install-chat-reply-launchd:19`, a 60-second scan). This is v3's D3, still open: you asked why it cannot run in the container instead. **§3.5 answers that in full** — the short form is that the credential's key is derived from the machine id and the unix user (`gchat.py:106-114`), so the token does not decrypt anywhere else, and the only ways around that put a Chat send credential inside the container where the profile that reads untrusted chat text runs. | Installing a job that runs as you, on your machine, every minute, is yours and not mine. | Run `chat-producer --scan` by hand when you want Ralph to notice new messages. Everything after that is already automatic. Nothing else in the design changes. |
+| **D6** | **Confirm the reading of "for the account from the room."** v4 takes the narrow one: inside a `CHAT_ROUTE_SPACES` room, a message is eligible if it is a direct message, an @mention of you or Ralph, or a requester's answer in a thread with an open question (§3.3) — the five-minute window changes *when* the producer looks, not *who* it answers. The wide reading is that every message in those rooms, from anyone, in the last five minutes, is eligible. | The wide reading is a real widening of R18 ("the owner, and anyone who @mentions the owner"), and R18 is your own words in a merged PRD. I will not widen it on an inference. | Nothing: the narrow reading is what v4 describes. Say "wide" and §3.3's mention test goes, every message in a pilot room becomes an intake card and a model run, and the eligibility eval in §4.7 inverts. |
+| **D7** | **Amend the PRD to v6, or let it stand.** Your D2 answer makes PRD R6, R7 and A14 describe behaviour that does not exist (§0, items 1-3). **Recommended:** one follow-up card after this merges, amending those three lines to the shipped behaviour and citing this document. | A merged PRD is approved text; a design document does not get to overrule it quietly, and the next reader of `prd.md` has no way to know which is newer. | Leave it, and `prd.md` keeps three sentences that `chat-reply` contradicts. Either way nothing is blocked: PRs 4 and 5 implement what you chose today. |
 
-**One pre-launch action is also yours:** run one threaded reply in a space of
-your own and confirm it lands in the thread. `test_gchat_send.py` proves the
-code asks for `REPLY_MESSAGE_OR_FAIL`; it cannot prove what the Chat service does
-with an old thread id. I cannot tell from the repository whether you have done
-this. `SKILL.md:46` says "after a controlled test".
+**Also yours, and unchanged since v3:** run one threaded reply in a space of
+your own and confirm it lands in the thread, before the first real send.
+`test_gchat_send.py` proves the code asks for `REPLY_MESSAGE_OR_FAIL`; it cannot
+prove what the Chat service does with an old thread id. I cannot tell from the
+repository whether you have done this. `SKILL.md:46` says "after a controlled
+test".
 
 ### Council dissent
 
-None for v3 yet. v2's independent review found three blocking issues, all
-accepted and fixed in v2 (recorded in v2's review reply on the PR): `inbox-writer` blocks
-nothing; the lock was on the operation rather than the request; and thread-scoped
-eligibility was settled in prose rather than escalated. **v3 keeps all three
-fixes** and re-grounds them: the block precedent is re-cited at the new line
-numbers (§4.8), the lock is now per thread (§4.2), and the eligibility widening
-is D4(a).
+v2's independent review found three blocking issues, all accepted and fixed:
+`inbox-writer` blocks nothing; the lock was on the operation rather than the
+request; and thread-scoped eligibility was settled in prose rather than
+escalated. **v3 and v4 keep all three fixes** — the block precedent is cited at
+`maintain-pr` (§4.8), the lock is per thread (§4.2), and the eligibility
+widening went to you as D4(a), which you approved. v3 reached you without an
+independent review; v4 has been sent back to the reviewer, and anything it
+raises lands on this branch before you read it.
+
+The one dissent v4 carries forward is with your own words, and it is in §0.1:
+"don't cap anything" is implemented as *no rate limit on requesters*, and the
+per-thread reply ceilings stay. That is the narrower reading, and it is deliberate.
 
 ### Scope: medium — seven pull requests
 
-Smaller than v2's eight and with less new machinery, because the sender, the
-strict-thread send, the policy line, the destination check and a launchd
-installer now exist. The work left is the producer, the tracker step, the
-host-side ceilings, and the CI wire that makes them hold. Breakdown in §6.
+Unchanged in count from v3; D1's approval removes the tracker fallback rather
+than any work, and the five-minute window is a few lines inside PR 2. The work
+is the producer, the tracker step, the host-side ceilings, and the CI wire that
+makes them hold. Breakdown in §6.
 
-### What changed since v2
+### What changed since v3
 
-- **`chat-writer` and the closure producer are gone**; their jobs move into `chat-reply` and the existing final card.
-- **Three PRD conflicts surface as D2**, and the eligibility gate's eight-space cap surfaces as D4(c).
-- **R19's enforcement is rewritten** (§4.4): the evidence-root argument is false now that the agent holds a repository token.
-- **Own-message suppression uses the message id Ralph already sets** rather than a ledger comment on the board.
-- **Ceilings count across the thread's operation directories**, so R15 is enforceable without the tracker.
-- **Observations added** (§9): a metadata-key mismatch between `chat-route` and `chat-reply` that can make an acknowledgement retry forever, and silent refusals in `chat-reply`.
+- **§0.1 is new**: your four answers, and what each one moved.
+- **The `rails runner` fallback is gone** (D1), and the tracker PRs are no longer gated on a decision.
+- **§4.4 and §4.6 lose their D2 branches**: the host refusal checks are the whole content bound, and a failed request is told about.
+- **§3.4 is new**: the five-minute read window, the 60-second scan, why the producer does not shell out to `gchat.py messages`, and the one thing the window loses.
+- **§3.5 is new**: the container answer, with the key derivation, the compose mounts, and what moving it would cost.
+- **D5-D7 replace D1-D4**: the LaunchAgent (v3's D3, still open), the narrow-reading confirmation (new), and the PRD amendment (new, created by your D2). Decision numbers never repeat across revisions.
+
 
 ---
 
@@ -153,9 +185,13 @@ concern (ceilings and tracker step into their own module), not by sender.
 ## 3. The producer: the missing half
 
 The producer is **the same job v2 described**, now with a contract it must meet
-rather than one it could choose. It runs on the host as the owner (D3), calls
-`spaces.messages.list`, and for each eligible message stages the evidence and
-creates one intake card on the `queues` board.
+rather than one it could choose. It runs on the host as the owner (§3.5), calls
+`spaces.messages.list` over a five-minute window (§3.4), and for each eligible
+message stages the evidence and creates one intake card on the `queues` board.
+`bootstrap/inbox-producer` is the shape to copy: the same host-side read, the
+same `stage_once` evidence at mode `0600` under a `0700` directory, the same
+`hermes kanban … create --idempotency-key` through `docker exec`
+(`inbox-producer:29-33,137-154`).
 
 ### 3.1 The schema it must write
 
@@ -180,11 +216,102 @@ Replies are created with `messageId = client-ralph-<kind>-…` (`chat-reply:134`
 
 - a direct message from a human, or
 - in a space, a structural @mention of the owner or of Ralph (a resolved user annotation, never the typed string), or
-- (D4a, if you approve) a message from the requester who opened a request in `Waiting on requester`, in that request's own thread, with no mention.
+- a message from the requester who opened a request in `Waiting on requester`, in that request's own thread, with no mention — **your D4(a), approved**.
 
-**And the space must be in `CHAT_ROUTE_SPACES`.** That list exists and the producer reads the same line from the same instance file, so the two scripts cannot disagree about it. Eligibility is therefore an intersection: R18's rule inside the owner's list. The producer never widens it. Lifting the cap of eight is D4(c).
+**And the space must be in `CHAT_ROUTE_SPACES`.** That list exists and the producer reads the same line from the same instance file, so the two scripts cannot disagree about it (`chat-reply:44-50`). Eligibility is therefore an intersection: R18's rule inside your list, which you kept for v1 ("we will expand to all chats later"). The producer never widens it. Expanding to all chats is a later change to this section, not a setting, because the producer would then have to derive the space set itself and `chat-reply:49-50`'s cap of eight would go with it.
+
+Whether the mention test survives the phrase "for the account from the room" is **D6**: v4 keeps it.
 
 `SOUL.md:11` already says the host sets `sender_trusted` from "the approved intake policy". This section *is* that policy; nothing in the PRD needs a new allowlist.
+
+### 3.4 The read: five minutes, every scan (your D4)
+
+Your instruction fixes three things v3 left loose.
+
+**What it reads.** One `spaces.messages.list` per space in `CHAT_ROUTE_SPACES`,
+with a filter of `createTime > (now − 5 minutes)`, newest first. Nothing walks
+history, nothing backfills, nothing keeps a cursor.
+
+**How often.** Every 60 seconds, the same `StartInterval` as the reply scan
+(`install-chat-reply-launchd:19`), so each message falls inside roughly five
+consecutive windows. The repeats cost nothing: the operation id is the sha256 of
+the message's resource name (`chat-reply:82`), and the card carries it as the
+idempotency key, so a message already staged produces no second directory and no
+second card — the same no-op the mail producer relies on
+(`inbox-producer:19-22,152`). v3's 900-second tick is retired.
+
+**What it loses, stated plainly.** A message older than five minutes when the
+scan runs is never seen, and nothing notices. If the machine sleeps, the
+LaunchAgent is unloaded, or the network is out for six minutes, the requests
+sent in that gap are lost silently — to Ralph; the requester sees no reply and
+has no way to tell whether the message was read. That is the cost of "just check
+the last 5 minutes" and it is accepted. A watermark (last successful scan time,
+one file, bounded to a day) would close it and is the obvious later change; it
+is a non-goal here because you did not ask for it.
+
+**Why the producer does not shell out to `gchat.py messages`.** That wrapper
+keeps five fields per message — name, createTime, sender display name, text,
+thread — and drops everything else, including `clientAssignedMessageId`,
+`sender.type` and the annotations (`gchat.py:222-240`); `--json` does not bring
+them back, because they are discarded before the output is built. Those three
+fields are exactly what §3.2 and §3.3 run on. So the producer imports the
+credential helpers from the same module (`_key`, `_load_creds`, `_svc`,
+`gchat.py:106-136`) and makes its own read-only `list` call. `gchat.py`'s own
+commands are unchanged, and `messages().create` stays reachable through exactly
+one code path (`gchat.py:264`), which is what §4.7's eval asserts.
+
+**Unverified, with §3.2's fields:** that `spaces.messages.list` accepts a
+`filter` on `createTime`. If it does not, the producer pages newest-first and
+stops at the first message older than the window — same behaviour, one more
+page read. Either way PR 2's first act confirms it.
+
+### 3.5 Why this cannot run in the container (the question you asked on D3)
+
+Four parts, shortest first.
+
+**1. The token is bound to the machine and the user, cryptographically.**
+`_key()` derives the Fernet key with HKDF over the string
+`"<machine id>:<unix user>:gws-cli"` and a salt from `gws_config.json`
+(`gchat.py:106-114`). The machine id is `IOPlatformUUID` from `ioreg` on macOS
+and `/etc/machine-id` on Linux (`:72-103`). In the container all three inputs
+differ: Linux rather than Darwin, user `hermes` rather than you, the image's
+machine-id rather than your Mac's. So `chat_token.json.enc` fails to decrypt —
+`_load_creds` returns `None` (`:129-136`) and the client secret exits with
+"Cannot decrypt client_secret (machine changed?)" (`:117-126`). Mounting
+`~/.config/gws-cli` into the container does not help: the key is not in the file.
+
+**2. Nothing is mounted anyway.** The hermes service mounts the Hermes home, the
+workspaces, the sandbox root, and read-only copies of `evals`, `bootstrap`,
+`skills` and the private skills — and nothing else
+(`compose/docker-compose.yml:158-183`). There is no path from inside to the
+credential, by construction rather than by omission.
+
+**3. The ways to change that are the ways the design exists to prevent.** Either
+drop the machine binding from `_key()` — which is shared with `gws-cli` by
+design, same `APP_ID`, same encrypted client secret (`gchat.py:54-59`), so it
+weakens a credential you use elsewhere — or run `auth` inside the container and
+keep a second long-lived Chat token there. Both end with a credential that can
+call `messages.create` sitting in the container where `ralph-chat-maintainer`
+runs, with a terminal and a repository token (`profiles/chat-maintainer/config.yaml:6-16`),
+reading untrusted chat text as its whole job. The design's first sentence is
+that this is impossible: "Holding no chat credential is enforced by where the
+credential lives, not by this file or the SOUL" (`config.yaml:3-5`), and the
+skill names exactly one automatic sender (`SKILL.md:44`). Host-side ceilings
+(§4.2) and the content refusals (§4.4) are only a bound if there is no second
+way to send; a token in the container is that second way.
+
+**4. "On the host" does not mean outside Ralph.** The host scripts already reach
+into the container for everything board-side: `chat-reply` runs
+`docker exec … hermes kanban` to read a card and `chat-route` to make one
+(`chat-reply:157,194,222`), and the mail producer does the same
+(`inbox-producer:29-33`), for the same reason, in your own earlier design —
+"Runs on the host, where the Gmail token lives; the token never enters the
+hermes container" (`inbox-producer:4-5`). The chat producer is that shape: read
+Chat on the host, create the card inside. The credential is the only thing that
+stays out.
+
+So the open question is narrow, and it is D5: a LaunchAgent, or you run the scan
+by hand.
 
 ---
 
@@ -227,7 +354,13 @@ directory in `item.json` (host-staged, never agent text):
 The lock is on the thread and not the operation for the reason v2's reviewer
 found: several messages in one thread are separate operations, and
 operation-scoped locks never see each other. A second host is out of scope
-because the credential cannot be decrypted on a second machine (§0, D3).
+because the credential cannot be decrypted on a second machine (§3.5).
+
+**These are not the cap your D4 waived.** D4 removed any limit on *requesters* —
+how many people may ask, how often, how much work they create. The table above
+limits *Ralph*: how many times one request may be messaged about. Four rules,
+all of them from the PRD (R6, R7/A15, R11, A17), and together they are the
+host-side half of the R15 grant.
 
 ### 4.3 R8, what is now true and what is not
 
@@ -245,17 +378,17 @@ v2 argued that the agent *could not reach* anything outside one request's eviden
 - a URL not in a `reachable` list the host builds, where a URL qualifies only if it is provably public (for a GitHub pull request, one API read showing the repository is public; everything else is named in words, R19);
 - a credential-shaped string (the SOUL already says never; `SOUL.md:29`).
 
-**The honest limit, stated plainly:** prose cannot be proven to come from this request. A refusal rule catches references and links; it cannot catch a sentence that *paraphrases* a private document. Under D2 option A that residual risk is the owner's to accept; under option B it shrinks (constants carry no prose) but the `answer` and `final` replies still carry it. The ADRs already accepted this class of risk for repository access.
+**The honest limit, stated plainly:** prose cannot be proven to come from this request. A refusal rule catches references and links; it cannot catch a sentence that *paraphrases* a private document. Your D2 answer makes these checks the whole content bound — there is no constant-text fallback behind them — so that residual risk is accepted rather than designed away. It is the same class of risk the ADRs already accepted for repository access, and it is smallest on `ack` (a restatement of what the requester just wrote) and largest on `final` (a summary of work Ralph did elsewhere).
 
 ### 4.5 The `SKILL.md:44` policy line
 
-v2's D2 is gone: the line is edited and names `chat-reply`. It says "acknowledgement, reply and final response" and does not mention the tracker, ceilings or `reply_kind`. PR 5 amends that sentence to match what the script then does, in the same pull request as the code, so the policy and the behaviour change together.
+v2's request for an owner-approved edit is gone: the line is already edited and names `chat-reply`. It says "acknowledgement, reply and final response" and does not mention the tracker, ceilings or `reply_kind`. PR 5 amends that sentence to match what the script then does, in the same pull request as the code, so the policy and the behaviour change together.
 
 ### 4.6 The close: the final card is the trigger
 
 The orchestrator ends a chat graph with one `ralph-chat-maintainer` card whose parents are the work cards (`orchestrator/SOUL.md:19`). Kanban dependencies mean it does not run until every parent is done, so **one work card finishing is not the request finishing** (R11, E7) by construction, and no tracker poll is needed. `chat-reply` sends the `final`, then sets the item to `Resolved` with the outcome text. The tracker still reads as canonical (R13) because the host writes it at each stage: created at the ack, `Waiting on requester` at a `clarify`, `Resolved` at the final.
 
-**Silence on failure (E11, A14)** follows from the graph only partly: a work card that is blocked or abandoned never lets the final card run, so nothing is sent. But a final card whose parents *completed with a failed result* is told to "say so plainly" (`SOUL.md:23`). That is D2 item 3. Under option A that message is sent; under option B the maintainer's instruction changes and `chat-reply` refuses a `final` whose card says the work failed.
+**Silence on failure (E11), and what your D2 did to A14.** Partly it follows from the graph: a work card that is blocked or abandoned never lets the final card run, so nothing is sent. But a final card whose parents *completed with a failed result* is told to "say so plainly" (`SOUL.md:23`), and your D2 keeps that. So E11 splits in two: no reply when the work never finished, one honest reply when it finished badly — still bounded by the one-`final`-per-thread ceiling and the §4.4 checks. PRD A14 asks for silence in both cases, and is the third of the three sentences D3 would amend.
 
 ### 4.7 The eval, and the CI gap
 
@@ -287,24 +420,22 @@ PR 5 extends `evals/test_chat_reply.py` and adds the workflow that runs it. The 
 
 ## 5. The tracker, and the remaining unknowns
 
-### 5.1 Unknown 1 — writing to the tracker with REST off
-
-Unchanged from v2.
+### 5.1 Unknown 1 — writing to the tracker, settled by your D1
 
 | Path | Verdict |
 |---|---|
-| **Enable REST, a dedicated Ralph account, a per-user API key** | **Chosen.** One setting, one account, a documented interface, validation runs. Cost: the setting is instance-wide, and the key is a credential held on the host beside the chat token (D1). |
-| `rails runner` over a shell on the tracker host | Fallback if you refuse D1. Bypasses validation; a second trust boundary. |
+| **Enable REST, a dedicated Ralph account, a per-user API key** | **Approved by you, 2026-11-06.** One setting, one account, a documented interface, the application's own validation. What remains is operational: create the account, generate its key, and put the key on the host beside the chat token, owner-only (PR 7's runbook). |
+| `rails runner` over a shell on the tracker host | **Dropped.** It existed only as the fallback if REST stayed off. With it goes a second credential and a write path that skips validation. |
 | Incoming email | Rejected: email is a PRD non-goal. |
 | Direct database writes | Rejected. |
 
-All tracker access sits behind one module, `bootstrap/tracker.py`, with `find`, `create`, `update`, `note`; the fallback replaces one file. *General product knowledge; the instance was not inspected (A1).*
+All tracker access sits behind one module, `bootstrap/tracker.py`, with `find`, `create`, `update`, `note`. *General product knowledge; the instance was not inspected (A1), so PR 1's eval runs against a fake and the first live call is a manual one.*
 
 ### 5.2 Where the tracker step sits
 
 Inside `chat-reply:handle`, in the branch that already holds the acknowledgement until the orchestrator card exists (`:193-200`). The order becomes: orchestrator card, then tracker item, then reply. If the tracker write fails, nothing is sent and the operation retries. Because the thread is the request, the lookup key is a custom field holding the thread name; a message in a known thread finds its item first, and an unconfident cross-thread match becomes a new item with a `related to` relation (R12, E5, E13).
 
-The tracker module is **optional at runtime**: with D1 unanswered, `chat-reply` runs exactly as shipped, replies and all. That keeps the tracker from gating a feature that already works, which v2's design did not.
+The tracker module stays **optional at runtime**, even with D1 approved: until the key file exists on the host, `chat-reply` runs exactly as shipped, replies and all, and logs that the tracker step was skipped. That keeps a credential that is not yet installed from stopping a feature that already works, and it makes PR 6 safe to merge before PR 7's runbook is followed.
 
 ### 5.3 What an item holds, and its statuses
 
@@ -316,7 +447,7 @@ Stored: the requester's display name, the space and thread names, the request te
 | `Waiting on requester` | a clarification is open (R5, R20) | the question, once, plus at most one follow-up |
 | `In progress` | understood and accepted | the acknowledgement, once |
 | `Resolved` + outcome | worked to a result | the final reply, once |
-| `Rejected` / `Duplicate` / `Closed` | stopped, refused, folded in | nothing, or per D2 item 3 |
+| `Rejected` / `Duplicate` / `Closed` | stopped, refused, folded in | nothing, or the one honest "it failed" reply your D2 keeps (§4.6) |
 
 `Waiting on requester` never expires and is never swept (A18). One saved query, sorted by age, shows the pile; building it is your click.
 
@@ -332,18 +463,18 @@ Each under 400 lines and one concern (`STANDARDS.md`). Each is inert on merge; t
 
 | PR | Concern | Files | Inert because | Gate |
 |---|---|---|---|---|
-| 1 | Tracker client | `bootstrap/tracker.py`, `evals/test_tracker.py` | nothing imports it | D1 before any live call |
-| 2 | Chat read, eligibility, schema; no cards | `bootstrap/chat-producer` (dry-run default), `evals/test_chat_producer.py` | dry-run prints, creates nothing | first act: confirm the three API fields (§3.2) |
-| 3 | Producer stages evidence and creates intake cards | same, plus `bootstrap/install-chat-producer-launchd` | the LaunchAgent is not installed | D3 |
-| 4 | Decision metadata | `profiles/chat-maintainer/SOUL.md`, `bootstrap/chat-route`, `evals/test_chat_route.py` | adds optional keys; unchanged behaviour without them | D2 |
-| 5 | Ceilings, R19 checks, block and alert, CI workflow | `bootstrap/chat-reply`, `evals/test_chat_reply.py`, `.github/workflows/chat-reply.yml`, `skills/ops/google-chat/SKILL.md` | tightens only; refuses more, sends nothing new | D2 |
-| 6 | Tracker step in `chat-reply` | `bootstrap/chat-reply`, `bootstrap/tracker.py`, evals | the tracker module is absent until D1 | D1 |
-| 7 | Turn it on | `compose/README.md` runbook | documentation | D3, the pre-launch check |
+| 1 | Tracker client | `bootstrap/tracker.py`, `evals/test_tracker.py` | nothing imports it | none left (D1 approved); the key file is PR 7 |
+| 2 | Chat read, eligibility, five-minute window, schema; no cards | `bootstrap/chat-producer` (dry-run default), `evals/test_chat_producer.py` | dry-run prints, creates nothing | first act: confirm the API fields and the `createTime` filter (§3.2, §3.4) |
+| 3 | Producer stages evidence and creates intake cards | same, plus `bootstrap/install-chat-producer-launchd` | the LaunchAgent is not installed | **D5** (install it, or you run the scan) |
+| 4 | Decision metadata | `profiles/chat-maintainer/SOUL.md`, `bootstrap/chat-route`, `evals/test_chat_route.py` | adds optional keys; unchanged behaviour without them | none left (D2 settled: shipped text stays) |
+| 5 | Ceilings, R19 checks, block and alert, CI workflow | `bootstrap/chat-reply`, `evals/test_chat_reply.py`, `.github/workflows/chat-reply.yml`, `skills/ops/google-chat/SKILL.md` | tightens only; refuses more, sends nothing new | none left |
+| 6 | Tracker step in `chat-reply` | `bootstrap/chat-reply`, `bootstrap/tracker.py`, evals | the module no-ops until the key file exists (§5.2) | the key file |
+| 7 | Turn it on | `compose/README.md` runbook | documentation | **D5**, the tracker account and key, the pre-launch check |
 
 Order: 5 first. It adds no behaviour and closes the most exposure, because the
-shipped sender has none of the ceilings today. PRs 2 and 3 stay separate for
-v2's reason: the half that reads untrusted content and the half that acts are
-reviewed apart.
+shipped sender has none of the ceilings today. Then 1, 4, 2, 3, 6, 7. PRs 2 and
+3 stay separate for v2's reason: the half that reads untrusted content and the
+half that acts are reviewed apart.
 
 ---
 
@@ -361,12 +492,12 @@ reviewed apart.
 | E8 | The final card's `send` posts once, then closes the item | `test_chat_reply`: a second scan sends nothing |
 | E9 | `reachable` list; other URLs refused | `test_chat_reply`: private-repo URL refused; the same outcome in words sent |
 | E10 | `kind: update`: no final card requested | `test_chat_route`: update omits the final-card line |
-| E11 | Blocked or abandoned work never runs the final card; D2 item 3 decides the rest | `test_chat_reply` per D2 |
+| E11 | Blocked or abandoned work never runs the final card; work that finished badly gets one honest reply (your D2, §4.6) | `test_chat_reply`: a blocked parent sends nothing; a failed-but-complete graph sends exactly one `final` |
 | E12 | R3 fields and statuses on the item (§5.3) | `test_tracker` |
 | E13 | Brief says decide and link, never stop | reviewed in PR 4; a judgement, not a branch |
-| E14 | Eligibility: a DM or a resolved annotation, inside `CHAT_ROUTE_SPACES` | `test_chat_producer`: unmentioned and typed-name messages are not staged |
+| E14 | Eligibility: a DM or a resolved annotation, inside `CHAT_ROUTE_SPACES`, created inside the five-minute window | `test_chat_producer`: unmentioned and typed-name messages are not staged; a message older than the window is not staged |
 | E15 | `clarify`: no acknowledgement; item `Waiting on requester` | `test_chat_reply` |
-| E16 | Whole thread staged; D4(a) makes the unmentioned answer eligible | `test_chat_producer`: requester's reply staged, a third party's not |
+| E16 | Whole thread staged; D4(a), approved, makes the unmentioned answer eligible | `test_chat_producer`: requester's reply staged, a third party's not |
 | E17 | No sweep, no reminder; no final card exists for a waiting item | `test_chat_producer`: nothing re-sent for a pending thread |
 | E18 | Third `clarify` in a thread refused and blocked | `test_chat_reply` |
 
@@ -377,12 +508,14 @@ reviewed apart.
 - **A second host sender.** `chat-reply` is the sender. There is no `chat-writer`.
 - **A closure producer or any tracker poll.** The final card is the trigger.
 - **A chat bot identity.** Replies come from the owner's account; a requester cannot tell Ralph's text from yours. A different consent.
-- **Teaching `gchat.py` more.** It is unchanged by this design.
-- **Running any of this in a container.** The chat credential forbids it.
+- **A new `gchat.py` command.** Its CLI is unchanged; the producer reuses its credential helpers and makes its own read-only `list` call (§3.4).
+- **Running any of this in a container.** Not a preference — the credential cannot decrypt there, and putting one there would undo the boundary (§3.5).
+- **A watermark or any backfill of messages older than the window** (§3.4). Your D4 says five minutes; nothing recovers what falls outside it.
 - **Unsending**, **a retry that re-sends**, and **sweeping pending requests** (A18).
-- **A rate limit**, unless D4 says otherwise.
+- **Any rate limit or volume cap on requesters** (your D4). The per-thread reply ceilings in §4.2 are not that, and stay.
+- **Reaching "all chats"** beyond `CHAT_ROUTE_SPACES` (your D4: "we will expand to all chats later").
 - **Any requester-facing surface**, and any tracker content reaching a requester. Unchanged from the PRD.
-- **Implementing any of this.** PR 1 starts after this document is merged.
+- **Amending the PRD** (D7), and **implementing any of this.** PR 1 starts after this document is merged.
 
 ---
 
@@ -390,20 +523,26 @@ reviewed apart.
 
 ### Assumptions
 
-Every inference the PRD, the card and the verified source did not state.
+Every inference the PRD, the card, your answers and the verified source did not
+state. Numbering is v4's; three of v3's twelve retired when you decided.
 
-1. **Redmine's capabilities are as generally documented** (REST off by default, a per-user key, custom fields, relations, `rails runner`). Not inspected.
-2. **An API key for a dedicated tracker account can live on the host** beside the chat token, owner-only.
-3. **`spaces.messages.list` returns `clientAssignedMessageId`, `sender.type` and mention annotations.** Unverified; PR 2 confirms it first (§3.2).
+1. **Redmine's capabilities are as generally documented** (REST toggle, a per-user key, custom fields, relations). Not inspected, and must not be.
+2. **An API key for a dedicated tracker account can live on the host** beside the chat token, owner-only. Your D1 approves the account; where its key sits is my inference.
+3. **`spaces.messages.list` returns `clientAssignedMessageId`, `sender.type` and mention annotations, and accepts a `filter` on `createTime`.** Unverified; PR 2 confirms it before anything else (§3.2, §3.4). Still the one assumption that would change the design rather than a detail.
 4. **"The thread is the request"** for counting and for item lookup. A requester who restates the ask in a new thread is a new request that R12 then links.
 5. **A requester cannot tell Ralph's text from yours**, and you accept that.
 6. **One host, one scan at a time per instance.** launchd does not start a second copy of a running job, and the thread lock covers the rest. I did not verify launchd's overlap behaviour against your version.
 7. **The producer reads `CHAT_ROUTE_SPACES` from the same instance file** `chat-reply` reads, so they cannot diverge.
 8. **`reply_kind` and `kind` are safe to add as optional metadata**, because `chat-reply` ignores unknown keys (`:90-93`) and PR 4 widens `chat-route`'s allow-list in the same change.
-9. **The shipped behaviour in D2 reflects a considered decision**, not drift. The ADRs say the owner decided 0001 and 0002; I found no ADR for the chat-reply behaviour.
-10. **900 seconds** is the producer's tick, matching `RALPH_POLL_SECONDS`; `chat-reply` already scans every 60 s.
-11. **You will run the one live thread-reply check** before the first real send.
-12. **A public GitHub repository is a sufficient proxy for "the requester can already reach it".** Anything subtler is treated as unreachable and named in words.
+9. **"Don't cap anything" means no limit on requesters**, not the removal of the per-thread reply ceilings (§0.1, §4.2). The narrower reading, stated so you can correct it.
+10. **"For the account from the room" does not drop the @mention test** (§3.3). This one is D6 rather than an assumption, because I will not widen R18 on a reading.
+11. **A five-minute window scanned every 60 seconds loses only what arrives while the host is not scanning**, and losing it silently is acceptable (§3.4).
+12. **You will run the one live thread-reply check** before the first real send.
+13. **A public GitHub repository is a sufficient proxy for "the requester can already reach it".** Anything subtler is treated as unreachable and named in words.
+
+Retired by your answers: v3's A1 fallback clause (`rails runner`, D1), its A9
+("the shipped behaviour was considered, not drift" — D2 settles it either way),
+and its A10 (the 900-second tick, replaced by 11 above).
 
 ### Observations, out of scope
 
