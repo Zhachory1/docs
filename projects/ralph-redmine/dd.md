@@ -4,11 +4,11 @@ title: Build the work tracker onto the chat path Ralph already shipped — one p
 status: in review
 owner: Zhachory1
 card: t_b5db2cf0
-revision: v5
+revision: v6
 date: 2026-11-06
 implements: prd-ralph-redmine
 prs:
-  - Zhachory1/docs#7   # v1, v2, v3, v4, v5
+  - Zhachory1/docs#7   # v1, v2, v3, v4, v5, v6
 supersedes: none
 ---
 
@@ -24,10 +24,12 @@ chat message was sent or read, no REST API was enabled, no credential and no
 work instance was touched. Merging this pull request is the approval.
 
 Implements `prd-ralph-redmine` v5, merged at `Zhachory1/docs#6`. **You answered v3's
-four decisions on 2026-11-06; §0.1 records what each one moved.** Three decisions are
-left, and one of them is the PRD: your D2 answer makes three of its sentences
-describe behaviour that no longer exists. **v5 answers the split proposal sent on
-your behalf: it is taken, re-cut at the trigger, and §2 says why** (§0.2).
+four decisions on 2026-11-06, and v5's remaining two the same day; §0.1 and §0.3
+record what each one moved.** One decision is left, D5, and it gates an
+installation step rather than the design. **Your D6 answer changes who Ralph
+answers** — the @mention test is gone and the approved room list is the whole
+gate (§3.3) — and **your D7 answer sends the PRD reconciliation to its own card**,
+`t_73bf3c94`.
 
 **Citations.** Every claim about Ralph is from a fresh clone of
 `Zhachory1/ralph` at commit `95bd4d960e9178a0ea00c8791afa75b851138e1c`
@@ -37,7 +39,9 @@ true. v4 re-read the same commit to answer your container question (§3.5) and t
 design the five-minute read (§3.4). v5 re-read `chat-reply`, `chat-route` and
 `install-chat-reply-launchd` in full at that commit to check the split proposal;
 three of its premises did not hold, which is why §2's Option C is not the shape
-it described. No earlier claim moved. I read the code; I did
+it described. v6 re-read `chat-reply:41-53`, `chat-route:55-64` and
+`gchat.py:222-240` to rewrite eligibility; all three hold as cited, and v6 adds
+no new claim about the code. No earlier claim moved. I read the code; I did
 not run it, send a message, or call any API.
 Claims about Redmine are general product knowledge and are marked; your
 instance was not inspected and must not be.
@@ -56,7 +60,7 @@ of beside it (Reuse first, `profiles/PRINCIPLES.md`).
 | `gchat.py` hard-codes the new-thread fallback (`:249`); the writer must make its own API call | `send` takes `--strict-thread` → `REPLY_MESSAGE_OR_FAIL`, `--request-id`, `--message-id` (`gchat.py:251-263,305-307`); `chat-reply` uses all three (`:129-134`) | R8's send half is **done**. v2 §5.5 shrinks to what is still unverified (§4.5). |
 | `SKILL.md:44` needs an owner-approved paragraph (v2's D2) | `SKILL.md:44` already names `bootstrap/chat-reply` as the one automatic exception, "owner-approved", for "acknowledgement, reply and final response" | v2's D2 **no longer exists as a text edit.** What is left is a scope question (D2 below). |
 | The chat-maintainer has no network and no credential | It has the `terminal` toolset and a repository token on every instance, and the owner's own token on the personal instance (`profiles/chat-maintainer/config.yaml:6-16`; `docs/decisions/0001`, `0002`) | **v2's R19 argument no longer holds** (§4.4). The agent can read what the owner can read. |
-| `sender_trusted` has no host side at all | Still no code *sets* it. But `chat-reply` and `chat-route` now both *require* it `is True`, and `chat-reply` also requires the space to be in `CHAT_ROUTE_SPACES`, at most **eight** spaces (`chat-reply:44-50,78-80`; `chat-route:63-64`) | A real gate exists and it is **narrower than R18** (D4c). |
+| `sender_trusted` has no host side at all | Still no code *sets* it. But `chat-reply` and `chat-route` now both *require* it `is True`, and `chat-reply` also requires the space to be in `CHAT_ROUTE_SPACES`, at most **eight** spaces (`chat-reply:44-50,78-80`; `chat-route:63-64`) | A real gate exists, and after your D6 it is the **only** gate: inside a listed space `sender_trusted` is true for every human message (§3.3), so the allowlist carries the whole surface. |
 | Own-message suppression needs a `SENT:` ledger on the board (v2 §4.2) | Replies carry a `client-ralph-*` message id "Ralph can recognize" (`gchat.py:31-33`; `chat-reply:134`), and `item.json` messages carry `from_ralph` (`SOUL.md:11`) | The ledger is **dropped**; the producer recognises Ralph's own messages by id (§3.2). |
 | Request identity is a tracker item; counts live on it | Operation id is `chat-` + sha256 of the latest message name, enforced by both scripts (`chat-reply:80-81`; `chat-route:68`). Sent-once state is a marker file per operation (`chat-reply:27,145-151`). `item.json` lists `prior_operations` for the thread (`chat-route:71-74`) | Counts can live **on the thread's operation directories**, no tracker field needed to enforce a ceiling (§4.2). |
 | A closure producer polls the tracker for `Resolved` + outcome | The orchestrator ends every chat graph with one `ralph-chat-maintainer` card that depends on the work cards and writes the final reply (`profiles/orchestrator/SOUL.md:19`; `chat-route:89-92`) | **The closure producer is dropped.** The final card is the trigger (§4.6). |
@@ -64,11 +68,17 @@ of beside it (Reuse first, `profiles/PRINCIPLES.md`).
 | Inbound chat is read by a producer (v2 PRs 2-3) | **Still no producer.** `SKILL.md:46` says the host scan "does not start inbound Chat polling", and nothing in the repository writes `chat-inbox/<op>/evidence/item.json` | The producer is **still the largest missing piece**, and it now has a fixed schema to meet (§3). |
 | No tracker integration | None. `grep -ri redmine` over the clone finds nothing | Unchanged; the tracker work needed your D1, which you have now approved (§0.1). |
 
-**The three places shipped code and the PRD disagree** (your D2 chose the shipped side; §0.1, and D7):
+**The three places shipped code and the PRD disagree** (your D2 chose the shipped side; §0.1):
 
 1. **Acknowledgement text.** PRD R6: one short sentence that Ralph has it. v2 made it a writer constant. Shipped: the agent writes `ack` "in your own words, saying what you understood and that you are working on it" (`SOUL.md:17`).
 2. **The "cannot help" reply.** PRD R7: "I am not sure how to help with that." Shipped: the agent writes a plain refusal "with the reason and where they could go instead" (`SOUL.md:18`), and one decision, `reply`, covers a refusal, a direct answer and a clarifying question alike.
 3. **A request that fails.** PRD A14: silence toward the requester. Shipped: "If the work failed or is incomplete, say so plainly" (`SOUL.md:23`).
+
+**And a fourth, which is this design rather than shipped code.** Your D6 makes the
+eligible surface every human message in an approved room, with no mention and no
+direct messages (§3.3). PRD R18 says the surface is a direct message or an
+@mention. All four go to card `t_73bf3c94`, which amends `prd.md` to v6 after
+this document merges — **your D7, approved**.
 
 ## 0.1 What you decided, and what each answer moved
 
@@ -78,8 +88,14 @@ these change the design rather than confirm it.
 | You said | It settles | What moved in this document |
 |---|---|---|
 | **D1 — Approved** | The tracker's REST API goes on, Ralph gets its own tracker account and a per-user API key. | §5.1's `rails runner` fallback is **dropped**, with it the second trust boundary and the "skips validation" cost. PRs 1, 7 and 8 lose their gate; the only prerequisite left is the key file on the host, which is one line of PR 9's runbook. |
-| **D2 — Let's go with the recommendation** | Where shipped `chat-reply` and the PRD disagree, **the shipped behaviour wins and the safety moves from the sentence to the host.** Ralph keeps writing its own acknowledgement and refusal, and tells a requester when work failed. | §4.4's refusal checks are now the **whole** content bound, not one of two options; the conditional branches in §4.4 and §4.6 are gone. No `SOUL.md` line changes, so PR 4 shrinks. And the merged PRD now has three sentences (R6, R7, A14) that describe nothing that runs — **D7 below**. |
+| **D2 — Let's go with the recommendation** | Where shipped `chat-reply` and the PRD disagree, **the shipped behaviour wins and the safety moves from the sentence to the host.** Ralph keeps writing its own acknowledgement and refusal, and tells a requester when work failed. | §4.4's refusal checks are now the **whole** content bound, not one of two options; the conditional branches in §4.4 and §4.6 are gone. No `SOUL.md` line changes, so PR 4 shrinks. And the merged PRD now has three sentences (R6, R7, A14) that describe nothing that runs — **your D7, answered in §0.3, sends them to card `t_73bf3c94`**. |
 | **D4 — Don't cap anything. Just check for chats from the last 5 minutes for the account from the room. We will expand to all chats later.** | (b) **No rate limit, ever** — §8 is now a flat non-goal, and the per-sender counter v3 offered is gone. (a) **Taken as approved, by inference**: a thread with an open question stays eligible for that requester without a mention (§3.3). Your sentence does not mention thread continuation; I read "don't cap anything" as covering it, and it is the narrower of the two things D4(a) could mean. Behaviour is identical either way — the wide reading of the *same* sentence is D6, which I did not take. (c) `CHAT_ROUTE_SPACES` **stays** as the v1 boundary; "all chats" is a later change and not this design. And new: the producer reads a **five-minute window** (§3.4), which fixes its scan shape, its tick, and what it loses. | §3.3 drops the conditional, §3.4 is new, §6's PR 2 gains the window, and two of v3's assumptions retire. |
+
+**Superseded the same day, by your D6 (§0.3).** D4(a) was a carve-out *from* the
+@mention test. The mention test is gone, so the carve-out has nothing left to
+carve: a requester's answer in an open thread is now eligible because the room
+is approved, not because a question is open. §3.3 no longer reads markers to
+decide eligibility, and E16 passes for a simpler reason.
 
 **What "don't cap anything" is *not* read as.** The per-thread reply ceilings in
 §4.2 — at most two clarifications, one decline, one acknowledgement, one final —
@@ -121,27 +137,53 @@ review and eval boundary — one grep proves which file can send — not an
 isolation boundary. It is still worth having, for the reason the standards give:
 `chat-reply` stays one sentence without an "and".
 
+## 0.3 What you decided on v5, and what each answer moved
+
+Your two review comments on `Zhachory1/docs#7`, 2026-11-06, anchored at
+`dd.md:136` and `:137` of v5 (`3ee3ee0`). Quoted exactly. The first one changes
+the design; the second closes it.
+
+| You said | It settles | What moved in this document |
+|---|---|---|
+| **D6 — "Keep it only to approved chat rooms please" / "@ mentions and direct messages can come later"** | The **wide** reading, bounded by the room list. A message is eligible because of *where* it was sent, not because of who it names: every human message in a `CHAT_ROUTE_SPACES` space, inside the five-minute window, is an operation. The @mention test and the direct-message surface are **deferred, not narrowed** — "later" is a later design, not a setting in this one. | §3.3 is rewritten: the mention test is gone, the direct-message path is gone, and eligibility is `space ∈ CHAT_ROUTE_SPACES` and a human sender who is not Ralph. §3.2's load-bearing assumption **shrinks** — mention annotations are no longer needed, only `clientAssignedMessageId` and `sender.type`. D4(a)'s carve-out and its marker read are gone with the test they carved. E14 and E16 change, §8 names direct messages and the @mention test as non-goals, and PRD R18 joins card `t_73bf3c94`. |
+| **D7 — "Approved. Update the PRD"** | The PRD is reconciled to what you chose, in its own pull request, after this one merges. | §8's "amending the PRD" non-goal now names the card, **`t_73bf3c94`**, which covers R6, R7 and A14 (your D2) and R18 (your D6). The decisions table loses D7. Nothing here waits on it. |
+
+**The cost of D6, stated plainly, because it is the one you may want back.**
+With no mention test and no volume cap (your D4), *every* human message in a
+pilot room becomes a staged operation, an intake card and one model run —
+including a conversation between two other people that has nothing to do with
+Ralph. The agent's `ignore` decision (`SOUL.md:19`) is what stops those at one
+card each; nothing stops the card itself. Three things bound the damage and
+none of them bound the volume: the room list is at most eight spaces
+(`chat-reply:49-50`), Ralph's own and bot messages are never staged (§3.2), and
+the per-thread reply ceilings still cap what any one thread can be told (§4.2).
+So the pilot rooms should be rooms you are willing to have Ralph read in full.
+If that is not what you meant, one sentence puts the mention test back and §3.3
+reverts; nothing else in the design depends on it.
+
 ---
 
 ## Review header
 
-### Decisions needed from you: three
+### Decisions needed from you: one
 
-Numbers never repeat across revisions. v3's **D1-D4 are answered** (§0.1); what
-is open is **D5-D7**.
+Numbers never repeat across revisions. v3's **D1-D4 are answered** (§0.1) and
+v5's **D6 and D7 are answered** (§0.3). What is open is **D5**, and it gates an
+installation step rather than anything in the design: every pull request in §6
+is inert on merge either way, and D5 decides only whether PR 3's scan runs on a
+timer or when you run it.
 
 | # | Decision | Why it is yours | If you say no |
 |---|---|---|---|
 | **D5** | **Install a second host LaunchAgent for the producer**, beside the one for `chat-reply` (`bootstrap/install-chat-reply-launchd:19`, a 60-second scan). This is v3's D3, still open: you asked why it cannot run in the container instead. **§3.5 answers that in full** — the short form is that the credential's key is derived from the machine id and the unix user (`gchat.py:106-114`), so the token does not decrypt anywhere else, and the only ways around that put a Chat send credential inside the container where the profile that reads untrusted chat text runs. | Installing a job that runs as you, on your machine, every minute, is yours and not mine. | Run `chat-producer --scan` by hand when you want Ralph to notice new messages. Everything after that is already automatic. Nothing else in the design changes. |
-| **D6** | **Confirm the reading of "for the account from the room."** v4 and v5 take the narrow one: inside a `CHAT_ROUTE_SPACES` room, a message is eligible if it is a direct message, an @mention of you or Ralph, or a requester's answer in a thread with an open question (§3.3) — the five-minute window changes *when* the producer looks, not *who* it answers. The wide reading is that every message in those rooms, from anyone, in the last five minutes, is eligible. | The wide reading is a real widening of R18 ("the owner, and anyone who @mentions the owner"), and R18 is your own words in a merged PRD. I will not widen it on an inference. | Nothing: the narrow reading is what this document describes. Say "wide" and §3.3's mention test goes, every message in a pilot room becomes an intake card and a model run, and the eligibility eval in §4.7 inverts. |
-| **D7** | **Amend the PRD to v6, or let it stand.** Your D2 answer makes PRD R6, R7 and A14 describe behaviour that does not exist (§0, items 1-3). **Recommended:** one follow-up card after this merges, amending those three lines to the shipped behaviour and citing this document. | A merged PRD is approved text; a design document does not get to overrule it quietly, and the next reader of `prd.md` has no way to know which is newer. | Leave it, and `prd.md` keeps three sentences that `chat-reply` contradicts. Either way nothing is blocked: PRs 4 and 5 implement what you chose today. |
 
-**Also yours, and unchanged since v3:** run one threaded reply in a space of
-your own and confirm it lands in the thread, before the first real send.
-`test_gchat_send.py` proves the code asks for `REPLY_MESSAGE_OR_FAIL`; it cannot
-prove what the Chat service does with an old thread id. I cannot tell from the
-repository whether you have done this. `SKILL.md:46` says "after a controlled
-test".
+**Two things that are yours and are not decisions.** Run one threaded reply in a
+space of your own and confirm it lands in the thread, before the first real
+send: `test_gchat_send.py` proves the code asks for `REPLY_MESSAGE_OR_FAIL`; it
+cannot prove what the Chat service does with an old thread id. I cannot tell
+from the repository whether you have done this. `SKILL.md:46` says "after a
+controlled test". And choose the pilot rooms knowing what D6 now means — Ralph
+reads every human message in them (§0.3).
 
 ### Council dissent
 
@@ -174,23 +216,34 @@ The dissent v4 carried forward, with your own words, still stands (§0.1):
 "don't cap anything" is implemented as *no rate limit on requesters*, and the
 per-thread reply ceilings stay.
 
+**What v6 closes, and the one disagreement that remains.** The oldest dissent in
+this document — v2's third blocking finding, that the eligible surface must not
+be widened inside the prose — is now settled by you rather than by me: D6 widens
+it further than D4(a) did, deliberately, and §3.3 says so in your words. I have
+no objection to the decision and one to its framing: "keep it only to approved
+chat rooms" sounds like a restriction and is read here as a widening, because
+inside those rooms it removes the only sender test there was. §0.3 states the
+cost that follows, so that if the sentence meant the other thing, it is one
+sentence to put back.
+
 ### Scope: medium — nine pull requests
 
-Seven in v4. The two new ones are the smallest in the set: a no-behaviour
-extraction of the evidence reader (PR 6) and the two call sites that wire the
-tracker script in (PR 8). The work itself did not grow; it is cut in more
-places. Breakdown in §6.
+Unchanged in v6, and one of them gets smaller: PR 2 no longer has to read or
+test mention annotations (§3.3). Seven in v4; v5 added the two smallest in the
+set, a no-behaviour extraction of the evidence reader (PR 6) and the two call
+sites that wire the tracker script in (PR 8). Breakdown in §6.
 
-### What changed since v4
+### What changed since v5
 
-- **§0.2 is new**: the split proposal, the three premises of it that do not hold at `95bd4d9`, and what was taken.
-- **§2 has a third option, and it is the chosen one**: `chat-reply` keeps the sending and the ceilings, `bootstrap/tracker-sync` holds the tracker key, and the sender calls it the way it already calls `chat-route`.
-- **§5.2 is rewritten** around that script's two entry points, `--record` (gates the ack) and `--settle` (everything after a reply has gone).
-- **§3.3 no longer reads the tracker**: "a question is still open" comes from `.clarify-sent` with no `.final-sent`, so the producer needs no tracker key.
-- **§5.3 now says when the pending record is written** — after the question, not before — which v4 left ambiguous between §5.2 and §4.6.
-- **§6 goes from seven PRs to nine**, §4.7 gains the assertion that the split is real, and §7's tests move to `test_tracker_sync` where the mechanism moved.
-- **After independent review:** §5.2 states that every `tracker-sync` write is idempotent *including its own markers* (the blocking finding), and that `--settle` walks the inbox directories rather than reusing the sender's done-card loop; §4.8's block and alert now fire on a repeating retry and not only on a refusal; §5.3 names who deletes the staged copy; §0.2's second premise is narrowed to what actually fails; §4.4's token citation is corrected to `config.yaml:6-16`.
-- **Decisions are unchanged: D5, D6, D7.** Nothing in this revision needs an answer that v4 did not already need.
+Your two answers, and nothing else. No citation moved and no new claim about
+the code was added.
+
+- **§0.3 is new**: your D6 and D7, quoted, with what each moved and what D6 costs.
+- **§3.3 is rewritten**: eligibility is the approved room plus a human sender who is not Ralph. The @mention test, the direct-message path and D4(a)'s open-question carve-out are all gone — the first two deferred by you, the third left with nothing to carve.
+- **§3.2's load-bearing assumption shrinks**: A3 no longer needs mention annotations, only `clientAssignedMessageId` and `sender.type`. The riskiest unverified field is the one that dropped out.
+- **The PRD reconciliation is a card, `t_73bf3c94`**, gated on this one, covering R6, R7, A14 and now R18. §0 and §8 name it; D7 leaves the decisions table.
+- **E14 and E16 change** (§7), and §8 gains two non-goals: direct messages, and any @mention test.
+- **Decisions: D5 only.** It gates installing a LaunchAgent, not the design.
 
 
 ---
@@ -280,27 +333,72 @@ Two consequences. First, the idempotency key v2 proposed is now **fixed**: it is
 
 Replies are created with `messageId = client-ralph-<kind>-…` (`chat-reply:134`). The producer marks `from_ralph: true` for any message whose `clientAssignedMessageId` starts with `client-ralph-`, and stages **no operation** for such a message. Bot senders (`sender.type = BOT`) are skipped the same way. The agent's `ignore` decision (`SOUL.md:19`) stays as the backstop and costs one card and one model run.
 
-**Unverified, and load-bearing:** that `spaces.messages.list` returns `clientAssignedMessageId`, `sender.type` and the mention annotations. It is documented as part of the Message resource, which I am recalling, not reading. PR 2's first act is one read-only call to confirm it. If a field is absent the design changes there, not later. This is v2's A3, unchanged in weight.
+**Unverified, and load-bearing:** that `spaces.messages.list` returns
+`clientAssignedMessageId` and `sender.type`. They are documented as part of the
+Message resource, which I am recalling, not reading. PR 2's first act is one
+read-only call to confirm them. If either is absent the design changes there,
+not later. This is v2's A3, and **your D6 made it smaller**: the mention
+annotations it also depended on are no longer read by anything (§3.3), so the
+part of A3 that was hardest to be sure of is gone. What is left are two scalar
+fields, and the failure if one is missing is now bounded — without
+`clientAssignedMessageId` the `ignore` backstop carries R10 alone, at one card
+per reply Ralph posts; without `sender.type` a bot notice costs one card.
 
-### 3.3 Eligibility, and what `sender_trusted` means now
+### 3.3 Eligibility: the approved room is the whole gate (your D6)
 
-`sender_trusted` is set `true` exactly when the message is inside the surface:
+`sender_trusted` is set `true` when **all four** hold, and there is no fifth
+test:
 
-- a direct message from a human, or
-- in a space, a structural @mention of the owner or of Ralph (a resolved user annotation, never the typed string), or
-- a message from the requester who opened a request whose question is still open, in that request's own thread, with no mention — **your D4(a), approved**.
+1. the message's space is in `CHAT_ROUTE_SPACES` — the same list `chat-reply`
+   reads from the same instance file, so the two scripts cannot disagree about
+   it (`chat-reply:44-50`), capped at eight spaces (`:49-50`);
+2. it was created inside the five-minute window (§3.4);
+3. its `sender.type` is a human, not `BOT`;
+4. its `clientAssignedMessageId` does not start with `client-ralph-` (§3.2).
 
-"Still open" is read from the markers, not from the tracker: an earlier
-operation in that thread has `.clarify-sent` and the thread has no
-`.final-sent`. The producer therefore needs no tracker key and no tracker read,
-and eligibility cannot lag behind a tracker write that the settle pass has not made
-yet (§5.2). It is the same marker set the ceilings count (§4.2).
+Nothing is asked about *who* the human is, and nothing is asked about what the
+message says. A message is eligible because of the room it was sent in.
 
-**And the space must be in `CHAT_ROUTE_SPACES`.** That list exists and the producer reads the same line from the same instance file, so the two scripts cannot disagree about it (`chat-reply:44-50`). Eligibility is therefore an intersection: R18's rule inside your list, which you kept for v1 ("we will expand to all chats later"). The producer never widens it. Expanding to all chats is a later change to this section, not a setting, because the producer would then have to derive the space set itself and `chat-reply:49-50`'s cap of eight would go with it.
+**What that drops, and on whose word.** Your D6: *"Keep it only to approved chat
+rooms please"*, and *"@ mentions and direct messages can come later"*. So the
+@mention test v4 and v5 carried is gone — the producer reads no annotations and
+never asks whether you or Ralph were named — and direct messages are **not a
+surface in v1** at all, because a direct message is not one of the rooms on the
+list. Both come back as a later design, not as a setting. D4(a)'s carve-out for
+a requester answering an open question goes too: it existed only to let an
+unmentioned reply through the mention test, and there is no longer a test for it
+to pass. The producer therefore reads **no markers and no tracker** to decide
+eligibility; `.clarify-sent` and `.final-sent` are still counted, but only by
+the ceilings (§4.2), and only after the agent has decided.
 
-Whether the mention test survives the phrase "for the account from the room" is **D6**: v5 keeps it.
+**What it costs, in one place so it is not buried.** Every human message in a
+pilot room is an operation, an intake card, and one model run — your
+conversation with someone else in that room included. The `ignore` decision
+(`SOUL.md:19`) is what ends those, one card each, and your D4 waived any volume
+cap, so nothing bounds the count except how busy the room is. Choose pilot
+rooms accordingly; §0.3 says what reverts this if it is not what you meant.
 
-`SOUL.md:11` already says the host sets `sender_trusted` from "the approved intake policy". This section *is* that policy; nothing in the PRD needs a new allowlist.
+**What `sender_trusted` means now, honestly.** It stops being a judgement about
+a person and becomes a restatement of condition 1: inside a listed space it is
+true for every human, outside one the message is never staged. `chat-route`'s
+`item["sender_trusted"] is not True` check (`:63-64`) and `chat-reply`'s
+(`:78-80`) still run and still refuse a hand-written file, so the field keeps
+its defensive value against a malformed or forged `item.json` — it just no
+longer encodes a second policy. The one gate that matters is the room list, and
+it is yours: `CHAT_ROUTE_SPACES` is an instance file on your machine, not a
+constant in the code.
+
+**This diverges from the merged PRD, by your instruction.** R18's surface is a
+direct message or an @mention, and R18 says the feature adds no allowlist of its
+own. v1 as you have now decided it is the opposite on both counts: an allowlist
+of rooms *is* the surface, and no mention is needed inside one. That is a
+decision you made with the trade-off in front of you, and it is the fourth item
+on card `t_73bf3c94` (§0, D7). Until that card merges, `prd.md` R18 and this
+section disagree and **this section is the newer one**.
+
+`SOUL.md:11` already says the host sets `sender_trusted` from "the approved
+intake policy". This section *is* that policy; nothing in the PRD needs a new
+allowlist beyond the one `chat-reply` already enforces.
 
 ### 3.4 The read: five minutes, every scan (your D4)
 
@@ -329,14 +427,15 @@ is a non-goal here because you did not ask for it.
 
 **Why the producer does not shell out to `gchat.py messages`.** That wrapper
 keeps five fields per message — name, createTime, sender display name, text,
-thread — and drops everything else, including `clientAssignedMessageId`,
-`sender.type` and the annotations (`gchat.py:222-240`); `--json` does not bring
-them back, because they are discarded before the output is built. Those three
-fields are exactly what §3.2 and §3.3 run on. So the producer imports the
-credential helpers from the same module (`_key`, `_load_creds`, `_svc`,
-`gchat.py:106-136`) and makes its own read-only `list` call. `gchat.py`'s own
-commands are unchanged, and `messages().create` stays reachable through exactly
-one code path (`gchat.py:264`), which is what §4.7's eval asserts.
+thread — and drops everything else, including `clientAssignedMessageId` and
+`sender.type` (`gchat.py:222-240`); `--json` does not bring them back, because
+they are discarded before the output is built. Those two fields are exactly
+what §3.2 runs on, and after your D6 they are the only two the producer needs
+beyond what the wrapper keeps. So the producer imports the credential helpers
+from the same module (`_key`, `_load_creds`, `_svc`, `gchat.py:106-136`) and
+makes its own read-only `list` call. `gchat.py`'s own commands are unchanged,
+and `messages().create` stays reachable through exactly one code path
+(`gchat.py:264`), which is what §4.7's eval asserts.
 
 **Unverified, with §3.2's fields:** that `spaces.messages.list` accepts a
 `filter` on `createTime`. If it does not, the producer pages newest-first and
@@ -466,7 +565,7 @@ v2's request for an owner-approved edit is gone: the line is already edited and 
 
 The orchestrator ends a chat graph with one `ralph-chat-maintainer` card whose parents are the work cards (`orchestrator/SOUL.md:19`). Kanban dependencies mean it does not run until every parent is done, so **one work card finishing is not the request finishing** (R11, E7) by construction, and no tracker poll is needed. `chat-reply` sends the `final` and marks it; the next `tracker-sync --settle` sets the item to `Resolved` with the outcome and writes its own `.tracker-closed` sentinel, so a tracker outage delays the close and never re-sends the reply. The tracker still reads as canonical (R13) because every stage is written: created at the ack, `Waiting on requester` after a `clarify`, `Resolved` after the final.
 
-**Silence on failure (E11), and what your D2 did to A14.** Partly it follows from the graph: a work card that is blocked or abandoned never lets the final card run, so nothing is sent. But a final card whose parents *completed with a failed result* is told to "say so plainly" (`SOUL.md:23`), and your D2 keeps that. So E11 splits in two: no reply when the work never finished, one honest reply when it finished badly — still bounded by the one-`final`-per-thread ceiling and the §4.4 checks. PRD A14 asks for silence in both cases, and is the third of the three sentences D7 would amend.
+**Silence on failure (E11), and what your D2 did to A14.** Partly it follows from the graph: a work card that is blocked or abandoned never lets the final card run, so nothing is sent. But a final card whose parents *completed with a failed result* is told to "say so plainly" (`SOUL.md:23`), and your D2 keeps that. So E11 splits in two: no reply when the work never finished, one honest reply when it finished badly — still bounded by the one-`final`-per-thread ceiling and the §4.4 checks. PRD A14 asks for silence in both cases, and is the third of the four items card `t_73bf3c94` amends (your D7, §0.3).
 
 ### 4.7 The eval, and the CI gap
 
@@ -649,9 +748,9 @@ that lets a reply depend on it are different reviews.
 | E11 | Blocked or abandoned work never runs the final card; work that finished badly gets one honest reply (your D2, §4.6) | `test_chat_reply`: a blocked parent sends nothing; a failed-but-complete graph sends exactly one `final` |
 | E12 | R3 fields and statuses on the item (§5.3) | `test_tracker` for the fields; `test_tracker_sync` for the statuses |
 | E13 | Brief says decide and link, never stop | reviewed in PR 4; a judgement, not a branch |
-| E14 | Eligibility: a DM or a resolved annotation, inside `CHAT_ROUTE_SPACES`, created inside the five-minute window | `test_chat_producer`: unmentioned and typed-name messages are not staged; a message older than the window is not staged |
+| E14 | Eligibility: a human message in a `CHAT_ROUTE_SPACES` space, created inside the five-minute window, and nothing else (your D6, §3.3) | `test_chat_producer`: a message in an unlisted space is not staged; a message older than the window is not staged; an **unmentioned** message in a listed space **is** staged |
 | E15 | `clarify`: no acknowledgement; the settle pass then sets `Waiting on requester` | `test_chat_reply`: no ack marker. `test_tracker_sync`: `.clarify-sent` yields the pending record once |
-| E16 | Whole thread staged; D4(a), approved, makes the unmentioned answer eligible, from `.clarify-sent` with no `.final-sent` (§3.3) | `test_chat_producer`: requester's reply staged, a third party's not |
+| E16 | Whole thread staged; the requester's unmentioned answer is eligible because the room is, with no marker read and no mention test (§3.3). A third party's message in the same thread is staged too, and the agent's `ignore` is what ends it (`SOUL.md:19`) | `test_chat_producer`: the requester's reply is staged and carries `prior_operations`; `test_chat_route`: the brief treats it as steering for the open request (`SOUL.md:13`) |
 | E17 | No sweep, no reminder; no final card exists for a waiting item | `test_chat_producer`: nothing re-sent for a pending thread |
 | E18 | Third `clarify` in a thread refused and blocked | `test_chat_reply` |
 
@@ -668,9 +767,11 @@ that lets a reply depend on it are different reviews.
 - **A watermark or any backfill of messages older than the window** (§3.4). Your D4 says five minutes; nothing recovers what falls outside it.
 - **Unsending**, **a retry that re-sends**, and **sweeping pending requests** (A18).
 - **Any rate limit or volume cap on requesters** (your D4). The per-thread reply ceilings in §4.2 are not that, and stay.
-- **Reaching "all chats"** beyond `CHAT_ROUTE_SPACES` (your D4: "we will expand to all chats later").
+- **Reaching "all chats"** beyond `CHAT_ROUTE_SPACES` (your D4: "we will expand to all chats later"; your D6: "keep it only to approved chat rooms"). Expanding is a change to §3.3, not a setting: the producer would have to derive the space set itself, and `chat-reply:49-50`'s cap of eight would go with it.
+- **Direct messages**, and **any @mention test** (your D6: "can come later"). The producer reads no annotations in v1, and a direct message is not a listed room, so neither surface exists to be got wrong. Adding them later is one condition each in §3.3.
 - **Any requester-facing surface**, and any tracker content reaching a requester. Unchanged from the PRD.
-- **Amending the PRD** (D7), and **implementing any of this.** PR 1 starts after this document is merged.
+- **Amending the PRD.** Your D7 approved it, and it is card `t_73bf3c94`, gated on this one — R6, R7, A14 and R18, in their own pull request against `prd.md`. Not done here, because a design document does not get to edit the requirement it implements in the same commit.
+- **Implementing any of this.** PR 1 starts after this document is merged.
 
 ---
 
@@ -683,23 +784,26 @@ state. Numbering is v4's; three of v3's twelve retired when you decided.
 
 1. **Redmine's capabilities are as generally documented** (REST toggle, a per-user key, custom fields, relations). Not inspected, and must not be.
 2. **An API key for a dedicated tracker account can live on the host** beside the chat token, owner-only. Your D1 approves the account; where its key sits is my inference.
-3. **`spaces.messages.list` returns `clientAssignedMessageId`, `sender.type` and mention annotations, and accepts a `filter` on `createTime`.** Unverified; PR 2 confirms it before anything else (§3.2, §3.4). Still the one assumption that would change the design rather than a detail.
+3. **`spaces.messages.list` returns `clientAssignedMessageId` and `sender.type`, and accepts a `filter` on `createTime`.** Unverified; PR 2 confirms it before anything else (§3.2, §3.4). Still the assumption that would change the design rather than a detail — but **smaller after your D6**, which took the mention annotations out of it, and they were its least certain third.
 4. **"The thread is the request"** for counting and for item lookup. A requester who restates the ask in a new thread is a new request that R12 then links.
 5. **A requester cannot tell Ralph's text from yours**, and you accept that.
 6. **One host, one scan at a time per instance.** launchd does not start a second copy of a running job, and the thread lock covers the rest. I did not verify launchd's overlap behaviour against your version.
 7. **The producer reads `CHAT_ROUTE_SPACES` from the same instance file** `chat-reply` reads, so they cannot diverge.
 8. **`reply_kind` and `kind` are safe to add as optional metadata**, because `chat-reply` ignores unknown keys (`:90-93`) and PR 4 widens `chat-route`'s allow-list in the same change.
 9. **"Don't cap anything" means no limit on requesters**, not the removal of the per-thread reply ceilings (§0.1, §4.2). The narrower reading, stated so you can correct it.
-10. **"For the account from the room" does not drop the @mention test** (§3.3). This one is D6 rather than an assumption, because I will not widen R18 on a reading.
+10. **Retired by your D6**, and kept as a number so nothing renumbers. It read "for the account from the room" as *keeping* the @mention test; you answered the other way (§0.3, §3.3).
 11. **A five-minute window scanned every 60 seconds loses only what arrives while the host is not scanning**, and losing it silently is acceptable (§3.4).
 12. **You will run the one live thread-reply check** before the first real send.
 13. **A public GitHub repository is a sufficient proxy for "the requester can already reach it".** Anything subtler is treated as unreachable and named in words.
 14. **Splitting the tracker out of the sender is mine to settle**, because it is file structure rather than product or policy. The proposal arrived on your behalf and §2 takes it; if you want the shape it described instead — a separate LaunchAgent on its own tick — that is a sentence from you, not a redesign.
 15. **An operation's workspace directory is a sound place for `tracker-sync`'s own sentinels.** It is already where the reply markers live (`chat-reply:27,145-147`), owner-only, and removed when the item closes (§5.3).
+16. **Your D6's two sentences mean the room list is the whole eligibility gate**, not that the @mention test survives inside it. The reading comes from the second sentence: if the mention test stayed, deferring it would leave *nothing* eligible, because it was the only sender test the producer had. This is the inference most worth correcting if it is wrong, and correcting it is one sentence (§0.3).
+17. **An approved room's traffic is low enough that one intake card and one model run per human message is acceptable**, given that your D4 waived any volume cap. I have no measurement of your rooms, so this is a guess about your usage rather than a property of the design (§3.3).
 
 Retired by your answers: v3's A1 fallback clause (`rails runner`, D1), its A9
 ("the shipped behaviour was considered, not drift" — D2 settles it either way),
-and its A10 (the 900-second tick, replaced by 11 above).
+its A10 (the 900-second tick, replaced by 11 above), and now A10 above, which
+your D6 answered in the opposite direction.
 
 ### Observations, out of scope
 
