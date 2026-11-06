@@ -101,7 +101,7 @@ of its premises do not hold at `95bd4d9`.
 | The proposal said | At `95bd4d9` | So v5 |
 |---|---|---|
 | "After the operation is routed", `tracker-sync` records the item | There is **no routed signal**, and nothing else routes: `chat-reply` runs `chat-route` itself, in the ack branch, through `docker exec` (`chat-reply:194-196`). `chat-route` writes no file; it prints `routed: t_…` (`chat-route:102`) and `chat-reply` reads that line and discards it (`:197`) | drops the rendezvous. `chat-reply` **invokes** `tracker-sync` where it already invokes `chat-route`, and gates the ack on its exit code — the shipped pattern at `:193-199` |
-| The two scripts coordinate through "the marker files that already exist" | The markers are **empty sentinels**, created `O_EXCL` (`:145-147`), and both scan loops *skip* an operation once its marker exists (`:239-242`). A close driven from `.final-sent` can never be retried by `chat-reply`, and a marker carrying the outcome text stops being a sentinel and becomes a record with a schema | keeps the markers empty. The after-the-fact writes come from a `--settle` pass with its own sentinels (§5.2) |
+| The two scripts coordinate through "the marker files that already exist" | Partly. A watcher *can* retry a close off `.final-sent`, which is what the proposal assigns to `tracker-sync` and what `--settle` does. What the markers cannot carry is the **payload**: they are empty files created `O_EXCL` (`:145-147`), so "Resolved plus the outcome" needs the card anyway, and a marker that held the outcome would stop being a sentinel and become a record with a schema — the test the proposal priced in | keeps the markers empty and lets `--settle` read the card for the outcome (§5.2). `chat-reply` is not the retrier: its own loop skips an operation once the marker exists (`:239-242`) |
 | "Up to one extra 60-second tick before the ack", avoided by "running tracker-sync and then chat-reply from the same LaunchAgent in order" | `ProgramArguments` names **one** script (`install-chat-reply-launchd:18`), and the installer refuses to replace a plist whose settings differ (`:44-46`). Two scripts in one job is a new plist and an ops step on your machine, not a config line. A separately ticked `tracker-sync` would also run **outside** the per-thread `flock` §4.2 puts in `chat-reply` — two processes, one item, no shared lock, which is the bug v2's review caught | adds no job and no tick. One invocation, inside the lock, no latency at all |
 
 **The question it asked me to confirm.** Yes: only the acknowledgement waits on
@@ -153,8 +153,12 @@ escalated. **v3, v4 and v5 keep all three fixes** — the block precedent is cit
 widening went to you as D4(a), which you approved. v3 reached you without an
 independent review; **v4 was reviewed** and raised one blocking finding — two
 new cross-references pointed at a decision number that no longer exists (D3
-rather than D7) — fixed in that revision. The reviewer re-checked every new
-citation at `95bd4d9` and found them exact.
+rather than D7) — fixed in that revision. **v5 was reviewed too**: one blocking
+finding — `--record` would deadlock the acknowledgement path if its own marker
+were written `O_EXCL` like every other marker in the design — and three notes,
+all accepted and fixed below. The reviewer re-checked every citation at
+`95bd4d9`, including all of v5's new ones, and found them exact but one, which
+is corrected.
 
 **The live dissent is with the split proposal** (§0.2). Its concern is taken and
 its mechanism is not: there is no routed signal to key on, the markers it would
@@ -185,6 +189,7 @@ places. Breakdown in §6.
 - **§3.3 no longer reads the tracker**: "a question is still open" comes from `.clarify-sent` with no `.final-sent`, so the producer needs no tracker key.
 - **§5.3 now says when the pending record is written** — after the question, not before — which v4 left ambiguous between §5.2 and §4.6.
 - **§6 goes from seven PRs to nine**, §4.7 gains the assertion that the split is real, and §7's tests move to `test_tracker_sync` where the mechanism moved.
+- **After independent review:** §5.2 states that every `tracker-sync` write is idempotent *including its own markers* (the blocking finding), and that `--settle` walks the inbox directories rather than reusing the sender's done-card loop; §4.8's block and alert now fire on a repeating retry and not only on a refusal; §5.3 names who deletes the staged copy; §0.2's second premise is narrowed to what actually fails; §4.4's token citation is corrected to `config.yaml:6-16`.
 - **Decisions are unchanged: D5, D6, D7.** Nothing in this revision needs an answer that v4 did not already need.
 
 
@@ -443,7 +448,7 @@ host-side half of the R15 grant.
 
 ### 4.4 R19: the content bound, rewritten
 
-v2 argued that the agent *could not reach* anything outside one request's evidence directory. That is no longer so. The chat-maintainer has `terminal` and a repository token (`config.yaml:13-16`); on the personal instance that token is the owner's (`docs/decisions/0002`), and both decisions record the exposure as accepted. A reply can now quote a private repository the requester cannot open.
+v2 argued that the agent *could not reach* anything outside one request's evidence directory. That is no longer so. The chat-maintainer has `terminal` and a repository token (`config.yaml:6-16`); on the personal instance that token is the owner's (`docs/decisions/0002`), and both decisions record the exposure as accepted. A reply can now quote a private repository the requester cannot open.
 
 **So the bound moves to the host, and it is a refusal, not a trim.** Before any send of agent text — `ack`, every `reply_kind`, `final` — `chat-reply` refuses text that contains:
 
@@ -476,6 +481,8 @@ PR 5 extends `evals/test_chat_reply.py` and adds the workflow that runs it. The 
 | a URL outside the `reachable` list is refused; the same outcome in words is sent | R19, E9 |
 | a tracker write failure sends no acknowledgement | R9, E1 |
 | `chat-reply` imports no tracker module, and `tracker-sync` contains no send call | §2, R15 |
+| a second `--record` for one operation exits 0 and creates no second item | §5.2, R6/R9 |
+| `--settle` closes an operation whose reply marker already exists | §5.2, E8 |
 | `kind: update` leaves no final card for `chat-reply` to send | E10 |
 | exactly one `messages ( ) . create` path exists in the host scripts, and `REPLY_MESSAGE_OR_FAIL` is the only reply option used | R15, R8 |
 
@@ -487,6 +494,13 @@ PR 5 extends `evals/test_chat_reply.py` and adds the workflow that runs it. The 
 
 1. **Block the card** through `hermes kanban block`, with a reason naming the reply kind, the thread and the cause (`maintain-pr:396`);
 2. **Say so at once** with the best-effort webhook post that tolerates its own failure (`maintain-pr:301-303`, `RALPH_NOTIFY_URL` or `GCHAT_WEBHOOK_URL`).
+
+Both fire on a **refusal (exit 2) and on a retry (exit 1) alike**, because the
+failure that matters most is the one that repeats quietly: a `--record` that
+keeps failing holds an acknowledgement for a request Ralph has, and nothing in
+the exit code says whether the next scan will do better. The alert is posted
+once per operation and reply kind, guarded by an `.alerted-<kind>` sentinel, so
+a loop reports itself once rather than every minute.
 
 `notifier/poller.py` stays the backstop: it polls blocked cards, recovers the reason from a `BLOCKED:` comment (`:93-94`), and announces each once (`:121-125`). E6 needs no new machinery.
 
@@ -519,6 +533,23 @@ call and no policy about whether a reply may go.
 The order for an acknowledgement becomes: orchestrator card, then
 `--record`, then the reply. A non-zero exit sends nothing and the operation
 retries next scan, exactly as a failed `chat-route` does today (`:197-199`).
+
+**Every `tracker-sync` write is idempotent, including its own markers — this is
+load-bearing.** `chat-reply` creates its markers `O_EXCL` (`:145-147`), which is
+right for a send that must happen once; copying that for `.tracker-recorded`
+would be a deadlock. `--record` is re-run whenever anything after it fails: the
+item is already created, the marker is already there, and a create-or-fail
+marker would make the second call exit non-zero, which `chat-reply` reads as
+"retry next scan" — forever, on the one path R6 and R9 exist to protect. So
+`--record` treats an existing `.tracker-recorded` for this operation as
+**success**, and the same holds for `.tracker-waiting` and `.tracker-closed`.
+The item lookup is idempotent by the thread key already.
+
+**How `--settle` finds its work.** It walks the `chat-inbox` directories on
+disk and reads their markers. It does **not** reuse `chat-reply`'s
+`list --status done` loop, which skips an operation once its reply marker
+exists (`:239-242`) — that loop is for deciding whether to send, and a close
+has to stay retryable after the sending is over.
 Everything the settle pass does happens **after** a reply has already gone out, so a
 tracker failure there delays a record and never changes what was said. It is
 called `--settle` and not a sweep because A18 uses "sweep" for chasing a
@@ -555,7 +586,7 @@ what makes PRs 7 and 8 safe to merge before PR 9's runbook is followed.
 
 ### 5.3 What an item holds, and its statuses
 
-Stored: the requester's display name, the space and thread names, the request text as sent (truncated), Ralph's restatement, the state and the next action (R3). Not stored: other threads, member lists, attachments. Retention is the item's lifetime; the staged copy is owner-only (`0600`) and is removed when the item closes. Nothing chat-derived enters this repository.
+Stored: the requester's display name, the space and thread names, the request text as sent (truncated), Ralph's restatement, the state and the next action (R3). Not stored: other threads, member lists, attachments. Retention is the item's lifetime; the staged copy is owner-only (`0600`). **Who deletes it, and when:** `tracker-sync --settle` removes the operation's `evidence/` directory immediately after it writes `.tracker-closed`, keeping the marker files so the thread's history still counts (§4.2). Nothing chat-derived enters this repository.
 
 | Status | Means | Reaches the requester |
 |---|---|---|
