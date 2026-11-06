@@ -1,18 +1,18 @@
 ---
 id: dd-ralph-redmine
-title: Build the work tracker onto the chat path Ralph already shipped — one producer to feed it, one tracker step inside the host sender, and host-side ceilings on every reply
+title: Build the work tracker onto the chat path Ralph already shipped — one producer to feed it, one tracker script the sender calls but cannot import, and host-side ceilings on every reply
 status: in review
 owner: Zhachory1
 card: t_b5db2cf0
-revision: v4
+revision: v5
 date: 2026-11-06
 implements: prd-ralph-redmine
 prs:
-  - Zhachory1/docs#7   # v1, v2, v3, v4
+  - Zhachory1/docs#7   # v1, v2, v3, v4, v5
 supersedes: none
 ---
 
-# Build the work tracker onto the chat path Ralph already shipped — one producer to feed it, one tracker step inside the host sender, and host-side ceilings on every reply
+# Build the work tracker onto the chat path Ralph already shipped — one producer to feed it, one tracker script the sender calls but cannot import, and host-side ceilings on every reply
 
 > **This repository is public.** No employer, person, space, address or message
 > content appears here. The requester is "a requester", the tracker is "the work
@@ -26,14 +26,18 @@ work instance was touched. Merging this pull request is the approval.
 Implements `prd-ralph-redmine` v5, merged at `Zhachory1/docs#6`. **You answered v3's
 four decisions on 2026-11-06; §0.1 records what each one moved.** Three decisions are
 left, and one of them is the PRD: your D2 answer makes three of its sentences
-describe behaviour that no longer exists.
+describe behaviour that no longer exists. **v5 answers the split proposal sent on
+your behalf: it is taken, re-cut at the trigger, and §2 says why** (§0.2).
 
 **Citations.** Every claim about Ralph is from a fresh clone of
 `Zhachory1/ralph` at commit `95bd4d960e9178a0ea00c8791afa75b851138e1c`
 (2026-11-05, `main`). v2 was written against `b41c99d` (2026-11-02). Thirty-eight
 commits landed between them and several of v2's central claims are no longer
 true. v4 re-read the same commit to answer your container question (§3.5) and to
-design the five-minute read (§3.4); no earlier claim moved. I read the code; I did
+design the five-minute read (§3.4). v5 re-read `chat-reply`, `chat-route` and
+`install-chat-reply-launchd` in full at that commit to check the split proposal;
+three of its premises did not hold, which is why §2's Option C is not the shape
+it described. No earlier claim moved. I read the code; I did
 not run it, send a message, or call any API.
 Claims about Redmine are general product knowledge and are marked; your
 instance was not inspected and must not be.
@@ -73,7 +77,7 @@ these change the design rather than confirm it.
 
 | You said | It settles | What moved in this document |
 |---|---|---|
-| **D1 — Approved** | The tracker's REST API goes on, Ralph gets its own tracker account and a per-user API key. | §5.1's `rails runner` fallback is **dropped**, with it the second trust boundary and the "skips validation" cost. PRs 1 and 6 lose their gate; the only prerequisite left is the key file on the host, which is one line of PR 7's runbook. |
+| **D1 — Approved** | The tracker's REST API goes on, Ralph gets its own tracker account and a per-user API key. | §5.1's `rails runner` fallback is **dropped**, with it the second trust boundary and the "skips validation" cost. PRs 1, 7 and 8 lose their gate; the only prerequisite left is the key file on the host, which is one line of PR 9's runbook. |
 | **D2 — Let's go with the recommendation** | Where shipped `chat-reply` and the PRD disagree, **the shipped behaviour wins and the safety moves from the sentence to the host.** Ralph keeps writing its own acknowledgement and refusal, and tells a requester when work failed. | §4.4's refusal checks are now the **whole** content bound, not one of two options; the conditional branches in §4.4 and §4.6 are gone. No `SOUL.md` line changes, so PR 4 shrinks. And the merged PRD now has three sentences (R6, R7, A14) that describe nothing that runs — **D7 below**. |
 | **D4 — Don't cap anything. Just check for chats from the last 5 minutes for the account from the room. We will expand to all chats later.** | (b) **No rate limit, ever** — §8 is now a flat non-goal, and the per-sender counter v3 offered is gone. (a) **Taken as approved, by inference**: a thread with an open question stays eligible for that requester without a mention (§3.3). Your sentence does not mention thread continuation; I read "don't cap anything" as covering it, and it is the narrower of the two things D4(a) could mean. Behaviour is identical either way — the wide reading of the *same* sentence is D6, which I did not take. (c) `CHAT_ROUTE_SPACES` **stays** as the v1 boundary; "all chats" is a later change and not this design. And new: the producer reads a **five-minute window** (§3.4), which fixes its scan shape, its tick, and what it loses. | §3.3 drops the conditional, §3.4 is new, §6's PR 2 gains the window, and two of v3's assumptions retire. |
 
@@ -85,6 +89,37 @@ grantable at all: the reason "Ralph may send to chat" is not the same sentence a
 limit on how many times Ralph can message one person about one request. If you
 meant those too, say so and §4.2 goes with them — but then R15 has no host-side
 enforcement and the eval in §4.7 has nothing to assert.
+
+## 0.2 The split proposal, and what v5 did with it
+
+A proposal arrived on the card on your behalf: move the tracker step out of
+`chat-reply` into its own host script, so that no one process holds both the
+chat credential and the tracker key. **The concern is right and the split is
+taken** (§2, Option C). The *mechanism* is not the one proposed, because three
+of its premises do not hold at `95bd4d9`.
+
+| The proposal said | At `95bd4d9` | So v5 |
+|---|---|---|
+| "After the operation is routed", `tracker-sync` records the item | There is **no routed signal**, and nothing else routes: `chat-reply` runs `chat-route` itself, in the ack branch, through `docker exec` (`chat-reply:194-196`). `chat-route` writes no file; it prints `routed: t_…` (`chat-route:102`) and `chat-reply` reads that line and discards it (`:197`) | drops the rendezvous. `chat-reply` **invokes** `tracker-sync` where it already invokes `chat-route`, and gates the ack on its exit code — the shipped pattern at `:193-199` |
+| The two scripts coordinate through "the marker files that already exist" | The markers are **empty sentinels**, created `O_EXCL` (`:145-147`), and both scan loops *skip* an operation once its marker exists (`:239-242`). A close driven from `.final-sent` can never be retried by `chat-reply`, and a marker carrying the outcome text stops being a sentinel and becomes a record with a schema | keeps the markers empty. The after-the-fact writes come from a `--settle` pass with its own sentinels (§5.2) |
+| "Up to one extra 60-second tick before the ack", avoided by "running tracker-sync and then chat-reply from the same LaunchAgent in order" | `ProgramArguments` names **one** script (`install-chat-reply-launchd:18`), and the installer refuses to replace a plist whose settings differ (`:44-46`). Two scripts in one job is a new plist and an ops step on your machine, not a config line. A separately ticked `tracker-sync` would also run **outside** the per-thread `flock` §4.2 puts in `chat-reply` — two processes, one item, no shared lock, which is the bug v2's review caught | adds no job and no tick. One invocation, inside the lock, no latency at all |
+
+**The question it asked me to confirm.** Yes: only the acknowledgement waits on
+the tracker. R6 says "Never before the item exists" (`prd.md:305`), so the ack
+is gated. R9 says a clarification receipt "is not an acknowledgement"
+(`prd.md:326-327`), so a `clarify` sends first and its pending record (R5,
+`prd.md:297-301`) lands on the settle pass; a `decline` records nothing at all,
+because R7 says "No item is created to justify the reply" (`prd.md:314-315`);
+an `answer` records nothing either. Holding a question because a tracker is
+down would be the wrong trade.
+
+**One honest subtraction from the proposal's case.** "Neither script holds both
+credentials" is true of the *code*, not of the *process*. Both run as you, on
+your machine, from the same directory; `tracker-sync` could shell out to
+`gchat.py` exactly as `chat-reply` does (`chat-reply:128-134`). The split is a
+review and eval boundary — one grep proves which file can send — not an
+isolation boundary. It is still worth having, for the reason the standards give:
+`chat-reply` stays one sentence without an "and".
 
 ---
 
@@ -98,7 +133,7 @@ is open is **D5-D7**.
 | # | Decision | Why it is yours | If you say no |
 |---|---|---|---|
 | **D5** | **Install a second host LaunchAgent for the producer**, beside the one for `chat-reply` (`bootstrap/install-chat-reply-launchd:19`, a 60-second scan). This is v3's D3, still open: you asked why it cannot run in the container instead. **§3.5 answers that in full** — the short form is that the credential's key is derived from the machine id and the unix user (`gchat.py:106-114`), so the token does not decrypt anywhere else, and the only ways around that put a Chat send credential inside the container where the profile that reads untrusted chat text runs. | Installing a job that runs as you, on your machine, every minute, is yours and not mine. | Run `chat-producer --scan` by hand when you want Ralph to notice new messages. Everything after that is already automatic. Nothing else in the design changes. |
-| **D6** | **Confirm the reading of "for the account from the room."** v4 takes the narrow one: inside a `CHAT_ROUTE_SPACES` room, a message is eligible if it is a direct message, an @mention of you or Ralph, or a requester's answer in a thread with an open question (§3.3) — the five-minute window changes *when* the producer looks, not *who* it answers. The wide reading is that every message in those rooms, from anyone, in the last five minutes, is eligible. | The wide reading is a real widening of R18 ("the owner, and anyone who @mentions the owner"), and R18 is your own words in a merged PRD. I will not widen it on an inference. | Nothing: the narrow reading is what v4 describes. Say "wide" and §3.3's mention test goes, every message in a pilot room becomes an intake card and a model run, and the eligibility eval in §4.7 inverts. |
+| **D6** | **Confirm the reading of "for the account from the room."** v4 and v5 take the narrow one: inside a `CHAT_ROUTE_SPACES` room, a message is eligible if it is a direct message, an @mention of you or Ralph, or a requester's answer in a thread with an open question (§3.3) — the five-minute window changes *when* the producer looks, not *who* it answers. The wide reading is that every message in those rooms, from anyone, in the last five minutes, is eligible. | The wide reading is a real widening of R18 ("the owner, and anyone who @mentions the owner"), and R18 is your own words in a merged PRD. I will not widen it on an inference. | Nothing: the narrow reading is what this document describes. Say "wide" and §3.3's mention test goes, every message in a pilot room becomes an intake card and a model run, and the eligibility eval in §4.7 inverts. |
 | **D7** | **Amend the PRD to v6, or let it stand.** Your D2 answer makes PRD R6, R7 and A14 describe behaviour that does not exist (§0, items 1-3). **Recommended:** one follow-up card after this merges, amending those three lines to the shipped behaviour and citing this document. | A merged PRD is approved text; a design document does not get to overrule it quietly, and the next reader of `prd.md` has no way to know which is newer. | Leave it, and `prd.md` keeps three sentences that `chat-reply` contradicts. Either way nothing is blocked: PRs 4 and 5 implement what you chose today. |
 
 **Also yours, and unchanged since v3:** run one threaded reply in a space of
@@ -113,34 +148,44 @@ test".
 v2's independent review found three blocking issues, all accepted and fixed:
 `inbox-writer` blocks nothing; the lock was on the operation rather than the
 request; and thread-scoped eligibility was settled in prose rather than
-escalated. **v3 and v4 keep all three fixes** — the block precedent is cited at
+escalated. **v3, v4 and v5 keep all three fixes** — the block precedent is cited at
 `maintain-pr` (§4.8), the lock is per thread (§4.2), and the eligibility
 widening went to you as D4(a), which you approved. v3 reached you without an
 independent review; **v4 was reviewed** and raised one blocking finding — two
 new cross-references pointed at a decision number that no longer exists (D3
-rather than D7) — fixed in this revision, with the reviewer's one note applied
-as the inference flag in §0.1's D4 row. The reviewer re-checked every new
+rather than D7) — fixed in that revision. The reviewer re-checked every new
 citation at `95bd4d9` and found them exact.
 
-The one dissent v4 carries forward is with your own words, and it is in §0.1:
+**The live dissent is with the split proposal** (§0.2). Its concern is taken and
+its mechanism is not: there is no routed signal to key on, the markers it would
+coordinate through are skip-sentinels rather than a channel, and one LaunchAgent
+cannot run two scripts in order without a replacement plist. The costs it listed
+— a tick of latency, a marker schema, a `chat-reply` config switch — all come
+from the rendezvous, and all disappear when the sender simply calls the script.
+I also disagree with one line of its case: the split is **not** a credential
+boundary, because both scripts run as you on one host and either could shell out
+to `gchat.py`. It is worth doing anyway, for the smaller and truer reason.
+
+The dissent v4 carried forward, with your own words, still stands (§0.1):
 "don't cap anything" is implemented as *no rate limit on requesters*, and the
-per-thread reply ceilings stay. That is the narrower reading, and it is deliberate.
+per-thread reply ceilings stay.
 
-### Scope: medium — seven pull requests
+### Scope: medium — nine pull requests
 
-Unchanged in count from v3; D1's approval removes the tracker fallback rather
-than any work, and the five-minute window is a few lines inside PR 2. The work
-is the producer, the tracker step, the host-side ceilings, and the CI wire that
-makes them hold. Breakdown in §6.
+Seven in v4. The two new ones are the smallest in the set: a no-behaviour
+extraction of the evidence reader (PR 6) and the two call sites that wire the
+tracker script in (PR 8). The work itself did not grow; it is cut in more
+places. Breakdown in §6.
 
-### What changed since v3
+### What changed since v4
 
-- **§0.1 is new**: your four answers, and what each one moved.
-- **The `rails runner` fallback is gone** (D1), and the tracker PRs are no longer gated on a decision.
-- **§4.4 and §4.6 lose their D2 branches**: the host refusal checks are the whole content bound, and a failed request is told about.
-- **§3.4 is new**: the five-minute read window, the 60-second scan, why the producer does not shell out to `gchat.py messages`, and the one thing the window loses.
-- **§3.5 is new**: the container answer, with the key derivation, the compose mounts, and what moving it would cost.
-- **D5-D7 replace D1-D4**: the LaunchAgent (v3's D3, still open), the narrow-reading confirmation (new), and the PRD amendment (new, created by your D2). Decision numbers never repeat across revisions.
+- **§0.2 is new**: the split proposal, the three premises of it that do not hold at `95bd4d9`, and what was taken.
+- **§2 has a third option, and it is the chosen one**: `chat-reply` keeps the sending and the ceilings, `bootstrap/tracker-sync` holds the tracker key, and the sender calls it the way it already calls `chat-route`.
+- **§5.2 is rewritten** around that script's two entry points, `--record` (gates the ack) and `--settle` (everything after a reply has gone).
+- **§3.3 no longer reads the tracker**: "a question is still open" comes from `.clarify-sent` with no `.final-sent`, so the producer needs no tracker key.
+- **§5.3 now says when the pending record is written** — after the question, not before — which v4 left ambiguous between §5.2 and §4.6.
+- **§6 goes from seven PRs to nine**, §4.7 gains the assertion that the split is real, and §7's tests move to `test_tracker_sync` where the mechanism moved.
+- **Decisions are unchanged: D5, D6, D7.** Nothing in this revision needs an answer that v4 did not already need.
 
 
 ---
@@ -158,30 +203,49 @@ chat ─> [NEW] bootstrap/chat-producer ─> chat-inbox/<op>/evidence/item.json 
                                             ralph-chat-maintainer   (decides: route | reply | ignore)
                                                      │
                                                      ▼
-        bootstrap/chat-reply  (host, exists) ── [NEW] ceilings ── [NEW] tracker step ── send ──> thread
-                │                                                                       
-                ├─ ack: chat-route makes the orchestrator card, THEN the tracker item, THEN the reply
-                └─ final: the card the orchestrator ends the graph with; THEN the tracker closes
+        bootstrap/chat-reply  (host, exists) ── [NEW] ceilings ── send ──> thread
+          chat credential, no tracker key   │
+                │                           └─ calls ─> [NEW] bootstrap/tracker-sync
+                │                                        tracker key, no send path
+                ├─ ack:   chat-route makes the orchestrator card, THEN `tracker-sync --record`, THEN the reply
+                ├─ clarify: the question goes out, THEN the pending record on the next `--settle`
+                └─ final: the card the orchestrator ends the graph with; THEN `--settle` closes the item
 ```
 
 1. **The agent still cannot send to chat.** It holds no chat credential: that stays on the host (`config.yaml:3-5`). It *can* now read repositories with a token (§0), which is why §4.4 changes.
 2. **The host cannot improvise.** Destination comes from staged evidence, never agent text (`chat-reply:64-84`). That stays. New: the host also decides *whether* a reply may go, from counts it reads itself (§4.2).
-3. **The record precedes the acknowledgement.** `chat-reply` already holds the ack until `chat-route` confirms an orchestrator card (`:193-200`). The tracker item joins that step, so "Ralph says it has the work" and "the work is recorded" cannot come apart (R9).
+3. **The record precedes the acknowledgement.** `chat-reply` already holds the ack until `chat-route` confirms an orchestrator card (`:193-200`). `tracker-sync --record` joins that same step, so "Ralph says it has the work" and "the work is recorded" cannot come apart (R9). Nothing else waits on the tracker (§0.2).
 4. **No new datastore.** Sent-once state is the marker files that exist. The thread-to-item map is two fields on the tracker item. Nothing else is added (R14).
 
 ---
 
 ## 2. Options considered
 
-Two ways to add the tracker. Standards require at least two.
+Three ways to add the tracker. Standards require at least two.
 
 | Option | For | Against |
 |---|---|---|
-| **A. Extend `chat-reply` and the producer (chosen)** | Reuses the sender, the destination check, the markers and the launchd installer. One place decides whether a reply goes. | `chat-reply` is 265 lines today and would carry ack, reply, final, ceilings and the tracker step. Standards call over 800 lines a refactor candidate, so there is room. |
+| A. Put the tracker step inside `chat-reply` (v4's choice) | Fewest files. One place decides whether a reply goes and whether it was recorded. No new contract between processes. | `chat-reply` would carry ack, reply, final, ceilings, refusals **and** the tracker. Its one-sentence description grows an "and", which is the standards' test for a file that is too big. The tracker key would be read into the process that sends. |
 | B. Write the v2 `chat-writer` beside it | Cleaner single responsibility; v2's eval design applies as written. | Two host senders with one policy line. Two places to forget a ceiling. Two LaunchAgents. It re-implements what shipped three days after v2 was written. |
+| **C. One sender, one tracker script, called by the sender (chosen)** | `chat-reply` stays "post the maintainer's replies to the original thread" and gains the ceilings and the refusals, which are *about replies*. `bootstrap/tracker-sync` holds the tracker key, imports nothing from the sender and contains no send call, so one grep over the host scripts still proves there is exactly one way to send (§4.7). It is the shape `chat-reply` already uses for `chat-route` (`:194-199`), so the gating, the retry and the failure path are the ones in the file today. | A second file, a second eval, and one more exit-code contract to get right. `chat-reply` still *drives* the tracker step: the ordering lives in the sender even though the tracker code does not. Two scripts must agree on the workspace layout. |
 
-If `chat-reply` crosses the standards' size line during PR 5, the split is by
-concern (ceilings and tracker step into their own module), not by sender.
+**Why C over A.** Both are safe; C is the one that keeps the file describable.
+The decisive argument is not credential isolation — §0.2 says plainly that the
+split is a code boundary and not a process boundary — it is that §4.7's bound is
+checked by reading one file, and that file should not also be where tracker
+behaviour lives.
+
+**Why C is not a rendezvous.** The two scripts do not meet in a shared tick or a
+shared file. `chat-reply` calls `tracker-sync --record <op>` before the
+acknowledgement and `tracker-sync --settle` once per scan; `tracker-sync` never
+reads the board for a decision and never decides whether a reply may go (§5.2).
+That keeps one reader of the decision metadata, one writer of the reply
+markers, and one lock.
+
+If you would rather have the split exactly as proposed — its own LaunchAgent, on
+its own tick — say so. It costs a replacement plist (`install-chat-reply-launchd:44-46`),
+one tick of acknowledgement latency, and a shared lock that neither script has
+today.
 
 ---
 
@@ -219,11 +283,17 @@ Replies are created with `messageId = client-ralph-<kind>-…` (`chat-reply:134`
 
 - a direct message from a human, or
 - in a space, a structural @mention of the owner or of Ralph (a resolved user annotation, never the typed string), or
-- a message from the requester who opened a request in `Waiting on requester`, in that request's own thread, with no mention — **your D4(a), approved**.
+- a message from the requester who opened a request whose question is still open, in that request's own thread, with no mention — **your D4(a), approved**.
+
+"Still open" is read from the markers, not from the tracker: an earlier
+operation in that thread has `.clarify-sent` and the thread has no
+`.final-sent`. The producer therefore needs no tracker key and no tracker read,
+and eligibility cannot lag behind a tracker write that the settle pass has not made
+yet (§5.2). It is the same marker set the ceilings count (§4.2).
 
 **And the space must be in `CHAT_ROUTE_SPACES`.** That list exists and the producer reads the same line from the same instance file, so the two scripts cannot disagree about it (`chat-reply:44-50`). Eligibility is therefore an intersection: R18's rule inside your list, which you kept for v1 ("we will expand to all chats later"). The producer never widens it. Expanding to all chats is a later change to this section, not a setting, because the producer would then have to derive the space set itself and `chat-reply:49-50`'s cap of eight would go with it.
 
-Whether the mention test survives the phrase "for the account from the room" is **D6**: v4 keeps it.
+Whether the mention test survives the phrase "for the account from the room" is **D6**: v5 keeps it.
 
 `SOUL.md:11` already says the host sets `sender_trusted` from "the approved intake policy". This section *is* that policy; nothing in the PRD needs a new allowlist.
 
@@ -389,7 +459,7 @@ v2's request for an owner-approved edit is gone: the line is already edited and 
 
 ### 4.6 The close: the final card is the trigger
 
-The orchestrator ends a chat graph with one `ralph-chat-maintainer` card whose parents are the work cards (`orchestrator/SOUL.md:19`). Kanban dependencies mean it does not run until every parent is done, so **one work card finishing is not the request finishing** (R11, E7) by construction, and no tracker poll is needed. `chat-reply` sends the `final`, then sets the item to `Resolved` with the outcome text. The tracker still reads as canonical (R13) because the host writes it at each stage: created at the ack, `Waiting on requester` at a `clarify`, `Resolved` at the final.
+The orchestrator ends a chat graph with one `ralph-chat-maintainer` card whose parents are the work cards (`orchestrator/SOUL.md:19`). Kanban dependencies mean it does not run until every parent is done, so **one work card finishing is not the request finishing** (R11, E7) by construction, and no tracker poll is needed. `chat-reply` sends the `final` and marks it; the next `tracker-sync --settle` sets the item to `Resolved` with the outcome and writes its own `.tracker-closed` sentinel, so a tracker outage delays the close and never re-sends the reply. The tracker still reads as canonical (R13) because every stage is written: created at the ack, `Waiting on requester` after a `clarify`, `Resolved` after the final.
 
 **Silence on failure (E11), and what your D2 did to A14.** Partly it follows from the graph: a work card that is blocked or abandoned never lets the final card run, so nothing is sent. But a final card whose parents *completed with a failed result* is told to "say so plainly" (`SOUL.md:23`), and your D2 keeps that. So E11 splits in two: no reply when the work never finished, one honest reply when it finished badly — still bounded by the one-`final`-per-thread ceiling and the §4.4 checks. PRD A14 asks for silence in both cases, and is the third of the three sentences D7 would amend.
 
@@ -405,6 +475,7 @@ PR 5 extends `evals/test_chat_reply.py` and adds the workflow that runs it. The 
 | a body containing the tracker host, `/issues/12`, or `#12` is refused | R1, R19 |
 | a URL outside the `reachable` list is refused; the same outcome in words is sent | R19, E9 |
 | a tracker write failure sends no acknowledgement | R9, E1 |
+| `chat-reply` imports no tracker module, and `tracker-sync` contains no send call | §2, R15 |
 | `kind: update` leaves no final card for `chat-reply` to send | E10 |
 | exactly one `messages ( ) . create` path exists in the host scripts, and `REPLY_MESSAGE_OR_FAIL` is the only reply option used | R15, R8 |
 
@@ -427,18 +498,60 @@ PR 5 extends `evals/test_chat_reply.py` and adds the workflow that runs it. The 
 
 | Path | Verdict |
 |---|---|
-| **Enable REST, a dedicated Ralph account, a per-user API key** | **Approved by you, 2026-11-06.** One setting, one account, a documented interface, the application's own validation. What remains is operational: create the account, generate its key, and put the key on the host beside the chat token, owner-only (PR 7's runbook). |
+| **Enable REST, a dedicated Ralph account, a per-user API key** | **Approved by you, 2026-11-06.** One setting, one account, a documented interface, the application's own validation. What remains is operational: create the account, generate its key, and put the key on the host beside the chat token, owner-only (PR 9's runbook). |
 | `rails runner` over a shell on the tracker host | **Dropped.** It existed only as the fallback if REST stayed off. With it goes a second credential and a write path that skips validation. |
 | Incoming email | Rejected: email is a PRD non-goal. |
 | Direct database writes | Rejected. |
 
 All tracker access sits behind one module, `bootstrap/tracker.py`, with `find`, `create`, `update`, `note`. *General product knowledge; the instance was not inspected (A1), so PR 1's eval runs against a fake and the first live call is a manual one.*
 
-### 5.2 Where the tracker step sits
+### 5.2 `bootstrap/tracker-sync`: one job, two entry points
 
-Inside `chat-reply:handle`, in the branch that already holds the acknowledgement until the orchestrator card exists (`:193-200`). The order becomes: orchestrator card, then tracker item, then reply. If the tracker write fails, nothing is sent and the operation retries. Because the thread is the request, the lookup key is a custom field holding the thread name; a message in a known thread finds its item first, and an unconfident cross-thread match becomes a new item with a `related to` relation (R12, E5, E13).
+One sentence: **make the work tracker match the state of a chat operation.** It
+holds the tracker key, imports `bootstrap/tracker.py`, and contains no send
+call and no policy about whether a reply may go.
 
-The tracker module stays **optional at runtime**, even with D1 approved: until the key file exists on the host, `chat-reply` runs exactly as shipped, replies and all, and logs that the tracker step was skipped. That keeps a credential that is not yet installed from stopping a feature that already works, and it makes PR 6 safe to merge before PR 7's runbook is followed.
+| Entry point | Called by | Does | Writes |
+|---|---|---|---|
+| `--record <op>` | `chat-reply`, in the branch that already holds the ack until `chat-route` confirms an orchestrator card (`:193-200`) | finds or creates the item for the thread, with the staged request text and the card's `ack` as the restatement | `.tracker-recorded`, holding the item id |
+| `--settle` | `chat-reply`, once at the top of each scan | for each operation with `.clarify-sent` and no `.tracker-waiting`: create or update the pending record (R5) and set `Waiting on requester`. For each with `.final-sent` and no `.tracker-closed`: set `Resolved` with the outcome from the report card | `.tracker-waiting`, `.tracker-closed` |
+
+The order for an acknowledgement becomes: orchestrator card, then
+`--record`, then the reply. A non-zero exit sends nothing and the operation
+retries next scan, exactly as a failed `chat-route` does today (`:197-199`).
+Everything the settle pass does happens **after** a reply has already gone out, so a
+tracker failure there delays a record and never changes what was said. It is
+called `--settle` and not a sweep because A18 uses "sweep" for chasing a
+requester, which this never does: it writes to the tracker and sends nothing.
+
+**Why `tracker-sync` reads cards.** `--record` needs the restatement and
+`--settle` needs the outcome; both are agent text and both live on a card. It
+finds them with the same listing `chat-reply` already makes
+(`hermes kanban … list --assignee ralph-chat-maintainer --status done`,
+`chat-reply:221-224`), matched by operation id. It never reads a decision in
+order to *act* on one: `chat-reply` has already decided by then, and before a
+settle pass the reply has already gone out. One reader of policy, one sender,
+one writer of reply markers.
+
+**Rule of three, and the shared reader.** All three scripts must validate the
+same staged `item.json`, and that check already exists twice — `chat-reply:69-74`
+and `chat-route:42-47` are near-copies. `tracker-sync` would be the third, so
+PR 6 extracts `bootstrap/chat_evidence.py` (the staged-item reader,
+`operation_of`, `decision_of`) and imports it in all three. No behaviour
+changes and the fifteen tests in `evals/test_chat_reply.py` and those in
+`test_chat_route.py` must pass untouched. `bootstrap` is mounted read-only into
+the container (`compose/docker-compose.yml:171`), so the module resolves for
+`chat-route` as well.
+
+**Finding the item.** Because the thread is the request, the lookup key is a
+custom field holding the thread name; a message in a known thread finds its
+item first, and an unconfident cross-thread match becomes a new item with a
+`related to` relation (R12, E5, E13).
+
+**Until the key file exists.** `tracker-sync` exits 0 with "tracker not
+configured" when there is no key on the host, so `chat-reply`'s gate is
+satisfied, the ack goes out, and the feature runs exactly as shipped. That is
+what makes PRs 7 and 8 safe to merge before PR 9's runbook is followed.
 
 ### 5.3 What an item holds, and its statuses
 
@@ -452,7 +565,10 @@ Stored: the requester's display name, the space and thread names, the request te
 | `Resolved` + outcome | worked to a result | the final reply, once |
 | `Rejected` / `Duplicate` / `Closed` | stopped, refused, folded in | nothing, or the one honest "it failed" reply your D2 keeps (§4.6) |
 
-`Waiting on requester` never expires and is never swept (A18). One saved query, sorted by age, shows the pile; building it is your click.
+`Waiting on requester` never expires and is never swept (A18). One saved query,
+sorted by age, shows the pile; building it is your click. The pending record is
+written **after** the question goes out, by `tracker-sync --settle` (§0.2, §5.2);
+only `In progress` is gated on a write that already succeeded.
 
 ### 5.4 Unknown 6 — who classifies
 
@@ -466,18 +582,22 @@ Each under 400 lines and one concern (`STANDARDS.md`). Each is inert on merge; t
 
 | PR | Concern | Files | Inert because | Gate |
 |---|---|---|---|---|
-| 1 | Tracker client | `bootstrap/tracker.py`, `evals/test_tracker.py` | nothing imports it | none left (D1 approved); the key file is PR 7 |
+| 1 | Tracker client | `bootstrap/tracker.py`, `evals/test_tracker.py` | nothing imports it | none left (D1 approved); the key file is PR 9 |
 | 2 | Chat read, eligibility, five-minute window, schema; no cards | `bootstrap/chat-producer` (dry-run default), `evals/test_chat_producer.py` | dry-run prints, creates nothing | first act: confirm the API fields and the `createTime` filter (§3.2, §3.4) |
 | 3 | Producer stages evidence and creates intake cards | same, plus `bootstrap/install-chat-producer-launchd` | the LaunchAgent is not installed | **D5** (install it, or you run the scan) |
 | 4 | Decision metadata | `profiles/chat-maintainer/SOUL.md`, `bootstrap/chat-route`, `evals/test_chat_route.py` | adds optional keys; unchanged behaviour without them | none left (D2 settled: shipped text stays) |
 | 5 | Ceilings, R19 checks, block and alert, CI workflow | `bootstrap/chat-reply`, `evals/test_chat_reply.py`, `.github/workflows/chat-reply.yml`, `skills/ops/google-chat/SKILL.md` | tightens only; refuses more, sends nothing new | none left |
-| 6 | Tracker step in `chat-reply` | `bootstrap/chat-reply`, `bootstrap/tracker.py`, evals | the module no-ops until the key file exists (§5.2) | the key file |
-| 7 | Turn it on | `compose/README.md` runbook | documentation | **D5**, the tracker account and key, the pre-launch check |
+| 6 | Extract the staged-evidence reader (rule of three, §5.2) | `bootstrap/chat_evidence.py`, `bootstrap/chat-reply`, `bootstrap/chat-route` | no behaviour change; the existing evals pass untouched | none |
+| 7 | The tracker script | `bootstrap/tracker-sync`, `evals/test_tracker_sync.py` | nothing calls it | none |
+| 8 | Wire it: `--record` before the ack, `--settle` per scan | `bootstrap/chat-reply`, `evals/test_chat_reply.py`, `evals/test_tracker_sync.py` | `tracker-sync` exits 0 "not configured" without a key file (§5.2) | the key file |
+| 9 | Turn it on | `compose/README.md` runbook | documentation | **D5**, the tracker account and key, the pre-launch check |
 
 Order: 5 first. It adds no behaviour and closes the most exposure, because the
-shipped sender has none of the ceilings today. Then 1, 4, 2, 3, 6, 7. PRs 2 and
+shipped sender has none of the ceilings today. Then 1, 4, 2, 3, 6, 7, 8, 9. PRs 2 and
 3 stay separate for v2's reason: the half that reads untrusted content and the
-half that acts are reviewed apart.
+half that acts are reviewed apart. PRs 7 and 8 are separate for the same reason
+in the other direction: the file that can write to the tracker and the change
+that lets a reply depend on it are different reviews.
 
 ---
 
@@ -485,22 +605,22 @@ half that acts are reviewed apart.
 
 | # | Mechanism | Test |
 |---|---|---|
-| E1 | `route` → orchestrator card → tracker item → acknowledgement, in that order | `test_chat_reply`: order; one send; a tracker failure sends nothing |
+| E1 | `route` → orchestrator card → `tracker-sync --record` → acknowledgement, in that order | `test_chat_reply`: order; one send; a non-zero `--record` sends nothing |
 | E2 | Operation id = hash of the message name; card idempotency key = that id | `test_chat_producer`: a second tick over one message creates no second card |
-| E3 | `reply_kind: decline`; no tracker call; second decline in the thread refused | `test_chat_reply`: decline makes no tracker call; second is refused |
+| E3 | `reply_kind: decline`; no tracker call; second decline in the thread refused | `test_chat_reply`: a decline calls `tracker-sync` not at all; the second is refused |
 | E4 | `client-ralph-` id and `sender.type` skip the message; `ignore` as backstop | `test_chat_producer`: both are skipped |
-| E5 | Thread-keyed lookup first; else a new item with a `related to` relation | `test_chat_reply` against a fake tracker |
+| E5 | Thread-keyed lookup first; else a new item with a `related to` relation | `test_tracker_sync` against a fake tracker |
 | E6 | `--strict-thread`; failure blocks the card and posts the webhook | `test_chat_reply`: API error blocks; refusal blocks |
 | E7 | The final card depends on every work card | `test_orchestration`: one of three parents done yields no final send |
-| E8 | The final card's `send` posts once, then closes the item | `test_chat_reply`: a second scan sends nothing |
+| E8 | The final card's `send` posts once; the next `--settle` closes the item | `test_chat_reply`: a second scan sends nothing. `test_tracker_sync`: the settle pass closes once |
 | E9 | `reachable` list; other URLs refused | `test_chat_reply`: private-repo URL refused; the same outcome in words sent |
 | E10 | `kind: update`: no final card requested | `test_chat_route`: update omits the final-card line |
 | E11 | Blocked or abandoned work never runs the final card; work that finished badly gets one honest reply (your D2, §4.6) | `test_chat_reply`: a blocked parent sends nothing; a failed-but-complete graph sends exactly one `final` |
-| E12 | R3 fields and statuses on the item (§5.3) | `test_tracker` |
+| E12 | R3 fields and statuses on the item (§5.3) | `test_tracker` for the fields; `test_tracker_sync` for the statuses |
 | E13 | Brief says decide and link, never stop | reviewed in PR 4; a judgement, not a branch |
 | E14 | Eligibility: a DM or a resolved annotation, inside `CHAT_ROUTE_SPACES`, created inside the five-minute window | `test_chat_producer`: unmentioned and typed-name messages are not staged; a message older than the window is not staged |
-| E15 | `clarify`: no acknowledgement; item `Waiting on requester` | `test_chat_reply` |
-| E16 | Whole thread staged; D4(a), approved, makes the unmentioned answer eligible | `test_chat_producer`: requester's reply staged, a third party's not |
+| E15 | `clarify`: no acknowledgement; the settle pass then sets `Waiting on requester` | `test_chat_reply`: no ack marker. `test_tracker_sync`: `.clarify-sent` yields the pending record once |
+| E16 | Whole thread staged; D4(a), approved, makes the unmentioned answer eligible, from `.clarify-sent` with no `.final-sent` (§3.3) | `test_chat_producer`: requester's reply staged, a third party's not |
 | E17 | No sweep, no reminder; no final card exists for a waiting item | `test_chat_producer`: nothing re-sent for a pending thread |
 | E18 | Third `clarify` in a thread refused and blocked | `test_chat_reply` |
 
@@ -508,7 +628,8 @@ half that acts are reviewed apart.
 
 ## 8. Non-goals
 
-- **A second host sender.** `chat-reply` is the sender. There is no `chat-writer`.
+- **A second host sender.** `chat-reply` is the sender. There is no `chat-writer`, and `tracker-sync` contains no send call (§2).
+- **A second LaunchAgent for the tracker.** `chat-reply` calls `tracker-sync`; the tracker step has no tick of its own (§0.2).
 - **A closure producer or any tracker poll.** The final card is the trigger.
 - **A chat bot identity.** Replies come from the owner's account; a requester cannot tell Ralph's text from yours. A different consent.
 - **A new `gchat.py` command.** Its CLI is unchanged; the producer reuses its credential helpers and makes its own read-only `list` call (§3.4).
@@ -542,6 +663,8 @@ state. Numbering is v4's; three of v3's twelve retired when you decided.
 11. **A five-minute window scanned every 60 seconds loses only what arrives while the host is not scanning**, and losing it silently is acceptable (§3.4).
 12. **You will run the one live thread-reply check** before the first real send.
 13. **A public GitHub repository is a sufficient proxy for "the requester can already reach it".** Anything subtler is treated as unreachable and named in words.
+14. **Splitting the tracker out of the sender is mine to settle**, because it is file structure rather than product or policy. The proposal arrived on your behalf and §2 takes it; if you want the shape it described instead — a separate LaunchAgent on its own tick — that is a sentence from you, not a redesign.
+15. **An operation's workspace directory is a sound place for `tracker-sync`'s own sentinels.** It is already where the reply markers live (`chat-reply:27,145-147`), owner-only, and removed when the item closes (§5.3).
 
 Retired by your answers: v3's A1 fallback clause (`rails runner`, D1), its A9
 ("the shipped behaviour was considered, not drift" — D2 settles it either way),
@@ -556,3 +679,5 @@ One line each. Reported, not fixed.
 - If a send succeeds and the marker write then fails, `chat-reply` says "retry is safe" (`:208`). A retry reuses the same `messageId`; what the Chat service returns for a duplicate custom id I did not verify, and the retry could fail forever on it.
 - No chat eval runs in CI (§4.7), and `evals/test_inbox_writer.py` is in no workflow either.
 - `ralph-chat-maintainer` has a repository token (`docs/decisions/0001`) and reads untrusted chat text; the ADR names this as accepted risk. R19 now rests on host checks because of it.
+- The staged-evidence safety check exists twice already: `chat-reply:69-74` raises `Refused`, `chat-route:42-47` raises `ValueError`, and they test the workspace symlink in different places (`chat-reply:69`, `chat-route:38`). That is why PR 6 extracts one reader rather than adding a third copy.
+- `install-chat-reply-launchd` refuses to replace a plist whose settings differ (`:44-46`) and offers no `--force`, so any later change to the scan command is a manual unload and reinstall on your machine.
