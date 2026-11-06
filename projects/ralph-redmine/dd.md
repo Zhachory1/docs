@@ -74,8 +74,8 @@ these change the design rather than confirm it.
 | You said | It settles | What moved in this document |
 |---|---|---|
 | **D1 — Approved** | The tracker's REST API goes on, Ralph gets its own tracker account and a per-user API key. | §5.1's `rails runner` fallback is **dropped**, with it the second trust boundary and the "skips validation" cost. PRs 1 and 6 lose their gate; the only prerequisite left is the key file on the host, which is one line of PR 7's runbook. |
-| **D2 — Let's go with the recommendation** | Where shipped `chat-reply` and the PRD disagree, **the shipped behaviour wins and the safety moves from the sentence to the host.** Ralph keeps writing its own acknowledgement and refusal, and tells a requester when work failed. | §4.4's refusal checks are now the **whole** content bound, not one of two options; the conditional branches in §4.4 and §4.6 are gone. No `SOUL.md` line changes, so PR 4 shrinks. And the merged PRD now has three sentences (R6, R7, A14) that describe nothing that runs — **D3 below**. |
-| **D4 — Don't cap anything. Just check for chats from the last 5 minutes for the account from the room. We will expand to all chats later.** | (b) **No rate limit, ever** — §8 is now a flat non-goal, and the per-sender counter v3 offered is gone. (a) **Approved**: a thread with an open question is eligible for that requester without a mention (§3.3). (c) `CHAT_ROUTE_SPACES` **stays** as the v1 boundary; "all chats" is a later change and not this design. And new: the producer reads a **five-minute window** (§3.4), which fixes its scan shape, its tick, and what it loses. | §3.3 drops the conditional, §3.4 is new, §6's PR 2 gains the window, and two of v3's assumptions retire. |
+| **D2 — Let's go with the recommendation** | Where shipped `chat-reply` and the PRD disagree, **the shipped behaviour wins and the safety moves from the sentence to the host.** Ralph keeps writing its own acknowledgement and refusal, and tells a requester when work failed. | §4.4's refusal checks are now the **whole** content bound, not one of two options; the conditional branches in §4.4 and §4.6 are gone. No `SOUL.md` line changes, so PR 4 shrinks. And the merged PRD now has three sentences (R6, R7, A14) that describe nothing that runs — **D7 below**. |
+| **D4 — Don't cap anything. Just check for chats from the last 5 minutes for the account from the room. We will expand to all chats later.** | (b) **No rate limit, ever** — §8 is now a flat non-goal, and the per-sender counter v3 offered is gone. (a) **Taken as approved, by inference**: a thread with an open question stays eligible for that requester without a mention (§3.3). Your sentence does not mention thread continuation; I read "don't cap anything" as covering it, and it is the narrower of the two things D4(a) could mean. Behaviour is identical either way — the wide reading of the *same* sentence is D6, which I did not take. (c) `CHAT_ROUTE_SPACES` **stays** as the v1 boundary; "all chats" is a later change and not this design. And new: the producer reads a **five-minute window** (§3.4), which fixes its scan shape, its tick, and what it loses. | §3.3 drops the conditional, §3.4 is new, §6's PR 2 gains the window, and two of v3's assumptions retire. |
 
 **What "don't cap anything" is *not* read as.** The per-thread reply ceilings in
 §4.2 — at most two clarifications, one decline, one acknowledgement, one final —
@@ -116,8 +116,11 @@ request; and thread-scoped eligibility was settled in prose rather than
 escalated. **v3 and v4 keep all three fixes** — the block precedent is cited at
 `maintain-pr` (§4.8), the lock is per thread (§4.2), and the eligibility
 widening went to you as D4(a), which you approved. v3 reached you without an
-independent review; v4 has been sent back to the reviewer, and anything it
-raises lands on this branch before you read it.
+independent review; **v4 was reviewed** and raised one blocking finding — two
+new cross-references pointed at a decision number that no longer exists (D3
+rather than D7) — fixed in this revision, with the reviewer's one note applied
+as the inference flag in §0.1's D4 row. The reviewer re-checked every new
+citation at `95bd4d9` and found them exact.
 
 The one dissent v4 carries forward is with your own words, and it is in §0.1:
 "don't cap anything" is implemented as *no rate limit on requesters*, and the
@@ -388,7 +391,7 @@ v2's request for an owner-approved edit is gone: the line is already edited and 
 
 The orchestrator ends a chat graph with one `ralph-chat-maintainer` card whose parents are the work cards (`orchestrator/SOUL.md:19`). Kanban dependencies mean it does not run until every parent is done, so **one work card finishing is not the request finishing** (R11, E7) by construction, and no tracker poll is needed. `chat-reply` sends the `final`, then sets the item to `Resolved` with the outcome text. The tracker still reads as canonical (R13) because the host writes it at each stage: created at the ack, `Waiting on requester` at a `clarify`, `Resolved` at the final.
 
-**Silence on failure (E11), and what your D2 did to A14.** Partly it follows from the graph: a work card that is blocked or abandoned never lets the final card run, so nothing is sent. But a final card whose parents *completed with a failed result* is told to "say so plainly" (`SOUL.md:23`), and your D2 keeps that. So E11 splits in two: no reply when the work never finished, one honest reply when it finished badly — still bounded by the one-`final`-per-thread ceiling and the §4.4 checks. PRD A14 asks for silence in both cases, and is the third of the three sentences D3 would amend.
+**Silence on failure (E11), and what your D2 did to A14.** Partly it follows from the graph: a work card that is blocked or abandoned never lets the final card run, so nothing is sent. But a final card whose parents *completed with a failed result* is told to "say so plainly" (`SOUL.md:23`), and your D2 keeps that. So E11 splits in two: no reply when the work never finished, one honest reply when it finished badly — still bounded by the one-`final`-per-thread ceiling and the §4.4 checks. PRD A14 asks for silence in both cases, and is the third of the three sentences D7 would amend.
 
 ### 4.7 The eval, and the CI gap
 
