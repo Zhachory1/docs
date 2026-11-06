@@ -8,7 +8,7 @@ revision: v6
 date: 2026-11-06
 prs:
   - Zhachory1/docs#6   # v1, v2, v3, v4, v5
-  - Zhachory1/docs#PRNUM   # v6, this reconciliation
+  - Zhachory1/docs#8   # v6, this reconciliation
 supersedes: none
 ---
 
