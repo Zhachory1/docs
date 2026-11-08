@@ -4,7 +4,7 @@ title: Ralph keeps its context, reports and memories in each instance's docs rep
 status: in review
 owner: Zhachory1
 card: none (owner request in session, 2026-11-08)
-revision: v3
+revision: v4
 date: 2026-11-08
 prs:
   - Zhachory1/docs#9   # this PRD
@@ -37,26 +37,13 @@ the design (Ralph#115). Nothing is built.
    public-safety rule this repository already has (no people, employers, spaces
    or message content); anything that fails it is not written. Or: keep a
    second, private repository for the personal instance's memories.
-3. **Migrating the previous private docs (R16).** The owner wants the
-   separate private-docs setup retired: its content moves into the work docs
-   repository, a filtered subset into the personal one, and the old setup is
-   removed once both are verified. Three sub-decisions:
-   - **3a. What moves to the work repository.** That repository's own rules
-     forbid personal data and raw transcripts. Proposed: documents, decisions,
-     project notes and reports move; raw session transcripts and pages about
-     individual people do not, or move only as summaries.
-   - **3b. How the personal repository is filtered.** It is public. Proposed:
-     an allowlist (only documents explicitly marked or chosen as public-safe),
-     never a denylist, landed as a pull request the owner reviews before merge.
-   - **3c. Retiring the old setup.** Proposed: archive the local folder and its
-     search index rather than delete them, and only after both repositories pass
-     verification and the owner confirms.
 
 **What changed since v1** (owner, 2026-11-08):
 
-- v3: the previous private docs are migrated into the docs repositories and the
-  old setup retired (R16, R18), instead of being indexed as a separate source.
-- QMD ships with Ralph and installs with it (R9, R17), instead of relying on
+- v4: scope is the docs, memory and context system only. Moving the owner's
+  previous private docs is not part of this PRD (N7); whatever is in the docs
+  repositories is what Ralph indexes.
+- QMD ships with Ralph and installs with it (R9, R16), instead of relying on
   the copy installed on the owner's Mac.
 
 **Scope:** M. Roughly three to five build PRs in the Ralph repository; the plan
@@ -100,9 +87,6 @@ Cited from Ralph `main` at `ff6ef4a` (2026-11-08) and the live instances.
   context, `update --pull`, and an MCP server with a shared HTTP mode
   (`qmd mcp --http`). Its models (~1.2 GB) are cached under `~/.cache/qmd`.
   Neither instance has it: nothing in Ralph installs, configures or runs it.
-- **The owner's previous docs live in a private repository** (about 1,200
-  Markdown files), the origin of the host's `~/private-docs`. It is not
-  `RALPH_DOCS_REPO` on either instance.
 - **Ralph's own docs** (`docs/infrastructure.md`, `workflows.md`,
   `operations.md`, `docs/decisions/`) live in the Ralph repository, not the
   docs repository.
@@ -166,21 +150,12 @@ design document, with a citation, without being pointed to it.
 - **R15.** Turning the feature off is one setting per instance, and leaves the
   docs repository untouched.
 
-**Sources and installation**
+**Installation**
 
-- **R16.** A one-time migration moves the previous private docs into the docs
-  repositories (decision 3): eligible content into the work repository, an
-  allowlisted public-safe subset into the personal one. Each lands as a pull
-  request the owner reviews and merges; nothing is pushed straight to either
-  default branch.
-- **R17.** QMD, its models and its index are part of Ralph: a new instance gets
+- **R16.** QMD, its models and its index are part of Ralph: a new instance gets
   working search from `docker compose up` and `init`, with no step on the host.
   The index and models live in that instance's volumes and survive restarts and
   upgrades.
-- **R18.** After both migration pull requests merge and acceptance passes, the
-  old private-docs setup (local folder, its separate search index, viewer and
-  hooks) is retired as decided in 3c. Nothing is removed before the owner
-  confirms.
 
 ## Acceptance examples
 
@@ -191,27 +166,25 @@ design document, with a citation, without being pointed to it.
 3. The work instance's index contains no personal documents, and the personal
    instance's none of the work ones.
 4. With the network off, search still answers from the index.
-4a. A fresh instance stood up from `docs/operations.md` has working search
-    after `docker compose up`, without installing anything on the host.
-4b. On the work instance, a question answered only by a migrated document is
-    answered with a citation to its new path in the work docs repository.
-4c. The personal docs repository contains only allowlisted documents, and none
-    names a person, employer, space or message.
-5. A memory that would name a person or contain message content is not written
+5. A fresh instance stood up from `docs/operations.md` has working search after
+   `docker compose up`, without installing anything on the host.
+6. A memory that would name a person or contain message content is not written
    on the personal instance; the card says why.
-6. A lens card has no QMD tools.
+7. A lens card has no QMD tools.
 
 ## Non-goals
 
 - **N1.** No new database, vector store, sidecar service or second document
   store. The docs repository and a QMD index are the whole system.
 - **N2.** No cloud embeddings or hosted RAG.
-- **N3.** Ralph never reads the host's private-docs folder directly. Its content
-  reaches Ralph only after migration into a docs repository (R16).
+- **N3.** Ralph never reads a host folder directly; only the docs repositories
+  are indexed.
 - **N4.** No change to the PRD, design and plan approval gates.
 - **N5.** No automatic deletion or summarisation of old memories in this
   version.
 - **N6.** Hermes' built-in memory stays off.
+- **N7.** Migrating or retiring the owner's previous private-docs setup. That is
+  the owner's own work, outside this PRD.
 
 ## Unknowns to settle at design time
 
