@@ -60,7 +60,7 @@ design; anyone other than the owner reading the stored knowledge.
 Cited from Ralph `main` at `ff6ef4a` (2026-11-08) and the live instances.
 
 - **Each instance already has a docs repository.** `RALPH_DOCS_REPO` is set on
-  both: personal `Zhachory1/docs` (public), work `rokt-noncore/zhach-docs`
+  both: personal `Zhachory1/docs` (public), work a private repository
   (private). It is a GitHub `owner/name`, not a local path
   (`compose/.env.example:67`). It receives PRD, design and implementation-plan
   PRs (`profiles/STANDARDS.md:38`, orchestrator SOUL), and generic maintenance
