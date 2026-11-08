@@ -4,7 +4,7 @@ title: Ralph keeps its context, reports and memories in each instance's docs rep
 status: in review
 owner: Zhachory1
 card: none (owner request in session, 2026-11-08)
-revision: v1
+revision: v2
 date: 2026-11-08
 prs:
   - Zhachory1/docs#9   # this PRD
@@ -37,8 +37,18 @@ the design (Ralph#115). Nothing is built.
    public-safety rule this repository already has (no people, employers, spaces
    or message content); anything that fails it is not written. Or: keep a
    second, private repository for the personal instance's memories.
-3. **`~/private-docs`.** Proposed: out of scope (N3). It is your owner-only
-   second brain; Ralph does not read it.
+3. **Your previous private docs repository.** Its contents (about 1,200
+   Markdown files, the source of `~/private-docs`) are already merged into a
+   private docs repository. Proposed (R16): the work instance indexes it as a
+   read-only source alongside its own docs repository; agents read it but never
+   write to it. Accept, or keep it out?
+
+**What changed since v1** (owner, 2026-11-08):
+
+- The private docs are already in a docs repository, so they are a read-only
+  source (R16), not a non-goal.
+- QMD ships with Ralph and installs with it (R9, R17), instead of relying on
+  the copy installed on the owner's Mac.
 
 **Scope:** M. Roughly three to five build PRs in the Ralph repository; the plan
 document sizes them.
@@ -75,11 +85,15 @@ Cited from Ralph `main` at `ff6ef4a` (2026-11-08) and the live instances.
 - **No shared MCP servers.** `bootstrap/write-profile-config.py` copies only
   `model`, `platform_toolsets`, `approvals`, `skills` and `terminal`; the one
   MCP server in use (lens-tools) is written by hand into each lens config.
-- **A local search engine is already on the host.** QMD 2.8.3
+- **A local search engine exists, but only on the owner's Mac.** QMD 2.8.3
   (`@tobilu/qmd`): BM25, vector search and LLM re-ranking with local GGUF models
   through `node-llama-cpp`; collections over folders, human-written collection
   context, `update --pull`, and an MCP server with a shared HTTP mode
   (`qmd mcp --http`). Its models (~1.2 GB) are cached under `~/.cache/qmd`.
+  Neither instance has it: nothing in Ralph installs, configures or runs it.
+- **The owner's previous docs live in a private repository** (about 1,200
+  Markdown files), the origin of the host's `~/private-docs`. It is not
+  `RALPH_DOCS_REPO` on either instance.
 - **Ralph's own docs** (`docs/infrastructure.md`, `workflows.md`,
   `operations.md`, `docs/decisions/`) live in the Ralph repository, not the
   docs repository.
@@ -121,8 +135,8 @@ design document, with a citation, without being pointed to it.
 
 - **R8.** Each instance keeps a local checkout of its docs repository, refreshed
   automatically and at least hourly.
-- **R9.** That checkout, plus Ralph's own `docs/`, is indexed with QMD on the
-  instance. Search, embeddings and re-ranking run locally; no document text
+- **R9.** That checkout, plus Ralph's own `docs/`, is indexed with QMD running
+  inside the instance, not on the host. Search, embeddings and re-ranking run locally; no document text
   leaves the machine.
 - **R10.** Agents reach the index through QMD's MCP tools, read-only, pinned to
   their instance's index.
@@ -143,6 +157,16 @@ design document, with a citation, without being pointed to it.
 - **R15.** Turning the feature off is one setting per instance, and leaves the
   docs repository untouched.
 
+**Sources and installation**
+
+- **R16.** An instance can index additional read-only source repositories
+  (decision 3). Agents search them like the docs repository but never write to
+  them. A source is indexed only on the instance whose credentials can read it.
+- **R17.** QMD, its models and its index are part of Ralph: a new instance gets
+  working search from `docker compose up` and `init`, with no step on the host.
+  The index and models live in that instance's volumes and survive restarts and
+  upgrades.
+
 ## Acceptance examples
 
 1. Fresh WebUI chat, personal instance: "what did we decide about the work
@@ -152,6 +176,11 @@ design document, with a citation, without being pointed to it.
 3. The work instance's index contains no personal documents, and the personal
    instance's none of the work ones.
 4. With the network off, search still answers from the index.
+4a. A fresh instance stood up from `docs/operations.md` has working search
+    after `docker compose up`, without installing anything on the host.
+4b. On the work instance, a question answered only by the previous private
+    docs is answered with a citation to that repository; an attempt to write
+    there is refused.
 5. A memory that would name a person or contain message content is not written
    on the personal instance; the card says why.
 6. A lens card has no QMD tools.
@@ -161,7 +190,8 @@ design document, with a citation, without being pointed to it.
 - **N1.** No new database, vector store, sidecar service or second document
   store. The docs repository and a QMD index are the whole system.
 - **N2.** No cloud embeddings or hosted RAG.
-- **N3.** `~/private-docs` is not read or indexed.
+- **N3.** Ralph does not read the host's `~/private-docs` folder directly; its
+  contents reach Ralph only through the repository in R16.
 - **N4.** No change to the PRD, design and plan approval gates.
 - **N5.** No automatic deletion or summarisation of old memories in this
   version.
@@ -169,8 +199,9 @@ design document, with a citation, without being pointed to it.
 
 ## Unknowns to settle at design time
 
-- Where QMD runs: the hermes container, a sandbox, or a small per-instance
-  service using QMD's HTTP MCP mode, and how its 1.2 GB of models are cached.
+- Where QMD runs inside an instance: a small per-instance compose service using
+  QMD's HTTP MCP mode, the hermes container, or each sandbox; how its 1.2 GB of
+  models are downloaded once and cached in a volume.
 - How the MCP server reaches profiles, given that install does not copy
   `mcp_servers` today.
 - How agents commit memories (`gh api` contents writes or a checkout), and how
