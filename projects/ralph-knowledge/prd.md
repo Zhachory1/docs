@@ -7,7 +7,7 @@ card: none (owner request in session, 2026-11-08)
 revision: v1
 date: 2026-11-08
 prs:
-  - Zhachory1/docs#TBD   # this PRD
+  - Zhachory1/docs#9   # this PRD
 issue: Zhachory1/ralph#121
 supersedes: none
 ---
