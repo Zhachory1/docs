@@ -7,7 +7,7 @@ card: none (owner request in session, 2026-11-08)
 revision: v1
 date: 2026-11-08
 prs:
-  - Zhachory1/docs#TBD   # this design
+  - Zhachory1/docs#10   # this design
 implements: prd-ralph-knowledge
 issue: Zhachory1/ralph#121
 supersedes: none
