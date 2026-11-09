@@ -266,7 +266,7 @@ cron job `chat_inbox.py`: it stages the whole thread every two minutes and skips
 Ralph's own `client-ralph-*` messages (`docs/workflows.md:84,89,108`;
 `docs/diagrams/system.dot:34`). It is installed into a profile from the private
 overlay by `bootstrap/install-overlay-jobs:1-25`, so it is not in the public
-source. `bootstrap/chat-route:1,21-33` relays one completed, trusted `route`
+source. `bootstrap/chat-route:1,21-39` relays one completed, trusted `route`
 decision to the orchestrator and refuses a card that is not done, not
 chat-maintainer's, or whose workspace does not match the operation.
 `evals/test_chat_reply.py` asserts the parts of the bound that exist: one send
@@ -299,8 +299,9 @@ wrote (`:16-19`). The chat path above is this pattern, already carried across.
 
 **No tracker integration of any kind.** Confirmed at `e5ce164`, not assumed: no
 tracker client, no issue code, no write path anywhere in the tree. The only
-mentions are the two diagrams, where the tracker is drawn dashed and labelled
-"DD awaiting approval" (`docs/diagrams/system.dot:114,161`). Everything this
+mentions are three dashed, not-wired diagram nodes: two in
+`docs/diagrams/system.dot:114,161`, labelled "DD awaiting approval", and one in
+`docs/diagrams/tools.dot:38`, in the "Planned / not wired" cluster. Everything this
 document says about the tracker is still unbuilt.
 
 **No chat intake in the public source.** The writer ships; the producer is not
