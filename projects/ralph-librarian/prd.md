@@ -1,7 +1,7 @@
 ---
 id: prd-ralph-librarian
 title: A weekly librarian keeps each instance's docs repository organised, so knowledge search returns current documents and not stale or duplicate ones
-status: draft
+status: in review
 owner: Zhachory1
 card: none yet (owner brief, 2026-11-09)
 revision: v1
@@ -18,7 +18,7 @@ supersedes: none
 > appears here. The work instance's docs repository is "the work docs
 > repository".
 
-Status: **draft**. Nothing is built.
+Status: **in review**. Nothing is built.
 
 ## Review header
 
@@ -47,7 +47,7 @@ sizes them.
 
 ## Current state, verified
 
-Cited from Ralph `main` at `e5ce164` and docs `main` at `e8b2a85` (2026-11-09).
+Cited from Ralph `main` at `e5ce164` and docs `main` at `7ad9a6b` (2026-11-09).
 
 - **The knowledge system is live** (Ralph#121, PRs #122 to #127). Agents file
   notes under `memory/<decisions|root-causes|conventions>/` and
