@@ -4,7 +4,7 @@ title: The chat half ships in eight pull requests, the sender's bounds first and
 status: draft
 owner: Zhachory1
 card: t_5576e6da
-revision: v1
+revision: v2
 date: 2026-11-09
 implements: dd-ralph-redmine-chat
 part: 1 of 2 (chat setup; the tracker plan is its own document)
@@ -30,8 +30,8 @@ Every chat file this plan touches is byte-identical at `f679e098` —
 chat evals are untouched between the two commits, so every line citation in the
 design still resolves. **Two of the design's citations have drifted** and this
 plan uses the new numbers: `bootstrap/install:170-179` is now `:178-187` and
-`:186-191` is now `:189-200` (`#128` added ten lines above them), and
-`docker-compose.yml:369,371` is now `:374,376` (`#128` added five lines above).
+`:186-191` is now `:194-199` (`#129` added eight lines above both), and
+`docker-compose.yml:369,371` is now `:374,376` (`#129` added five lines above).
 `docker-compose.yml:31`, `:90`, `:93`, `:163-171`, `:226-228`, `:261` and
 `docs/workflows.md:84,89,92,110` are unmoved.
 
@@ -48,8 +48,35 @@ plan uses the new numbers: `bootstrap/install:170-179` is now `:178-187` and
 
 ### Council dissent
 
-None yet. One independent review round follows this draft; its findings and
-their resolution land in v2 of this document.
+One independent review round (`ralph-reviewer`, artifact lens,
+[#22 comment](https://github.com/Zhachory1/docs/pull/22#issuecomment-6747653193)).
+No dissent on the plan's shape: the reviewer checked the eight-versus-six-to-seven
+arithmetic, every PR's class and inertness statement, and that no live-host-path
+PR increases what is sent today, and accepted all three. It found two factual
+defects, both fixed in this revision and neither contested:
+
+1. A re-grounded line citation was wrong. See "What changed in v2" below.
+2. **Owner-only runbook item 1 described the rejected credential path.** It said
+   D8 needed a browser OAuth step before the copy — design option (a), which
+   §4.2 rejects and the design's non-goals name explicitly (`dd-chat.md:636`).
+   An owner following it literally would have created a second real Google
+   grant, the exact cost option (b) exists to avoid. Item 1 is rewritten to the
+   chosen option (b), which PR 8's own body already described correctly.
+
+Two non-blocking observations (the sender unit's line-count reconciliation, the
+total-size rounding) were raised and need no change.
+
+### What changed in v2
+
+- Runbook item 1 rewritten: the D8 step is `bootstrap/chat-creds-copy` against
+  the token already on the host, not a browser mint. No other section changed
+  mechanism — PR 8 was already correct.
+- `bootstrap/install:186-191` re-grounds to **`:194-199`**, not `:189-200`
+  (opening paragraph and PR 8's volume bullet). The shift is eight lines, from
+  `#129`, not ten from `#128`; the paired `:170-179 → :178-187` was correct and
+  is unchanged.
+- No pull request was added, removed, resized or re-ordered. The eight PRs,
+  their `<planned_files>`, dependencies and test plans are untouched.
 
 ### Scope: eight pull requests, roughly 2,000 changed lines
 
@@ -488,7 +515,7 @@ units.
     rewrites the token in place, `gchat.py:139-143`), `../bootstrap:ro`,
     `../skills:ro` (`post()` shells out two levels up, `chat-reply:128`), and
     `${RALPH_WORKSPACES}:/workspaces` at the same host path as the hermes
-    service, because `bootstrap/install:178-187,189-200` derives the
+    service, because `bootstrap/install:178-187,194-199` derives the
     chat-maintainer's read-only evidence mount from that container's own
     `/workspaces` source. Environment: `RALPH_INSTANCE`, `RALPH_WORKSPACES`,
     `CHAT_ROUTE_SPACES`, `CHAT_SEND`, `RALPH_NOTIFY_URL`,
@@ -540,14 +567,22 @@ units.
 
 These are yours. None is a pull request, and nothing in the plan schedules them.
 
-1. **Mint the second send-capable Chat token (D8).** A browser step on your own
-   machine: `cmd_auth` calls `run_local_server(port=0)` (`gchat.py:161-166`),
-   which needs a browser on the same host. **After PR 8 merges, before it is
-   useful** — PR 8 merges with no credential present and mints nothing. Then run
-   `bootstrap/chat-creds-copy` on the host, once, to re-encrypt the grant into
-   the `chat-creds` volume. What you give up is in §4.2: that copy has no
-   machine binding left and can post as you until you revoke the grant in your
-   Google account.
+1. **Copy the Chat token you already have into the sidecar's volume (D8).**
+   **Not a browser step, and not a second OAuth grant.** The design rejects
+   minting a token inside the container (§4.2 option a) and lists "a second
+   OAuth grant, a second consent screen" among its non-goals
+   (`dd-chat.md:636`); the chosen option b copies the grant that exists today
+   (`dd-chat.md:51`). The host token is already send-capable — `gchat.py` has
+   one scope list and `chat.messages.create` is in it (`:60-66`) — which is why
+   the host `chat-reply` LaunchAgent posts replies now. **After PR 8 merges,
+   before it is useful** — PR 8 merges with no credential present and mints
+   nothing. One command, on the host, once:
+   `bootstrap/chat-creds-copy`, which reads
+   `~/.config/gws-cli/chat_token.json.enc` with the host key and re-encrypts it
+   into the `chat-creds` volume. Your host token is not moved or replaced; a
+   second copy of it comes into existence. What you give up is in §4.2: that
+   copy has no machine binding left and can post as you until you revoke the
+   grant in your Google account.
 2. **Answer P2, then cut over from the overlay job.** Read `chat_inbox.py` and
    check whether it stages under `chat-<sha256 of the message resource name>`.
    Then, in this order: stop the overlay cron job, start the sidecar
