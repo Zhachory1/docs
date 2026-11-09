@@ -1,10 +1,10 @@
 ---
 id: dd-ralph-redmine-chat
 title: How a chat message reaches Ralph, and how its replies are bounded
-status: in review
+status: approved
 owner: Zhachory1
 card: t_1b391076
-revision: v1
+revision: v2
 date: 2026-11-09
 implements: prd-ralph-redmine
 part: 1 of 2 (chat setup; the tracker is its own design)
@@ -19,8 +19,11 @@ prs:
 > content appears here. The requester is "a requester", the tracker is "the work
 > tracker", and Google Chat is a vendor name and is named.
 
-Status: **in review**. Nothing is built; no chat message was sent or read, no
-credential touched, no tracker contacted. Merging this is the approval.
+Status: **approved** — merged at `Zhachory1/docs#14` on 2026-11-09, on the
+owner's direct instruction. Nothing is built; no chat message was sent or read,
+no credential touched, no tracker contacted. **This revision is an amendment,**
+not a new design round: it corrects a safety claim that was wrong, and makes
+§3.1's ownership of the shared schema explicit. Merging it is its approval.
 
 **Scope.** Everything between a message arriving and a reply leaving: the
 producer that stages it, the gate that makes it eligible, the ceilings and
@@ -46,7 +49,7 @@ other half. Every `prd.md:N` is `projects/ralph-redmine/prd.md` at **v7**
 | # | Decision | Why it is yours | If you say no |
 |---|---|---|---|
 | **D8** | **Put a send-capable Chat credential in a container.** Your D5 chose the sidecar, and a sidecar cannot mint its own token: `cmd_auth` calls `run_local_server(port=0)` (`gchat.py:161-166`), which needs a browser on the same machine and a loopback port nobody can publish in advance. So the token arrives from outside. The recommended path (§4.2, option **b**) copies the grant you already have: decrypt the host token once, re-encrypt it under a pinned machine id and user, write it into the sender's own volume. **Two costs, both yours:** that copy has **no machine binding left** (`gchat.py:106-114` keys on a file you now supply), and it can post as you until you revoke the grant in your Google account. The client secret never enters the container, and your host token does not move. | Where a credential that can post as you may live is not a design question. The boundary — "holding no chat credential is enforced by where the credential lives" (`profiles/chat-maintainer/config.yaml:3-5`) — is yours, and this is the first thing that spends it. | The sidecar is off. The sender stays on your machine as a LaunchAgent (`install-chat-reply-launchd`, not deleted either way) or you run `--scan` by hand. Nothing else changes: §4.2's cost table is the whole difference. |
-| **D9** | **Ship the send switch, defaulting off.** One environment variable, read once per scan. With it off the producer stages, the agent decides, `chat-route` routes and the tracker records — and `post()` is never called (`chat-reply:123`, called at `:200`). You flip it when you want requesters to hear from Ralph. **Recommended: take it.** It buys a week of real volume and classification quality under D6 before anyone is replied to, and because the §4.5 refusals still run while held, it is a live dry run of the content bound with nothing reaching a requester. The cost, stated in §4.8: **phase 1 satisfies no requester-facing requirement.** R6, R7, R11 and R20 are deferred, not met. | It decides whether the first thing you see is a backlog or a conversation, and when a requester first hears from an automatic sender. A product call, not a file layout. | The sender posts as soon as the producer runs. Drop §4.8 and the two held-marker conditions the tracker design would otherwise inherit. |
+| **D9** | **Ship the send switch — and choose its default, now that the loop is live.** One environment variable, read once per scan. With it off the producer stages, the agent decides, `chat-route` routes and the tracker records — and `post()` is never called (`chat-reply:123`, called at `:200`). **The v2 correction, and it changes this decision:** v1 wrote this row believing nothing was staged and nothing was sent. Both were wrong. The private overlay producer stages whole threads every two minutes and the host `chat-reply` LaunchAgent answers requesters every sixty seconds, today (`docs/workflows.md:84,89,92,110`; §3). So **off** is not a ramp onto a cold start — it is a deliberate pause on a reply path people are already being answered on, and they will not be told why it went quiet. **On** keeps today's behaviour and makes §4.4's ceilings and §4.5's refusals the only change a requester can notice, with the switch kept as a stop button rather than a ramp. **Recommended: on.** Taking **off** still buys what v1 claimed — a week of real volume and classification quality under D6 — but buys it with silence, not with a blank slate, and §4.8's "phase 1 satisfies no requester-facing requirement" is then a withdrawal of R6, R7, R11 and R20, not a deferral of them. | It decides whether requesters who hear from Ralph today keep hearing from it. A product call, not a file layout. | No switch at all: the sender keeps posting exactly as it does now, with §4.4's ceilings and §4.5's refusals applied, and your only stop button is unloading the LaunchAgent. Drop §4.8 and the two held-marker conditions the tracker design would otherwise inherit. |
 
 **Yours, but not decisions.** Run one threaded reply in a space of your own
 before the first real send: `evals/test_gchat_send.py:34-40` proves the code
@@ -112,8 +115,29 @@ closes the most exposure, because the shipped sender has none of the ceilings
 today. The sidecar comes **last**: everything before it runs by hand. The
 breakdown belongs to the implementation plan.
 
-**Length, declared rather than hidden.** This is 662 lines against the card's
-450-line target — 58% of the 1146-line document it replaces, and it carries
+**What makes these pull requests safe to merge, now that the loop is live.** v1
+rested this on "no producer exists". One does, and the host sender answers
+requesters every sixty seconds (§3). So no pull request may claim inertness from
+"nothing exists". It claims it from "this path is not reached without an owner
+action", and names the action. Every planned pull request falls in one of three
+classes, and the implementation plan states which, per pull request:
+
+1. **Changes to the live host path** — `bootstrap/chat-reply`, `chat-route`,
+   `SKILL.md`. These take effect on the next sixty-second scan; they are not
+   inert. They are safe because each only ever *reduces* what is sent: §4.4's
+   ceilings and §4.5's refusals add no send path, and §3.1's stricter reads
+   refuse rather than send. The one exception is §4.8's switch, whose default
+   decides whether a live reply path goes quiet — which is why it is D9.
+2. **Sidecar and credential work** — the compose services, the public producer,
+   the token copy. Inert until **D8**: nothing in the container reads a
+   credential that is not there yet, and `post()` is unreachable without one.
+3. **Tracker-side work.** Inert until **D1**: `tracker-sync` exits 0 "tracker
+   not configured" with no key file (`dd-tracker.md` §3.2).
+
+**Length, declared rather than hidden.** This is 743 lines at v2 (662 at v1,
+plus 81 for the three safety classes, the §3 correction and the changelog)
+against the card's 450-line target — 65% of the 1146-line document it replaces,
+and it carries
 roughly half of that document's subject matter, so it is denser per topic but
 still over budget. The three blocks I would cut first, in order, and what each
 costs you: §4.1's mount derivation and exec-reach paragraphs (~25 lines; you
@@ -131,8 +155,28 @@ any of the three goes.
 omitted. No code reads it — only the model does — but R3 ("a person opening one
 item can tell who asked", `prd.md:399-401`) needs it, so the tracker should
 take the requester identity from that field rather than invent a second source.
-Nothing else in §3.1 moves. If D9 is taken, §4.8 names two further things the
-tracker design inherits.
+Nothing else in §3.1 moves. **v2 adds no field**; it states plainly that §3.1 is
+the single authoritative copy of this schema, `kind` on the done card included
+(set in §4.3), so the tracker design cites it instead of keeping its own list.
+If D9 is taken, §4.8 names two further things the tracker design inherits.
+
+### What changed in v2
+
+An amendment to the merged v1 (`Zhachory1/docs#14`), card `t_d306f347`. Prose
+only; no section moved, no citation changed, no field added.
+
+1. **§3 and §4.8: the safety claim is corrected.** v1 said nothing writes staged
+   chat evidence and there is nothing to send. A private overlay producer and
+   the host `chat-reply` LaunchAgent have been live throughout. Inertness now
+   rests on the three classes above, never on "nothing exists".
+2. **D9 changes shape because of that**, and its recommendation is now **on**: a
+   switch defaulting off pauses a reply path requesters already use.
+3. **§3.1 is named as the single authoritative schema**, `sender` and `kind`
+   included, which closes `dd-tracker.md`'s T1 without changing anything here.
+4. **Assumption 12 is rewritten**, for the same reason as 1.
+
+§4.4's ceilings, §4.5's refusals, D8, §3.2's gate and every source citation are
+v1's, unchanged.
 
 ---
 
@@ -186,17 +230,41 @@ no rendezvous, no second tick, and still inside the thread lock.
 
 ---
 
-## 3. The producer: the missing half
+## 3. The producer: the missing *public* half
 
-Nothing writes staged chat evidence today: `grep -rn chat-producer` at
-`e5ce164` returns nothing, and `SKILL.md:46` says the host scan "does not start
-inbound Chat polling". `bootstrap/inbox-producer` is the shape to copy — the
-same read beside the token, the same staged evidence, the same `hermes kanban …
+**Correction, v2.** v1 opened "nothing writes staged chat evidence today", and
+that claim was load-bearing under this document's whole safety story. It is
+wrong. A producer runs in production: the private overlay cron job
+`chat_inbox.py` stages the thread every two minutes, and the host `chat-reply`
+LaunchAgent answers requesters every sixty seconds
+(`Zhachory1/ralph` at `e5ce164`: `docs/workflows.md:84,89,92,110`; the job is
+installed by `bootstrap/install-overlay-jobs`). `grep -rn chat-producer`
+returning nothing and `SKILL.md:46` saying the *host scan* "does not start
+inbound Chat polling" are both true, and both prove only that the producer is
+not in the public repository — not that there is none. The overlay does the
+polling the host scan does not.
+
+What is missing is a **public** producer. This section specifies it, D5 puts it
+in the sidecar, and `bootstrap/inbox-producer` is the shape to copy — the same
+read beside the token, the same staged evidence, the same `hermes kanban …
 create --idempotency-key` through `docker exec` (`:4-5,19-22,29-33`).
+
+**One thing the implementation plan must settle, which I cannot.** Whether the
+sidecar producer replaces the overlay job or runs beside it. Both staging the
+same thread is harmless only if they agree on the operation id (§3.1), and
+`chat_inbox.py` is not readable from here, so I cannot check that they do.
 
 ### 3.1 The item record
 
 `chat-reply` and `chat-route` read this and refuse anything that differs.
+
+**This section is the schema, and the only copy of it.** It is authoritative for
+every field the producer writes, `sender` included, and for the two
+decision-metadata keys `chat-route` writes on the done card — `reply_kind` and
+`kind` — which are defined in §4.3, where `kind` is also explained. The tracker
+half consumes both and defines neither: `dd-tracker.md` §5 cites this section
+and §4.3 rather than restating them, which is how R14's "no duplicate store"
+holds for the schema as well as for the data.
 
 - Directory `chat-inbox/chat-<sha256 of the latest message's resource name>/`,
   with `evidence/item.json` mode `0600`, a regular file, one hard link, under
@@ -495,12 +563,20 @@ changes to `bootstrap/chat-*`, `skills/ops/google-chat/**` and
 
 ### 4.8 The send switch (D9)
 
-One environment variable, read once per scan, defaulting to **off**. With it off
-the sender reads the decision, validates the destination, runs every §4.5 check,
-runs `chat-route`, calls the tracker — and does not call `post()`
-(`chat-reply:123`, called at `:200`). Merging it off changes nothing that runs
-today, because there is nothing to send: no producer exists and `SKILL.md:46`
-says the host scan does not start inbound polling.
+One environment variable, read once per scan. With it off the sender reads the
+decision, validates the destination, runs every §4.5 check, runs `chat-route`,
+calls the tracker — and does not call `post()` (`chat-reply:123`, called at
+`:200`).
+
+**Its default is D9's, and v1 got the stakes wrong.** v1 said merging it off
+"changes nothing that runs today, because there is nothing to send: no producer
+exists". There is a producer, and there is traffic: the overlay stages every two
+minutes and the host sender answers requesters every sixty seconds (§3;
+`docs/workflows.md:84,89,92,110`). So merging this switch **off** is a
+deliberate pause on a live reply path, not a no-op — the only pull request in
+this half whose default decides whether a requester hears from Ralph tomorrow.
+What is inert, and why, is the three classes in the Scope section above; this
+switch is the named exception to class 1.
 
 **The one change to the proposal, and it is a safety fix.** The proposal holds a
 reply by writing *no* marker. That cannot ship. `scan()` skips an operation only
@@ -526,8 +602,11 @@ a week. So the switch is read **before** that check: a held `final` is held, not
 refused, and writes `.held-final` without touching the card. One `if`, and the
 difference between a quiet pilot and a board full of blocked cards.
 
-**What phase 1 does not satisfy, said plainly rather than argued away.** No
-requester-facing requirement. R6, R7, R11 and R20 are deferred, not met, and the
+**What phase 1 does not satisfy, said plainly rather than argued away.** This
+paragraph describes the switch held **off**, which v2 no longer recommends; with
+it on, the live path keeps meeting these and §4.4's ceilings are the only
+change. Held off: no requester-facing requirement is met. R6, R7, R11 and R20
+are deferred, not met, and the
 acceptance examples that assert a message arriving — E1, E3, E8, E9, E11, E15,
 E16, E18 — are tests of the code either way and observations of real behaviour
 only once you flip the switch. It does satisfy R10 and R16, which hold either
@@ -628,11 +707,13 @@ state.
     repeat and exits 0**, which makes a rescan a no-op. Read from
     `inbox-producer:19-22`, not reproduced; the same source says archiving a
     card frees its key, so an archived orchestrator card would be recreated.
-12. **The send switch defaults off without changing anything that runs today**,
-    because nothing writes staged chat evidence at `e5ce164`, and **a week of
-    intake with no replies is a ramp, not a broken promise**, because no
-    requester has been told to expect anything (§4.8). The second is a judgement
-    about your pilot rooms, not a property of the code.
+12. **The send switch's default is a product choice, not a safe no-op** (§4.8).
+    v1 assumed **off** changed nothing because nothing was staged at `e5ce164`;
+    both halves of that were wrong (§3), so holding replies is a visible pause
+    on a loop that answers requesters today. "A week of intake with no replies
+    is a ramp, not a broken promise" no longer holds either: requesters in the
+    pilot rooms have already been answered by Ralph, so some of them have been
+    told to expect something. That is why D9 now recommends **on**.
 
 ### Observations, out of scope
 

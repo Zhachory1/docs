@@ -1,10 +1,10 @@
 ---
 id: dd-ralph-redmine-tracker
 title: How an accepted chat request becomes a tracked item and stays in sync — one script, two entry points, every write idempotent
-status: in review
+status: approved
 owner: Zhachory1
 card: t_41227371
-revision: v1
+revision: v2
 date: 2026-11-09
 implements: prd-ralph-redmine
 prs:
@@ -18,9 +18,12 @@ supersedes: Zhachory1/docs#7   # closed by the owner; this is part 2 of 2
 > content appears here. The requester is "a requester" and the tracker is "the
 > work tracker" (a self-hosted Redmine). The PRD's banner applies unchanged.
 
-Status: **in review**. Nothing is built. No chat message was read or sent, no
-REST API was enabled, no credential and no work instance was touched. Merging
-this pull request is the approval.
+Status: **approved** — merged at `Zhachory1/docs#15` on 2026-11-09, on the
+owner's direct instruction. Nothing is built. No chat message was read or sent,
+no REST API was enabled, no credential and no work instance was touched. **This
+revision is an amendment,** not a new design round: it closes the two blocking
+findings from the review round and the T1 contract question. Merging it is its
+approval.
 
 **Part 2 of 2.** You closed `Zhachory1/docs#7` for having too many revisions and
 split it. This half covers that document's §5 — the tracker script, what an item
@@ -56,7 +59,7 @@ instance was not inspected and must not be.
 
 ## Review header
 
-### Decisions needed from you: two *(budget: 200 words)*
+### Decisions needed from you: one *(budget: 200 words)*
 
 Numbering continues the closed pull request's lineage, so `D1` still means what
 you answered. New decisions are prefixed `T`, so they cannot collide with the
@@ -65,7 +68,25 @@ chat half's.
 | # | Decision | Why it is yours | If you say no |
 |---|---|---|---|
 | **D1** | **Answered 2026-11-06: approved.** Turn the tracker's REST API on, create a dedicated Ralph account, generate its per-user API key, and put that key in the `tracker-creds` volume — not beside the chat token. What is left is operational, and it is still the whole gate: **everything here is inert until you do it.** One part is not an API call: Redmine creates custom fields through the admin interface, not over REST (general product knowledge, A1), so the thread-key field in §4 is one thing you add by hand, once. | It is a setting on your instance, and an account only you can create. | Nothing tracker-side runs. The sender keeps working exactly as today, because `tracker-sync` exits 0 "tracker not configured" with no key file (§3.2). |
-| **T1** | **Two fields the chat half must carry; I will not fork its schema to get them.** (a) The item record must keep `sender`, the requester's display name: `profiles/chat-maintainer/SOUL.md:11` documents it and the agent reads it, but the closed design's §3.1 enumerates the record without it, and R3 says an item must say *who asked*. (b) The decision metadata must carry `kind`, one of R4's four actionable kinds; R4 and E10 both turn on it, and it lives nowhere else. | A contract between two designs is not mine to change alone, and a tracker keeping its own copy of either field is the duplicate store R14 forbids. | Without (a) an item says what was asked and not who, so R3 and E12 are not met. Without (b) R4's classification is recorded nowhere, and E10 has no mechanism. Tell me which you would rather drop. |
+
+**T1 is closed, and it was closed before it was asked.** v1 asked the chat half
+to carry two fields and listed them as an open contract change. The merged
+`dd-chat.md` already carries both, and v2 of that document states §3.1 is the
+single authoritative copy of the schema:
+
+- **(a) `sender`** is in its §3.1 item record (`dd-chat.md:276-277` at this
+  revision) — "the requester, for the model and for R3. No code reads it;
+  `SOUL.md:11` documents it and the agent uses it." The review round guessed
+  this might already be free; it is.
+- **(b) `kind`** is written on the done card's decision metadata by
+  `chat-route`, which `dd-chat.md` §4.3 specifies (`dd-chat.md:443-447`) along
+  with the allow-list widening it needs.
+
+So §5 below cites those two sections instead of restating them, and nothing in
+this half is an open ask of a sibling document. What is **not** closed is the
+`chat-route:55-56` allow-list change `kind` depends on — it is the chat half's
+pull request, named in its §4.3, and still listed in this document's
+observations.
 
 ### Council dissent *(budget: 240 words)*
 
@@ -96,7 +117,11 @@ be claiming something `EXEC: 1` disproves.
 is a private overlay file I cannot read. Everything this half consumes is
 written by public code — the marker layout and the workspace path are pinned by
 `chat-reply:52,171` and refused if they differ — so the mechanism does not rest
-on the overlay. The *input record* does, and T1(a) is the first consequence.
+on the overlay. The *input record* does, and the only check available is that
+the merged chat design says what the record holds (its §3.1). **v2 adds the part
+that matters more:** that overlay runs in production and the host sender answers
+requesters every sixty seconds, so this half is being designed against a live
+loop, not a cold one (§3.2, Scope).
 
 ### Scope: small — three pull requests of its own *(budget: 80 words)*
 
@@ -108,6 +133,37 @@ extracted staged-evidence reader all three scripts need (rule of three — it
 exists twice already, at `chat-reply:69-74` and `chat-route:42-47`), the compose
 services, the runbook. Order, file lists and sizes belong in the implementation
 plan.
+
+**What makes all three safe to merge while the chat loop is live.** Not "nothing
+exists" — a producer does, and the host sender answers requesters every sixty
+seconds (§3.2). All three are class 3 in `dd-chat.md`'s scope section: inert
+until **D1**, because `tracker-sync` exits 0 "tracker not configured" with no
+key file. The third also edits the live host sender (class 1), and is safe there
+for a narrower reason: adding a `--record` call before the acknowledgement can
+only **delay** a send, never add one, and the delay is bounded by the same
+gate — no key file, exit 0, acknowledgement goes out unchanged. The
+implementation plan states that class per pull request.
+
+### What changed in v2 *(budget: 90 words)*
+
+An amendment to the merged v1 (`Zhachory1/docs#15`), card `t_d306f347`, closing
+the two blocking findings of the single review round
+(`Zhachory1/docs#15`, comment `6745102361`):
+
+1. **§3.3's convergence guard is now stated completely.** Detecting the race was
+   not resolving it: the losing item's thread key is cleared and the item set
+   `Duplicate`, and the operation's marker is written to the canonical item id.
+2. **§6: unknown 10 moves to the closed list**, where `prd.md:895` already had
+   it.
+3. **T1 is closed** rather than asked, and §5 cites `dd-chat.md` instead of
+   restating its schema.
+4. **Scope says what makes these pull requests safe to merge** now the loop is
+   live.
+
+The round's non-blocking findings are untouched and still open, by the amending
+card's instruction: §3.2's `chat-reply:203-209` precedent, the chat-side half of
+unknown 9 (E6), the "same mechanism as R12/E5" framing (§3.3 now names the
+difference, which is as far as this amendment goes), and §7's suggested trim.
 
 ---
 
@@ -211,7 +267,7 @@ acknowledgement goes out, the shipped path runs unchanged. That is what makes
 these pull requests safe to merge before D1 is done — which now matters,
 because the sender has live traffic.
 
-### 3.3 How `--settle` finds its work, and the lock it depends on *(budget: 170 words)*
+### 3.3 How `--settle` finds its work, and the lock it depends on *(budget: 260 words)*
 
 `--settle` **walks the `chat-inbox` directories on disk** and reads their
 markers. It does not reuse the sender's `list --status done` loop, which skips
@@ -226,13 +282,42 @@ operation set, and an overlay staging anything else is already refused.
 
 **What this half depends on and does not own.** `--record` is serialised only
 because the sender holds a per-thread `flock` across the span that calls it, and
-that lock is the chat half's to build. Without it, two messages arriving in one
-thread at once can both pass the find step and create two items for one request.
-`tracker-sync` cannot take the same lock — the sender already holds it — so it
-carries a convergence guard instead: after a create, `--record` re-queries by
-thread key, and if more than one item returns it keeps the oldest as canonical
-and links the newer with a `related to` relation. Same mechanism R12 and E5
-already ask for, second purpose.
+that lock is the chat half's to build (`dd-chat.md` §4.4; it is not built
+today). Without it, two messages arriving in one thread at once can both pass
+the find step and create two items for one request. `tracker-sync` cannot take
+the same lock — the sender already holds it — so it carries a convergence guard
+instead.
+
+**The guard, stated completely**, because detecting the race is not resolving
+it. After a create, `--record` re-queries by thread key. If one item returns,
+nothing happened. If more than one returns it takes **the oldest as canonical**
+— the rule *every* thread-keyed lookup in this half uses, so two callers
+reconciling at the same moment reach the same answer — and then does three
+things, in this order:
+
+1. **clears the thread-key custom field on every newer item** and sets that item
+   `Duplicate` (§4), so a later thread-keyed lookup cannot return it at all;
+2. **links it `related to` the canonical item**, which is where a person sees
+   that the duplicate happened;
+3. **writes, or rewrites, this operation's `.tracker-recorded` to the canonical
+   item id** — never the id this particular call happened to create.
+
+Step 1 is what stops the race recurring on every later message in the thread.
+Step 3 is what stops this operation's own `--settle` pass from updating the
+loser. The *other* operation's marker, written before reconciliation, is fixed
+by the same rule from the other side: `--record` and `--settle` both resolve the
+item by thread key at the start of every call and treat the id in a marker as
+advisory, so once step 1 has run there is exactly one item any thread key can
+reach, and R14's one-field map stays single-valued rather than forking.
+
+The relation type is shared with R12 and E5; the job is not. R12 is an agent's
+judgement about an ambiguous cross-thread match; this is automatic, takes the
+oldest, and involves no judgement.
+
+**The cost, stated rather than hidden.** This converges the map; it does not
+prevent the duplicate. A lost race leaves one extra `Duplicate` item for a
+person to see, and nothing tells a requester about it. The chat half's
+per-thread lock removes even that, and remains the real fix.
 
 ### 3.4 How you see a tracker failure *(budget: 100 words)*
 
@@ -262,7 +347,8 @@ request (A5), so a message in a known thread finds its item first, and a
 cross-thread follow-up that cannot be matched confidently becomes a new item
 with a `related to` relation rather than a guess (R2, R12, E5, E13). That field
 is also the whole thread-to-item map, which is how R14 is met without a new
-store.
+store — and §3.3's reconciliation keeps it single-valued by clearing it on any
+item it demotes to `Duplicate`.
 
 | Status | Means | Reaches the requester |
 |---|---|---|
@@ -289,17 +375,22 @@ keeping the marker files so the thread's history still counts.
 
 ## 5. The input contract *(budget: 100 words)*
 
-The chat half owns the item record and the decision metadata. This half
-**consumes** them and redefines neither.
+The chat half owns the item record and the decision metadata, and `dd-chat.md`
+§3.1 is the single authoritative copy of both. This half **consumes** them and
+defines nothing. The right-hand column is where each field is defined, not a
+second definition of it.
 
-| From | Field | Used for |
-|---|---|---|
-| `evidence/item.json` | `thread`, `space` | the lookup key, and R3's "where it came from" |
-| `evidence/item.json` | `messages[].text` | the request text as sent |
-| `evidence/item.json` | **`sender`** | R3's "who asked" — **T1(a)** |
-| the done card | `ack` | Ralph's restatement |
-| the done card | **`kind`** | R4's classification — **T1(b)** |
-| the done card | the final `body` | the outcome on `Resolved` |
+| From | Field | Used for | Defined in |
+|---|---|---|---|
+| `evidence/item.json` | `thread`, `space` | the lookup key, and R3's "where it came from" | `dd-chat.md` §3.1 |
+| `evidence/item.json` | `messages[].text` | the request text as sent | `dd-chat.md` §3.1 |
+| `evidence/item.json` | `sender` | R3's "who asked" | `dd-chat.md` §3.1 |
+| the done card | `ack` | Ralph's restatement | `dd-chat.md` §4.8, read at `chat-reply:168-176,182` |
+| the done card | `kind` | R4's classification | `dd-chat.md` §4.3 |
+| the done card | the final `body` | the outcome on `Resolved` | `dd-chat.md` §4.8, read at `chat-reply:168-176,182` |
+
+**T1 is closed** (review header): `sender` and `kind` are both in the merged
+chat design already, so neither is an ask, and neither is restated here.
 
 **Eligibility is not read here at all.** Your **D6** makes the approved room the
 whole gate, the chat half owns it, and this half records whatever that gate
@@ -319,9 +410,11 @@ request looks like and how long it lives, §4), and the tracker-side half of
 
 **Left to the chat design, in one line:** unknowns **4** (whether
 `REPLY_MESSAGE_OR_FAIL` honours an older thread id), **5** (how the rest of
-R15's bound is enforced and proven), **10** and **12** (the eval, and R19's
-provenance check) and **13** (how Ralph notices the requester's answer).
-Unknowns 3 and 11 were already closed, by the code and by your D6.
+R15's bound is enforced and proven), **12** (R19's provenance check) and **13**
+(how Ralph notices the requester's answer). Unknowns **3**, **10** and **11**
+were already closed before this half: 3 and 10 by the code, which the merged PRD
+records as "Answered by the code" for both (`prd.md:865`, `prd.md:895`), and 11
+by your D6.
 
 ---
 
@@ -335,7 +428,7 @@ design's.
 | E1 | one item exists, with requester, ask, kind, state and next action, **before** the acknowledgement | `test_chat_reply`: a non-zero `--record` sends nothing. `test_tracker_sync`: the fields are set |
 | E2 | a repeated message yields one item | `test_tracker_sync`: a second `--record` exits 0 and creates nothing |
 | E3 | a refusal creates **no** item | `test_chat_reply`: a decline calls `tracker-sync` not at all |
-| E5, E13 | thread-keyed lookup first, else a new item with a `related to` relation, never a wait on the owner | `test_tracker_sync` against a fake tracker |
+| E5, E13 | thread-keyed lookup first, else a new item with a `related to` relation, never a wait on the owner | `test_tracker_sync` against a fake tracker; and a forced double create converges per §3.3 — the loser loses its thread key and is `Duplicate`, the marker holds the canonical id |
 | E8, E10 | the final reply's settle pass closes the item once; an `update` is acknowledged and never closed | `test_tracker_sync`: the close is written once and stays retryable |
 | E11 | `Resolved` only with a non-empty outcome, otherwise `Rejected`/`Closed` | `test_tracker_sync` |
 | E12 | every open item reads cold, with no chat open | `test_tracker` for the fields |
@@ -383,7 +476,8 @@ Every inference the PRD, the card and the verified source did not state.
    enforces.** I cannot read `chat_inbox.py`; I rely only on what `chat-reply`
    refuses if it differs (§3.3).
 4. **The sender will hold a per-thread lock across `--record`.** It does not
-   today. §3.3 states the consequence and the guard that limits the damage.
+   today. §3.3 states the consequence, the guard that converges the map without
+   it, and the one cost the guard does not remove.
 5. **The thread is the request**, for lookup and counting. A requester who
    restates the ask in a new thread is a new request that R12 then links.
 6. **An item's lifetime is an acceptable retention period** for the stored chat
