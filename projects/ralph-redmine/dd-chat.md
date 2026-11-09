@@ -111,7 +111,7 @@ closes the most exposure, because the shipped sender has none of the ceilings
 today. The sidecar comes **last**: everything before it runs by hand. The
 breakdown belongs to the implementation plan.
 
-**Length, declared rather than hidden.** This is 659 lines against the card's
+**Length, declared rather than hidden.** This is 658 lines against the card's
 450-line target — 57% of the 1146-line document it replaces, and it carries
 roughly half of that document's subject matter, so it is denser per topic but
 still over budget. The three blocks I would cut first, in order, and what each
