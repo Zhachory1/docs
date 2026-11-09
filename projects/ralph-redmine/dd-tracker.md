@@ -9,6 +9,7 @@ date: 2026-11-09
 implements: prd-ralph-redmine
 prs:
   - Zhachory1/docs#15
+  - Zhachory1/docs#17   # v2 amendment
 supersedes: Zhachory1/docs#7   # closed by the owner; this is part 2 of 2
 ---
 
@@ -74,12 +75,12 @@ to carry two fields and listed them as an open contract change. The merged
 `dd-chat.md` already carries both, and v2 of that document states §3.1 is the
 single authoritative copy of the schema:
 
-- **(a) `sender`** is in its §3.1 item record (`dd-chat.md:276-277` at this
+- **(a) `sender`** is in its §3.1 item record (`dd-chat.md:277-278` at this
   revision) — "the requester, for the model and for R3. No code reads it;
   `SOUL.md:11` documents it and the agent uses it." The review round guessed
   this might already be free; it is.
 - **(b) `kind`** is written on the done card's decision metadata by
-  `chat-route`, which `dd-chat.md` §4.3 specifies (`dd-chat.md:443-447`) along
+  `chat-route`, which `dd-chat.md` §4.3 specifies (`dd-chat.md:444-448`) along
   with the allow-list widening it needs.
 
 So §5 below cites those two sections instead of restating them, and nothing in

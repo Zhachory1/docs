@@ -11,6 +11,7 @@ part: 1 of 2 (chat setup; the tracker is its own design)
 supersedes: Zhachory1/docs#7   # closed at the owner's direction, not on substance
 prs:
   - Zhachory1/docs#14
+  - Zhachory1/docs#17   # v2 amendment
 ---
 
 # How a chat message reaches Ralph, and how its replies are bounded
@@ -134,8 +135,8 @@ classes, and the implementation plan states which, per pull request:
 3. **Tracker-side work.** Inert until **D1**: `tracker-sync` exits 0 "tracker
    not configured" with no key file (`dd-tracker.md` §3.2).
 
-**Length, declared rather than hidden.** This is 743 lines at v2 (662 at v1,
-plus 81 for the three safety classes, the §3 correction and the changelog)
+**Length, declared rather than hidden.** This is 744 lines at v2 (662 at v1,
+plus 82 for the three safety classes, the §3 correction and the changelog)
 against the card's 450-line target — 65% of the 1146-line document it replaces,
 and it carries
 roughly half of that document's subject matter, so it is denser per topic but
