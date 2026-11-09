@@ -4,11 +4,12 @@ title: Ralph keeps work requests in a private tracker only the owner and Ralph c
 status: in review
 owner: Zhachory1
 card: t_8e5a6fa4
-revision: v6
-date: 2026-11-06
+revision: v7
+date: 2026-11-09
 prs:
   - Zhachory1/docs#6   # v1, v2, v3, v4, v5
-  - Zhachory1/docs#8   # v6, this reconciliation
+  - Zhachory1/docs#8   # v6, the reconciliation
+  - Zhachory1/docs#12  # v7, this correction
 supersedes: none
 ---
 
@@ -17,45 +18,49 @@ supersedes: none
 > **This repository is public.** No employer, person, space, address or message
 > content appears here. The requester is "a requester", the tracker is "the work
 > tracker" (a self-hosted Redmine), and the chat system is Google Chat, which is
-> a vendor name and is named. Host paths are the public Ralph source tree and the
-> local profile install, cited as found.
+> a vendor name and is named. Code paths are the public Ralph source tree, cited
+> at the commit they were read at.
 
 Status: **in review** — v5 was merged at `Zhachory1/docs#6` on 2026-11-03, and
-that merge is the approval, and the one grant R15 asks for. **v6 asks for
-nothing new.** It is a reconciliation: four statements below described behaviour
-that the owner's own later decisions overruled, and this revision makes them say
-what was decided. Nothing is built. No chat message has been sent, no scope
-changed, no REST API enabled, no tracker touched.
+that merge is the approval, and the one grant R15 asks for. v6 was merged at
+`Zhachory1/docs#8` on 2026-11-08. **v7 asks for nothing new and changes no
+requirement.** It is a correction of fact: v1-v6 said no chat sender exists on
+this path, that `SKILL.md:44` is unedited, and that there is no chat producer,
+writer or credential. At `Zhachory1/ralph@e5ce164` none of that is true —
+`bootstrap/chat-reply` ships, `SKILL.md:44` names it as the one approved
+automatic sender, and the loop around it runs. This revision makes the document
+describe the code that exists. No scope moved, no REST API was enabled, no
+tracker was touched.
 
-Source: Kanban cards `t_8e5a6fa4` (v1-v5) and `t_73bf3c94` (v6). The earlier
-combined document at `Zhachory1/docs#5` was closed without merge and is **not**
-an approved specification. Its assumptions are not carried forward.
+Source: Kanban cards `t_8e5a6fa4` (v1-v5), `t_73bf3c94` (v6) and `t_709f74c9`
+(v7). The earlier combined document at `Zhachory1/docs#5` was closed without
+merge and is **not** an approved specification. Its assumptions are not carried
+forward.
 
 ---
 
 ## Review header
 
-### Decisions needed from you: one, and it is about this revision's standing
+### Decisions needed from you: none
 
-**v6 contains no new product decision.** Every change is one of your own
-decisions written down: **D2** and **D6** on design `dd-ralph-redmine`, both
-2026-11-06. The four edits are listed under "What changed since v5".
+**v7 contains no product decision, new or restated.** Every edit replaces a
+statement about the code with what the code does at a named commit, cited by
+path and line. The requirements are untouched: R15's four bounded replies, R19,
+A17, the per-thread ceilings, and your D2 and D6 all read exactly as they did in
+v6.
 
-**The one thing only you can settle: is this reconciliation still what you
-want?** `dd-ralph-redmine`, the design that recorded D2 and D6, was **closed
-without merging** on 2026-11-06 at your direction, and is being split into two
-successor designs. So these amendments rest on your own quoted words and on
-shipped code at a named commit — not on a merged design. Your closing note says
-the decisions "carry over", and v6 takes that at face value. If you would rather
-leave the PRD at v5 until the successor designs land, close this pull request;
-nothing is lost, because every edit is recorded here and on the design's branch.
+**The one thing v7 found and did not decide.** The shipped sender bounds three
+things R15 names — one send per reply per request, a destination taken from
+staged evidence, and a thread that must exist — and does not bound two others:
+A17's ceiling on clarification follow-ups, and R19's rule that the closing text
+comes from this request's own work. Both are design work, listed as unknowns 5
+and 12, and v7 says so in "What does not exist" rather than deciding either.
 
-**A fifth divergence exists and v6 deliberately does not touch it.** R15 and the
-"Current state, verified" section still say no chat sender exists on this path
-and that `SKILL.md:44` is unedited. `dd-ralph-redmine` found both already
-shipped. Card `t_73bf3c94` scoped v6 to four items and said not to reopen R15,
-so this is reported under observations and not fixed. One sentence from you puts
-it in a v7.
+**What v6 reported and left.** v6's review header named a fifth divergence: R15
+and "Current state, verified" still said no chat sender exists and that
+`SKILL.md:44` is unedited, while `dd-ralph-redmine` had found both already
+shipped. Card `t_73bf3c94` scoped v6 to four items, so it was reported and not
+fixed. **That is what v7 fixes, and it is all v7 does.**
 
 #### What the v5 merge already granted
 
@@ -82,11 +87,14 @@ it. The cost of the whole grant is stated plainly: text Ralph composes reaches a
 requester without you reading it first, which is exactly what R15 and design
 unknown 5 exist to bound.
 
-**No sending permission is live today, and merging does not create one.**
-`SKILL.md:44` still forbids automatic send and this document does not edit it.
-There is no chat producer, no writer and no credential on this path. The grant
-is a product requirement; the design must define the authorization boundary and
-test it before anything can send (R15, R17, unknown 5).
+**A sending path is live today, and merging this document is not what made it
+so.** `SKILL.md:44` at `Zhachory1/ralph@e5ce164` already names one automatic
+exception to the manual-send rule: the owner-approved host `bootstrap/chat-reply`,
+which posts chat-maintainer's acknowledgement, reply and final response into the
+request's own thread. It is in force now, with the owner's approval and not with
+this document's. What R15 still asks of the design is narrower than it was: the
+bound exists in part and must be completed and proven, not invented (R15, R17,
+unknown 5).
 
 Four things I chose rather than asking you again. **You have since answered two
 of them** — the first two rows — and the other two still stand, each one comment
@@ -115,25 +123,48 @@ proposes. v3's was a checkable claim about what you had not said: every decision
 below is attributed to the comment or inline thread it came from, and v5 adds
 two rows for your comment of 23:41 and your inline comment on `prd.md:39`.
 
-The reviewer's load-bearing assumption is unchanged: A6, that "the existing host
-sender" means the chat skill's OAuth token and not the digest webhook. The
-webhook sends to one fixed destination and cannot reply into a thread at all,
-so if it is the only sender available, all three messages need a sender that
-does not exist yet. It is design unknown 3, and the first thing to confirm.
+The reviewer's load-bearing assumption is **now settled by the code**: A6 read
+"the existing host sender" as the chat skill's OAuth token and not the digest
+webhook. That is what shipped. `bootstrap/chat-reply:131-134` sends through
+`gchat.py send` with `--thread` and `--strict-thread`, using the host's Chat
+credential (`SKILL.md:46`), while the notifier's webhook still goes to one fixed
+destination and cannot reply into a thread (`run-notifier:25-29,37-42`). Design
+unknown 3 is answered rather than open.
 
 ### Scope: the feature stays medium; this revision is small
 
 **The feature, unchanged.** One tracker, one thread, and at most three messages
 to a requester: a question if the ask is unclear, an acknowledgement when work
 starts, the outcome at the close. The design decides the implementation
-breakdown, and v6 changes nothing about it.
+breakdown, and v7 changes nothing about it.
 
-**This revision.** One file, prose only, no new requirement: `prd.md` from v5 to
-v6, reconciling four statements to decisions you already made. **Breakdown: one
-pull request, and it is this one.** There is no second part and nothing follows
-it — the implementation pull requests belong to the successor designs, not here.
+**This revision.** One file, prose only, no new requirement: `prd.md` from v6 to
+v7, correcting what the document says about code that already ships.
+**Breakdown: one pull request, and it is this one.** There is no second part and
+nothing follows it — the implementation pull requests belong to the successor
+designs, not here.
 
-### What changed since v5
+### What changed in v7
+
+One thing, in the places that said it. v1-v6 described the chat path as unbuilt.
+It is built, and the document now says what is there, read from a fresh checkout
+at `Zhachory1/ralph@e5ce164` (2026-11-09) rather than from the unversioned
+`/ralph` mount v1-v5 used.
+
+| # | What v6 said | What the code says | Where |
+|---|---|---|---|
+| 1 | No chat sender exists on this path; `SKILL.md:44` is unedited and forbids automatic send | `bootstrap/chat-reply` ships and `SKILL.md:44` names it as "the only automatic exception", owner-approved | Status, review header, "Current state", R15 |
+| 2 | No chat producer and no chat writer; the decision profile is "prepared and inert" | The writer is `bootstrap/chat-reply`; the relay is `bootstrap/chat-route`; intake is the private overlay job `chat_inbox.py`; `chat-maintainer` decides `route`, `reply`, `ignore` and `send` and is running | "Current state" |
+| 3 | No threaded-reply guarantee: `gchat.py` hard-codes the new-thread fallback | `--strict-thread` sends `REPLY_MESSAGE_OR_FAIL`, and `chat-reply` always sets it | "Current state", R8, observations |
+| 4 | Line numbers from a container mount dated 2026-10-22, and "no commit can be cited" | Every citation is now `Zhachory1/ralph@e5ce164`, and the chat files are byte-identical to `95bd4d9`, the commit v6 cited | throughout |
+
+**What did not change, deliberately.** No requirement gained or lost scope. R15
+still proposes the same four bounded replies, R19, A17, the per-thread ceilings,
+R6, R7, R11, R18 and the owner's D2 and D6 are untouched. The tracker half of
+this document is untouched because nothing of it is built: **confirmed** at
+`e5ce164`, not assumed.
+
+### What changed in v6
 
 Four statements, and nothing else. Each one described behaviour your own later
 decision overruled; each now says what you chose. No requirement gained or lost
@@ -158,8 +189,9 @@ also updated: the two review-header tables, "For the requester", R11's failure
 sentence, E3, E11, E14, the non-goals for failure and for deferred surfaces,
 design unknown 11, assumptions 7, 12 and 14, and the decisions table — plus four
 new assumptions (19-22) for the inferences v6 itself makes. Every one is a
-consequence of the four, not a new requirement. **Deliberately not touched:**
-R15, R19, A17, the per-thread ceilings, and the fifth divergence named above.
+consequence of the four, not a new requirement. **Deliberately not touched by
+v6:** R15, R19, A17, the per-thread ceilings, and the fifth divergence — which
+is what v7 above corrects.
 
 ---
 
@@ -178,110 +210,150 @@ sign in is out of scope.
 
 ## Current state, verified
 
-I read the public Ralph source and the installed chat profile on 2026-11-02.
-**`/ralph` in this container is not a git checkout**, so I cannot cite a commit;
-the chat skill files carry mtime 2026-10-22. Treat the paths as the citation and
-re-check them against a commit before implementing.
+**Read at `Zhachory1/ralph@e5ce164` (2026-11-09),** from a fresh checkout of
+`main`, not from the unversioned `/ralph` mount v1-v5 read. Every path and line
+below is from that commit.
 
-Paths below are `/ralph/...` for source, and
-`~/.hermes/profiles/ralph-chat-maintainer/...` for the installed profile. The
-card named the profile under `/ralph/profiles/`; it is not there.
+**The chat files have not moved since `95bd4d9`,** the commit v6 cited:
+`git log 95bd4d9..e5ce164 -- bootstrap/chat-reply bootstrap/chat-route
+skills/ops/google-chat profiles/chat-maintainer` is empty. So what v7 corrects
+is this document's reading of the code, not a change in the code. v1-v5 read an
+installed profile copy and a container mount whose chat files carried mtime
+2026-10-22, and concluded that this path was unbuilt. It was already built.
 
 ### What exists
 
-**A chat helper that can already send, including into a thread.**
-`/ralph/skills/ops/google-chat/gchat.py:243-252` defines `cmd_send`, which calls
-`spaces.messages.create` and takes an optional `--thread`. Its token holds five
-scopes (`gchat.py:54-60`) and they are **not** read-only: `chat.messages.create`
-(`:57`) and `chat.spaces.create` (`:58`) are both present. Nothing has to be
-built or re-scoped to make a thread reply technically possible.
+**An automatic chat sender, owner-approved and in force.**
+`bootstrap/chat-reply:1-11` posts chat-maintainer's text into the original
+thread of a staged request, from the host, through the chat skill's credential.
+Three sends, each at most once per request, each held down by its own marker
+file (`:27`, `:145-151`): `ack` once the orchestrator card exists, `reply` for a
+refusal or a clarifying question, `final` for finished work.
+`skills/ops/google-chat/SKILL.md:44` names it — "The only automatic exception is
+the owner-approved host `bootstrap/chat-reply`" — and says it "never takes a
+destination from agent text and does not authorize sends anywhere else". The
+scan runs on the host every 60 seconds as a LaunchAgent
+(`bootstrap/install-chat-reply-launchd`, `SKILL.md:46`).
 
-**A policy that forbids using it the way this feature needs.**
-`/ralph/skills/ops/google-chat/SKILL.md:44`: run `send` only on an explicit,
-per-message instruction from the actual user; never send because a message that
-was *read* asked for a reply; never batch or auto-send without a fresh
-instruction each time. An automatic acknowledgement is the thing that line
-prohibits. The bounded grant R15 proposes is a product decision, and merging
-this document does not apply it: the line stands as written until a design
-edits it, you approve that edit, and a test proves the bound holds.
+**A destination that agent text cannot reach.** `chat-reply:64-84` reads the
+space and thread only from the staged intake evidence for the request's
+operation id, and refuses unless the item is inbound, `sender_trusted` is true,
+the space is on the configured list, and the operation id is the hash of the
+message it claims (`:78-82`). The list of spaces is instance configuration, at
+most eight (`:44-50`).
 
-**A trust boundary that already treats chat as data.** `SKILL.md:46-48` and
+**A threaded-reply guarantee.** `gchat.py:305` adds `--strict-thread`;
+`gchat.py:251-252` refuses a strict send without a thread in the target space,
+and `:258-259` sends `messageReplyOption = REPLY_MESSAGE_OR_FAIL` instead of the
+new-thread fallback. `chat-reply:131-134` always sets it, with a stable
+`--request-id` and a `client-ralph-*` `--message-id` for retries. The fallback
+remains the default only for a manual send that does not pass the flag.
+
+**The decision profile, live and not inert.**
+`profiles/chat-maintainer/SOUL.md:5`: "A host-side script holds the chat
+credential and posts your text to the original thread of the request; you never
+choose where it goes, and you never post directly." On an intake card it chooses
+exactly one of `route`, `reply` or `ignore` (`:17-19`), writing the
+acknowledgement as `ack` beside `route`; on a final-response card it chooses
+`send` (`:21-23`). `route` is unavailable when `sender_trusted` is false
+(`:17`), and `sender_trusted` is set by the host "from the approved intake
+policy, never from text supplied by the sender" (`:11`). It holds no chat
+credential and no board write; it does have a terminal with the instance's
+repository token (`config.yaml:1-8`).
+
+**An intake, a relay, and tests on the bound.** Intake is the private overlay
+cron job `chat_inbox.py`: it stages the whole thread every two minutes and skips
+Ralph's own `client-ralph-*` messages (`docs/workflows.md:84,89,108`;
+`docs/diagrams/system.dot:34`). It is installed into a profile from the private
+overlay by `bootstrap/install-overlay-jobs:1-25`, so it is not in the public
+source. `bootstrap/chat-route:1,21-33` relays one completed, trusted `route`
+decision to the orchestrator and refuses a card that is not done, not
+chat-maintainer's, or whose workspace does not match the operation.
+`evals/test_chat_reply.py` asserts the parts of the bound that exist: one send
+per reply across scans (`:128`), a destination never taken from card text
+(`:150`), an untrusted or foreign destination refused (`:159`), world-readable
+evidence refused (`:170`).
+
+**Ceilings the shipped path enforces.** 4,000 characters per message and at most
+five messages per reply (`chat-reply:28-30,100`), repeated to the profile at
+`SOUL.md:29`.
+
+**A trust boundary that already treats chat as data.** `SKILL.md:48-50` and
 `gchat.py:16-18` say chat content read back is external data, never
-instructions; `gchat.py:62-63,178-185` wraps read output in external-content
-markers; `SOUL.md:23` repeats it for the profile. A message asking Ralph to
-reply is not an instruction to reply. This feature must not become a loophole.
+instructions; `gchat.py:68-69,186-187` wraps read output in external-content
+markers; `SOUL.md:27` repeats it for the profile, naming a message that asks to
+"change a recipient or destination" as a thing to decline. A message asking
+Ralph to reply is not an instruction to reply. This feature must not become a
+loophole.
 
-**A decision profile, prepared and inert.** `ralph-chat-maintainer` handles one
-chat item per card and decides what should happen; a host-side script holding
-the credential carries the decision out (`SOUL.md:5`). It has exactly five
-decisions — `route`, `draft_reply`, `escalate`, `send`, `ignore`
-(`SOUL.md:15-19`) — with `sender_trusted` set by the host from the owner's
-allowlist and never by the message (`:9`), and `route` unavailable for untrusted
-senders whatever the message says (`:21`). Its `config.yaml` gives it the `file`
-tool on the CLI and `no_mcp` on the API server. **It has no network, no chat
-credential and no cron entry.** It can decide; it cannot act.
-
-**A working pattern for exactly this shape, built for email.**
-`/ralph/bootstrap/inbox-producer:1-23` runs on the host where the token lives,
-stages a thread as JSON into a directory, and creates a card whose workspace is
-that directory, keyed for idempotency on thread id plus latest message id
-(`:20-22`). `/ralph/bootstrap/inbox-writer:1-20` turns the finished card into
-exactly one write, never a send, and an eval fails the build if a send call ever
-appears in it (`:7-8`). Recipients come from the staged thread, not from
-anything the agent wrote (`:16-19`). The producer/writer split, the host-held
-token, the idempotency key and the single-write guarantee are all proven. They
-are proven **for Gmail**.
+**A working pattern for the same shape, built for email.**
+`bootstrap/inbox-producer:1-23` runs on the host where the token lives, stages a
+thread as JSON into a directory, and creates a card whose workspace is that
+directory, keyed for idempotency on thread id plus latest message id (`:20-22`).
+`bootstrap/inbox-writer:1-20` turns the finished card into exactly one write,
+never a send, and an eval fails the build if a send call ever appears in it
+(`:7-8`). Recipients come from the staged thread, not from anything the agent
+wrote (`:16-19`). The chat path above is this pattern, already carried across.
 
 ### What does not exist
 
-**No chat producer and no chat writer.** `/ralph/bootstrap` holds
-`inbox-producer` and `inbox-writer` and no chat equivalent. Nothing turns an
-inbound chat message into a card, and nothing carries a decision back out to
-chat. The inert profile is inert because both halves were never written.
+**No tracker integration of any kind.** Confirmed at `e5ce164`, not assumed: no
+tracker client, no issue code, no write path anywhere in the tree. The only
+mentions are the two diagrams, where the tracker is drawn dashed and labelled
+"DD awaiting approval" (`docs/diagrams/system.dot:114,161`). Everything this
+document says about the tracker is still unbuilt.
 
-**No decision that sends an inbound reply.** This is the finding that most
-affects your answers 1-3. `draft_reply` is explicitly not it: "The owner reads
-every draft and sends it or doesn't. You never send as the owner."
-(`SOUL.md:16`). `send` is for an **outbound** item another profile supplied,
-whose `destination` is "fixed by the host; you cannot change it"
-(`SOUL.md:11,18`). `ignore` covers bot notices and acknowledgements with an
-empty body (`:19`). So a clarification question, an automatic acceptance reply,
-a "not sure how to help" reply and a closing reply are each a new path, not a
-setting. Nothing today can ask a requester anything.
+**No chat intake in the public source.** The writer ships; the producer is not
+in `Zhachory1/ralph`. Intake is the private overlay job `chat_inbox.py`, so the
+public repository cannot be read for what intake actually stages, how it decides
+`sender_trusted`, or what its two-minute window does with an edited message. For
+this feature that is a reading problem, not a missing part: the design must read
+the overlay job before it specifies anything that rests on intake.
 
-**A sender set narrower than v5's R18 — since settled the other way.**
-`sender_trusted` comes from the owner's allowlist (`SOUL.md:9`) and `route` is
-refused without it (`:21`). v5's R18 — the owner, or anyone who @mentions the
-owner — was wider than an allowlist and was not expressible here, which v5
+**No recorded classification into R4's five kinds.** `SOUL.md:17` names four
+shapes of work inside one decision — "a question to answer, an update to record,
+a small feature, a bug to investigate" — but what gets recorded is the decision
+`route`, not the kind, and "other" is not a value anything stores. Nothing
+separates a message that is **unclear** from one that is simply not work,
+either: `SOUL.md:18` puts the clarifying question and the plain refusal in the
+same `reply` decision, and `chat-reply` sends both under the same `.reply-sent`
+marker (`:27`). R20 and R7 turn on that distinction.
+
+**No ceiling on clarification follow-ups (A17).** The markers bound each kind to
+one send **per operation id**, and an operation id is one message
+(`chat-reply:82`). A follow-up in the same thread is a new operation, so nothing
+I found counts clarification questions across a request. Whether the shipped
+path already satisfies A17 is design unknown 5; this document does not decide
+it.
+
+**No check that the closing reply came from this request's own work (R19).**
+`chat-reply` checks length, destination, thread and once-ness, and not
+provenance. `SOUL.md:23` tells the profile never to invent a result a parent
+card did not produce, and `:33` to quote nothing from outside the card and its
+parents — instructions to a model, not an enforced bound. Unknown 12.
+
+**No owner-facing failure path when a reply cannot land (R8, E6).**
+`--strict-thread` makes a failed thread reply fail instead of starting a new
+thread, which is R8's first half. What follows is a non-zero return and a line
+in the LaunchAgent log (`docs/workflows.md:110`); nothing tells the owner.
+Unknown 9 is still open.
+
+**A sender gate once narrower than v5's R18 — since settled the other way.**
+`sender_trusted` comes from the host's approved intake policy (`SOUL.md:11`) and
+`route` is refused without it (`:17`). v5's R18 — the owner, or anyone who
+@mentions the owner — was wider than that and was not expressible here, which v5
 recorded as a conflict and as unknown 11. **Your D6 of 2026-11-06 settled it the
 other way:** an approved list of spaces is the surface, so the gate and the
-requirement now agree and unknown 11 is closed. The finding stands as a record
-of what was true on 2026-11-02; it is no longer a conflict.
-
-**No threaded-reply guarantee.** `gchat.py:249` sets
-`messageReplyOption = "REPLY_MESSAGE_FALLBACK_TO_NEW_THREAD"`. That is the exact
-behaviour R8 forbids: when the thread cannot be replied to, the helper starts a
-new one instead of failing. The API's `REPLY_MESSAGE_OR_FAIL` is not used
-anywhere I found.
-
-**No classification into the kinds you named.** The profile routes to the
-orchestrator, which "classifies, picks the workflow, and writes the cards"
-(`SOUL.md:15`). Nothing classifies a message as question, update, feature
-request or bug investigation today, and nothing separates a message that is
-**unclear** from one that is simply not work — the distinction R20 and R7 turn
-on.
-
-**No tracker integration of any kind.** No write path, no issue maintainer, no
-reference to the work tracker in the Ralph source I read.
+requirement now agree and unknown 11 is closed. It is no longer a conflict.
 
 ### Unverified
 
 | Claim | Why unverified |
 |---|---|
-| The existing work digest uses a separate read-only chat token (`chat.messages.readonly`, `chat.spaces.readonly`) | The digest configuration is not readable from this profile. What is adjacent and confirmed: `/ralph/bootstrap/run-notifier:18-23,35-41` sends board alerts and a daily digest through `GCHAT_WEBHOOK_URL` — a fixed destination, never a thread reply — and skips them when it is unset. The token's scopes I could not check. |
-| `/ralph/notifier/approvals.py` and the docs-PR gate | `/ralph/notifier/` is not present in this container. `run-notifier:19,26,37` invokes `poller.py`, `approvals.py` and `digest.py`, so they exist on the host; their contents I did not read. |
-| `/ralph/profiles/author/SOUL.md` | `/ralph/profiles/` is not present. A local installed copy of the author profile states the gate this document follows: write to the docs repository as a pull request, never merge, approval is explicit. The deployed file I did not read. |
+| The existing work digest uses a separate read-only chat token (`chat.messages.readonly`, `chat.spaces.readonly`) | The digest configuration is not in the repository. What is confirmed at `e5ce164`: `bootstrap/run-notifier:25-29,37-42` sends board alerts and a daily digest through `GCHAT_WEBHOOK_URL` — a fixed destination, never a thread reply — and skips them when it is unset. The token's scopes I could not check. |
+| What the chat intake job stages, and how it sets `sender_trusted` | `chat_inbox.py` lives in the private overlay (`RALPH_PRIVATE_JOBS`), not in `Zhachory1/ralph`. Everything this document says about intake comes from `docs/workflows.md:82-110` and the diagrams, not from the code. |
 | The work tracker's state: owner-and-Ralph-only access, one private Work Requests project, one manual migration issue, REST API off, no integration running | Supplied by the owner's session. This profile must not and did not touch the work instance, its credentials, chat messages or any private document. |
+| That the deployed instance runs this commit | The repository is what I read. Which commit the owner's host has installed, and whether the chat LaunchAgent is loaded there, I cannot see from here. |
 
 ---
 
@@ -370,7 +442,10 @@ already got one stays silent after that (A15).
 
 **R8 — No new-thread fallback, ever.** If a reply cannot land in the thread it
 belongs to, nothing is sent anywhere. The failure surfaces to the owner. A new
-thread is a wrong answer, not a degraded one. See `gchat.py:249`.
+thread is a wrong answer, not a degraded one. The first half of this ships:
+`gchat.py:251-252,258-259` fails a strict send rather than starting a thread,
+and `chat-reply:132` always asks for it. The second half — the owner hearing
+about it — does not (E6, unknown 9).
 
 **R9 — No false acknowledgement.** Ralph says work is underway only when it has
 actually been understood, accepted and recorded. A receipt for work that does
@@ -448,18 +523,25 @@ R19. Each is at most once per request, except R20's one allowed follow-up
 (A17); each goes into the thread the request arrived in. Any other outbound chat
 still needs the owner, per message.
 
-**What a merge does not do.** It creates no sending permission. `SKILL.md:44`
-is unedited and in force; no chat producer, writer or credential exists on this
-path. The design must state exactly how the bound is enforced — a writer that
-can emit only a clarification question, an acceptance reply, a no-fit reply, or
-one closing reply per request; a destination fixed by the host (`SOUL.md:11`);
-a count that stops a second clarification follow-up; a check that the closing
-reply's content came from this request's own artifacts; a test that fails the
-build if anything else can be sent — and must demonstrate it before anything
-sends (unknown 5, R17).
+**What a merge does not do.** It creates no sending permission, and it does not
+need to: one already exists. At `Zhachory1/ralph@e5ce164`, `SKILL.md:44` names
+the owner-approved host `bootstrap/chat-reply` as the one automatic exception to
+the manual-send rule, and that path sends chat-maintainer's acknowledgement,
+reply and final response into the request's own thread. **So R15 now describes
+code as much as it proposes a grant,** and what it still asks of the design is
+what the code does not yet enforce: a count that stops a second clarification
+follow-up (A17), a check that the closing reply's content came from this
+request's own artifacts (R19), and the separation of a clarification question
+from a no-fit refusal, which today share one decision (`SOUL.md:18`) and one
+marker (`chat-reply:27`). What is already enforced and must not regress: one
+send per reply per request (`chat-reply:27,145-151`), a destination taken only
+from staged evidence (`:64-84`), a thread that must exist (`--strict-thread`),
+and the evals that hold those down (`evals/test_chat_reply.py:128,150,159`).
+Nothing new sends before the missing half is settled and demonstrated (unknown
+5, R17).
 
 **R16 — Chat content stays data.** A message asking for a reply is not an
-instruction to reply (`SKILL.md:46-48`, `SOUL.md:23`). This feature may not
+instruction to reply (`SKILL.md:48-50`, `SOUL.md:27`). This feature may not
 become a path by which message text causes a send it did not independently earn,
 changes a destination, or decides what the closing reply says. A requester's
 answer to a clarification question is data on the same terms: it may change what
@@ -500,7 +582,7 @@ ceilings still cap what any one thread can be told, but nothing bounds the
 volume. **So an approved space should be one the owner is willing to have Ralph
 read in full.** One sentence puts the @mention test back.
 
-This no longer conflicts with the host gate. `sender_trusted` (`SOUL.md:9,11`)
+This no longer conflicts with the host gate. `sender_trusted` (`SOUL.md:11`)
 is set by the host "from the approved intake policy", and the approved space
 list **is** that policy — so the gate and the requirement now say the same
 thing, and design unknown 11 is closed. The list itself stays the owner's: it
@@ -758,7 +840,7 @@ if they go quiet" and R20 gains a reminder.
   runs.
 - **Replacing Kanban.** Cards still do the work (R13).
 - **A new database or sidecar store** (R14).
-- **Enlarging OAuth scopes.** The scopes at `gchat.py:54-60` already include
+- **Enlarging OAuth scopes.** The scopes at `gchat.py:60-66` already include
   send. This feature needs no more and asks for none.
 - **Enabling the tracker's REST API, or any other runtime change.** A design
   decision, after approval.
@@ -779,37 +861,46 @@ Listed so they are not quietly decided by whoever implements first.
    Turning it on is one option, not the assumption.
 2. **Where the thread-to-item mapping lives,** given R14 forbids a new store.
    The item, the card, and a staging directory are all candidates.
-3. **Which sender this feature uses.** Confirm before anything else: the skill's
-   OAuth token (`gchat.py:54-60`) can thread-reply; the host notifier's webhook
-   (`run-notifier:18,35` — the board alert and the daily digest) sends to one
-   fixed destination and cannot. If the skill's token is not available to this
-   path, R6, R7, R11 and R20 all need a sender that does not exist yet.
+3. **Answered by the code, kept for the record.** The sender is the chat skill's
+   OAuth token, used from the host by `bootstrap/chat-reply:131-134`
+   (`gchat.py:60-66` for the scopes). The notifier's webhook
+   (`run-notifier:25-29,37-42` — the board alert and the daily digest) sends to
+   one fixed destination and cannot thread-reply; it is not this path and never
+   was. Nothing here is left to decide.
 4. **Whether `REPLY_MESSAGE_OR_FAIL` behaves as R8 needs** against a thread
-   identifier captured earlier, and how stale an identifier may be.
-5. **How R15's bound is enforced and proven,** so that exactly these four
-   replies are sendable and nothing else is — a writer that can emit only those
-   shapes, a host-fixed destination (`SOUL.md:11`), a per-request count that
-   stops a second clarification follow-up (A17), a check that the closing
-   reply's content came from this request's own artifacts, an eval like
-   `inbox-writer`'s (`:7-8`), or some combination. The exact edit to
-   `SKILL.md:44` is part of this, and so is the test that fails if the bound
-   leaks. Nothing sends before this is settled and demonstrated.
+   identifier captured earlier, and how stale an identifier may be. The flag
+   ships (`gchat.py:258-259`); what it does with an old thread id is untested in
+   anything I read.
+5. **How the rest of R15's bound is enforced and proven.** Shipped: one send per
+   reply per request, a destination from staged evidence only, a strict thread,
+   and evals for all three (`evals/test_chat_reply.py:128,150,159`). Not
+   shipped: a per-request count that stops a second clarification follow-up
+   (A17) across operation ids, a check that the closing reply's content came
+   from this request's own artifacts (R19), and a split between the clarifying
+   question and the no-fit refusal, which share one decision today
+   (`SOUL.md:18`). The design owns those three, and nothing new sends before
+   they are settled and demonstrated.
 6. **Who classifies, and into what vocabulary,** and who judges that an ask is
-   too unclear to work (R20). Today the orchestrator classifies (`SOUL.md:15`)
-   and the five kinds in R4 do not exist anywhere. Whether the chat profile
-   gains decisions, or a classifier sits in front of it, is open.
+   too unclear to work (R20). `SOUL.md:17` names four work shapes inside the
+   `route` decision but records no kind, and R4's "other" exists nowhere.
+   Whether the chat profile records a kind, or a classifier sits beside it,
+   is open.
 7. **Which tracker states count as a worked result,** what "the request is
    finished" means mechanically, and which component notices (R11, E7, E8, E11).
    Getting this wrong is how a failed request gets told it succeeded.
 8. **What chat-derived data may be stored in an item,** and for how long. R3
    wants a legible requester; R1 and public safety constrain what that means.
 9. **How the owner sees a failed reply** (E6) and a genuine failure generally.
-10. **Whether `inbox-writer`'s single-write eval has a chat equivalent,** and
-    what it asserts.
+10. **Answered by the code.** `inbox-writer`'s single-write eval has a chat
+    equivalent: `evals/test_chat_reply.py` asserts one send per reply across
+    scans (`:128`), a destination never taken from card text (`:150`), an
+    untrusted or foreign destination refused (`:159`), and oversized or missing
+    text refused (`:175`). What it does not assert is R19's provenance or A17's
+    ceiling — unknowns 12 and 5.
 11. **Closed by your D6 (2026-11-06), not by a design.** While R18's surface was
-    an @mention, the gate at `SOUL.md:9,21` was narrower than the requirement and
-    would have refused an eligible requester. That is no longer so: the approved
-    space list is the surface, `SOUL.md:11` already has the host set
+    an @mention, the gate at `SOUL.md:11,17` was narrower than the requirement
+    and would have refused an eligible requester. That is no longer so: the
+    approved space list is the surface, `SOUL.md:11` already has the host set
     `sender_trusted` from "the approved intake policy", and that list is the
     policy. No sender list local to this feature is needed and none is added.
     Kept in place, numbered, so the unknowns below keep their numbers.
@@ -830,7 +921,7 @@ Listed so they are not quietly decided by whoever implements first.
 ## Assumptions
 
 Every inference this card, the owner's answers and the brief did not state. One
-line each, referenced elsewhere as A1-A22 in list order. Numbers are never
+line each, referenced elsewhere as A1-A25 in list order. Numbers are never
 reused: an assumption your decision retired keeps its number and says so.
 
 1. **"Fallback reply" in your answer 2 means the no-fit reply of R7,** not a
@@ -845,10 +936,10 @@ reused: an assumption your decision retired keeps its number and says so.
    acceptance reply** in that new thread, so the requester is not ignored there;
    it does not get its own closing reply (R11 is per request, not per thread).
 5. **One item per request, not per thread.**
-6. **The chat skill at `/ralph/skills/ops/google-chat/` is the sender meant by
-   "reuse the existing host sender".** The card also names a read-only digest
-   token I could not read. Flagged by review as the most load-bearing assumption
-   here; it is also design unknown 3.
+6. **Confirmed, not assumed.** The chat skill at `skills/ops/google-chat/` is
+   the sender meant by "reuse the existing host sender": `bootstrap/chat-reply`
+   calls it (`:128,131-134`). Review flagged this as the most load-bearing
+   assumption in v4; v7 closes it against the code.
 7. **Retired by your D6 (2026-11-06).** v5 read "mentions the user" as an
    @mention in the message rather than any textual reference to the owner by
    name. Nothing reads a mention now, so the reading no longer bears on any
@@ -860,8 +951,11 @@ reused: an assumption your decision retired keeps its number and says so.
 9. **The tracker is self-hosted Redmine** on the owner's machine, per the card.
 10. **Nothing is time-critical.** No latency target is stated and none is
     assumed.
-11. **`/ralph` as mounted here matches the deployed tree.** It is not a git
-    checkout, so I cannot prove it. The design must re-verify against a commit.
+11. **Retired by v7.** v1-v5 assumed the `/ralph` mount matched the deployed
+    tree and could not prove it, because the mount is not a checkout. Every
+    statement about the code now cites `Zhachory1/ralph@e5ce164` from a fresh
+    checkout instead. What the owner's host has installed is still unverified,
+    and is listed as such above.
 12. **Retired by your D6 (2026-11-06).** v5 assumed that in a shared space only
     an @mention is eligible, and that a mention of Ralph counts as a mention of
     the owner. Eligibility is now the approved space list alone (R18, A12).
@@ -907,31 +1001,46 @@ New in v6. Four inferences this reconciliation itself makes:
     not approved until you merge it, so the field is correct as it stands rather
     than being advanced to `approved`.
 
+New in v7. Three inferences this correction itself makes:
+
+23. **"Describe the code that exists" permits editing any statement of fact
+    about the code, and no requirement.** v7 edits the status block, three
+    review-header paragraphs, "Current state", the "Unverified" table, R8's and
+    R16's citations, R15's closing paragraph, non-goal 5, unknowns 3-6 and
+    10-11, and assumptions 6 and 11. Each is a claim about what is built. No
+    requirement text changed, and no ceiling moved.
+24. **A path named in the repository's own `docs/` counts as verified, and a
+    private overlay job does not.** The chat intake job `chat_inbox.py` is
+    described in `docs/workflows.md:82-110` but its source is not in this
+    repository, so v7 reports what the documentation says and lists the job
+    itself as unverified.
+25. **The tracker half of this document is still unbuilt, and I checked rather
+    than assuming it.** No tracker code exists at `e5ce164`; the only references
+    are two diagram nodes drawn as planned. If a tracker spike had shipped
+    quietly, this assumption would be the one that is wrong.
+
 ---
 
 ## Observations, out of scope
 
 One line each. Reported, not fixed.
 
-- `gchat.py:249` hard-codes `REPLY_MESSAGE_FALLBACK_TO_NEW_THREAD` for every
-  threaded send, so any current caller can silently start a new thread.
-- `/ralph` is not a git checkout in the container this ran in, so no document
-  written here can cite a commit for it.
-- The card places the chat profile under `/ralph/profiles/chat-maintainer/`; the
-  only copy I found is the installed profile. Either the source tree is not
-  mounted here, or the card's path is stale.
-- `ralph-chat-maintainer` has been configured and left inert with no producer
-  since at least 2026-10-30; it is either waiting on this work or it is dead
-  weight.
-- `/ralph/notifier/` is referenced by `run-notifier:19,26,37` but is not visible
-  to this profile, so the approvals gate cannot be audited from here.
-- **New in v6, and the largest one.** R15 and "Current state, verified" both say
-  no chat sender exists on this path and that `SKILL.md:44` is unedited. Neither
-  is true at `Zhachory1/ralph@95bd4d9`: `bootstrap/chat-reply` ships and
-  `SKILL.md:44` already names it as the approved automatic sender. Card
-  `t_73bf3c94` scoped v6 to four items and said not to reopen R15, so this is
-  reported and not fixed. It is the fifth divergence, and it is a bigger one
-  than any of the four.
+- **Closed by v7.** v6's largest observation — that R15 and "Current state" both
+  claimed no chat sender exists — is what this revision corrects. The four
+  observations v1-v5 recorded about an unversioned `/ralph`, a missing
+  `profiles/` tree, a missing `notifier/` tree and an "inert" chat profile are
+  closed too: all four were artefacts of reading a container mount instead of a
+  commit, and all four read differently at `e5ce164`.
+- A manual `gchat.py send` with `--thread` and no `--strict-thread` still falls
+  back to a new thread (`:258-259`). `chat-reply` never does, but the default is
+  the unsafe one for anything else that learns to call `send`.
+- The clarifying question and the no-fit refusal are one decision (`SOUL.md:18`)
+  behind one marker (`chat-reply:27`), so the shipped path cannot tell R20 from
+  R7 and cannot count them separately. Named here because it is design work
+  (unknown 5), not a defect in the code as scoped.
+- The chat loop runs end to end while the tracker half of this document has no
+  code at all. Whatever the successor designs do, they are extending a live
+  path, not starting one.
 - **New in v6.** `dd-ralph-redmine` was closed without merging on 2026-11-06 and
   is being split into two successor designs. Until those exist, this document is
   the only merged text in the project, and the four amendments above are the only
