@@ -4,7 +4,7 @@ title: Ralph keeps its context, reports and memories in each instance's docs rep
 status: in review
 owner: Zhachory1
 card: none (owner request in session, 2026-11-08)
-revision: v4
+revision: v5
 date: 2026-11-08
 prs:
   - Zhachory1/docs#9   # this PRD
@@ -24,22 +24,20 @@ the design (Ralph#115). Nothing is built.
 
 ## Review header
 
-**Decisions needed from you:**
+**Decisions needed from you:** none. Merging approves the PRD.
 
-1. **Writes to the docs repository without a pull request.** Memories and run
-   reports are frequent and low-stakes; a PR for each would bury the PRD,
-   design and plan PRs you actually review. Proposed (R4): agents commit those
-   two kinds directly to a dedicated folder on the default branch, and
-   everything that changes a decision still goes through a PR. Accept, or keep
-   PRs for everything?
-2. **The personal docs repository is public.** Proposed (R7): on the personal
-   instance, agents write memories and reports only when they pass the same
-   public-safety rule this repository already has (no people, employers, spaces
-   or message content); anything that fails it is not written. Or: keep a
-   second, private repository for the personal instance's memories.
+**Decisions you made** (owner, 2026-11-08):
+
+1. **Memories and reports are written without a pull request** (R4), only to
+   their dedicated folder on the default branch. Everything that changes a
+   decision still goes through a PR.
+2. **The personal docs repository stays public** (R7). No second, private
+   repository: on the personal instance, agents write a memory or report only
+   when it passes this repository's public-safety rule.
 
 **What changed since v1** (owner, 2026-11-08):
 
+- v5: the two open decisions are recorded as made.
 - v4: scope is the docs, memory and context system only. Moving the owner's
   previous private docs is not part of this PRD (N7); whatever is in the docs
   repositories is what Ralph indexes.
@@ -116,12 +114,12 @@ design document, with a citation, without being pointed to it.
 
 - **R4.** PRDs, designs, plans and decision records keep their pull-request and
   merge-to-approve flow (Ralph#115, #120). Memories and run reports are written
-  without a PR (decision 1), only to the dedicated folder.
+  without a PR (owner decision 1), only to the dedicated folder.
 - **R5.** Each memory or report states what it is, which card or PR produced it,
   the date, and the profile that wrote it, so a reader can check and expire it.
 - **R6.** A profile writes only to its own instance's docs repository.
 - **R7.** On an instance whose docs repository is public, an agent writes a
-  memory or report only if it passes the public-safety rule (decision 2);
+  memory or report only if it passes the public-safety rule (owner decision 2);
   otherwise it does not write it, and says so on the card.
 
 **Reading and search**
