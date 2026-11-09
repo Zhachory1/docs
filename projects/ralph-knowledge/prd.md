@@ -1,7 +1,7 @@
 ---
 id: prd-ralph-knowledge
 title: Ralph keeps its context, reports and memories in each instance's docs repository, and every agent searches them locally before it plans or writes
-status: in review
+status: approved
 owner: Zhachory1
 card: none (owner request in session, 2026-11-08)
 revision: v5
@@ -19,8 +19,8 @@ supersedes: none
 > the two Ralph deployments; repository names are the public Ralph source tree and
 > this repository.
 
-Status: **in review**. Merging this pull request approves the PRD and releases
-the design (Ralph#115). Nothing is built.
+Status: **approved** by the owner (merge of Zhachory1/docs#9, 2026-11-08).
+The design follows as its own pull request (Ralph#115). Nothing is built.
 
 ## Review header
 
