@@ -7,7 +7,7 @@ card: none (owner request in session, 2026-11-08)
 revision: v1
 date: 2026-11-08
 prs:
-  - Zhachory1/docs#TBD   # this plan
+  - Zhachory1/docs#11   # this plan
 implements: dd-ralph-knowledge
 issue: Zhachory1/ralph#121
 supersedes: none
