@@ -1,7 +1,7 @@
 ---
 id: prd-ralph-librarian
 title: A weekly librarian keeps each instance's docs repository organised, so knowledge search returns current documents and not stale or duplicate ones
-status: in review
+status: approved
 owner: Zhachory1
 card: none yet (owner brief, 2026-11-09)
 revision: v1
@@ -18,7 +18,7 @@ supersedes: none
 > appears here. The work instance's docs repository is "the work docs
 > repository".
 
-Status: **in review**. Nothing is built.
+Status: **approved** by the owner (merge of Zhachory1/docs#19, 2026-11-09). The design follows as its own pull request. Nothing is built.
 
 ## Review header
 
