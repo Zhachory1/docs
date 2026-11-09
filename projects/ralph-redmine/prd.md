@@ -9,7 +9,7 @@ date: 2026-11-09
 prs:
   - Zhachory1/docs#6   # v1, v2, v3, v4, v5
   - Zhachory1/docs#8   # v6, the reconciliation
-  - Zhachory1/docs#PR  # v7, this correction
+  - Zhachory1/docs#12  # v7, this correction
 supersedes: none
 ---
 
