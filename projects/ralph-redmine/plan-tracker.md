@@ -4,7 +4,7 @@ title: The tracker half ships in three pull requests, the client first and the l
 status: draft
 owner: Zhachory1
 card: t_a875dd0b
-revision: v2
+revision: v3
 date: 2026-11-09
 implements: dd-ralph-redmine-tracker
 part: 2 of 2 (the tracker; the chat plan is its own document)
@@ -56,9 +56,22 @@ own, `P` the chat plan's. This plan's are **`Q`**, so none of the four collide.
 
 ### Council dissent
 
-One independent review round (`ralph-reviewer`, comment-only). It raised one
+Two review rounds. The first (`ralph-reviewer`, comment-only) raised one
 blocking finding and three observations, and it re-resolved roughly thirty of
 this document's citations against the source rather than trusting the narrative.
+The second (the review queue's reliability lens) raised one blocking finding,
+which is the larger of the two and the reason v3 exists.
+
+- **Blocking, round 2, accepted in full: v2 planned a retry that could not
+  happen.** PR 3 said a non-zero `--record` "retries next scan" **and** that it
+  goes through `block_and_alert()`. Both cannot be true of the same failure. The
+  sender's scan lists only `--status done` cards (`chat-reply:222-224`) and
+  `handle()` refuses a card in any other status (`chat-reply:164-166`), so the
+  moment the block lands the intake card leaves the set the retry is drawn from.
+  One slow tracker call would have stranded an acknowledgement that the design
+  says retries by itself (`dd-tracker.md:240-242`). v3 bounds the retry and
+  fires the block at the end of it rather than at the start; see **"What changed
+  in v3"** and PR 3.
 
 - **Blocking, accepted in full.** v1 said `.final-sent` "arrives" in the chat
   plan's PR 2, in the cross-plan table and again in assumption 6. It does not:
@@ -78,12 +91,23 @@ this document's citations against the source rather than trusting the narrative.
   and the chat plan's PR 8. The rebase risk and the order (tracker first) were
   already stated; the reviewer called that acceptable.
 
+### What changed in v3
+
+One blocking finding, in one push. **PR 3's retry is now bounded and the block
+fires at the end of it**, so a transient tracker failure retries by itself and
+only a failure that keeps happening takes the card out of the loop — with the
+recovery named rather than left to the reader (runbook step 9). PR 2 gains the
+one line that makes a `--settle` failure attributable to an operation, because
+the design's per-operation alert sentinel is unwritable without it. Sizes move
+to ~250 (PR 3) and ~395 (PR 2); no pull request, file list, dependency or
+decision changed, and nothing the design settled was re-opened.
+
 ### What changed in v2
 
 Three narrative corrections and this header. No pull request, file list,
 dependency, size or test plan changed, and no decision was re-opened.
 
-### Scope: three pull requests, roughly 950 changed lines
+### Scope: three pull requests, roughly 990 changed lines
 
 **The design rated this half at three, and this is three**, one per unit, in the
 design's own order (`dd-tracker.md:126-135`):
@@ -257,7 +281,7 @@ design's, stated there and not re-argued here (`dd-tracker.md:317-320`).
   plan PR 1** (it imports `bootstrap/chat_evidence.py`). Functionally but not
   for the merge: chat plan PR 7 for `sender`, chat plan PR 2 for the
   `.clarify-sent` marker and `kind`.
-- **Size:** ~385 changed lines. **If the build comes in over 400, the split is
+- **Size:** ~395 changed lines. **If the build comes in over 400, the split is
   decided here rather than improvised:** `--record` with the guard in one pull
   request, `--settle` with the evidence removal in a second, same files, same
   order, `--settle` second. Say so on the card instead of shrinking a test.
@@ -304,6 +328,14 @@ design's, stated there and not re-argued here (`dd-tracker.md:317-320`).
     operations by the `operation_id:` line: `ack` for `--record`, the final
     `body` for `--settle` (`dd-tracker.md:245-249`). It reads no decision in
     order to act on one.
+  - **One failing operation does not end the `--settle` walk, and it says which
+    one failed.** A `TrackerError` on one operation prints
+    `settle-failed: <op_id>` on stderr, the walk continues to the operations
+    after it, and the command exits 1 at the end. **This line is what makes
+    §3.4's per-operation alert writable at all** (`dd-tracker.md:330-332`): the
+    sender gets one `.alerted-tracker-settle` per operation only if it can tell
+    which operation it was, and `--settle` is the only party that knows. One
+    failing item otherwise hides every operation behind it in the walk.
   - **Exit codes:** 0 for done, nothing to do, or not configured; 1 for a
     retryable failure; 2 for a refusal. The same three `chat-reply:154-155`
     already documents, so PR 3's wiring needs no new vocabulary.
@@ -341,13 +373,17 @@ design's, stated there and not re-argued here (`dd-tracker.md:317-320`).
     still counts that operation (chat plan PR 7).
   - Unit: an operation whose `item.json` the shared reader refuses is skipped,
     and `--settle` still processes the operations after it in the walk.
+  - Unit: a tracker failure on one operation prints `settle-failed: <op_id>`,
+    **the operations after it in the walk are still settled**, and the command
+    exits 1. The line PR 3's per-operation sentinel is parsed from, tested where
+    it is produced.
 
 ## PR 3: the wiring, and a tracker failure you can see
 
 - **Goal:** the sender records the item before it acknowledges and settles once
-  per scan, a tracker failure blocks its card and alerts once instead of
-  repeating quietly, and with no key file the requester-facing path is the one
-  that runs today, unchanged.
+  per scan; a transient tracker failure **retries on the next scan, by itself**,
+  and only a failure that keeps happening blocks the card and alerts; and with
+  no key file the requester-facing path is the one that runs today, unchanged.
 - **Implements:** §3.1's "called by" column (`dd-tracker.md:233-243`), §2's
   local-or-`docker exec` invocation (`dd-tracker.md:216-222`) and §3.4 in full
   (`dd-tracker.md:322-333`).
@@ -361,7 +397,9 @@ design's, stated there and not re-argued here (`dd-tracker.md:317-320`).
   (`dd-tracker.md:142-144`): it sits on the branch that already holds the
   acknowledgement until `chat-route` confirms (`chat-reply:193-199`), and a
   non-zero exit sends nothing and retries next scan, exactly as a failed
-  `chat-route` does today. **`--settle` cannot touch a send at all.** It runs at
+  `chat-route` does today. With no key file **no failure path runs at all**: the
+  retry counter is never created, nothing is ever blocked and nothing is ever
+  alerted. **`--settle` cannot touch a send at all.** It runs at
   the top of `scan()`, before any card is handled; its failure sets the scan's
   exit status and alerts, and never withholds a reply, because everything it
   does happens after a reply has gone out (`dd-tracker.md:240-243`).
@@ -369,7 +407,7 @@ design's, stated there and not re-argued here (`dd-tracker.md:317-320`).
   **chat plan PR 3** for `block_and_alert()` and its `.alerted-<kind>` sentinel.
   **Sequenced after the chat plan's lane A (its PR 5)** — see Order below. That
   is a merge-conflict constraint, not a behavioural one.
-- **Size:** ~210 changed lines.
+- **Size:** ~250 changed lines.
 - **What:**
   - `bootstrap/chat-reply`: a `tracker(*args)` helper in the shape
     `inbox-producer:29-33` already uses — `docker exec` into
@@ -380,18 +418,60 @@ design's, stated there and not re-argued here (`dd-tracker.md:317-320`).
     confirmation at `:193-199` and **before** `post()`:
     `tracker("--record", op_id)`. A non-zero exit returns 1, the
     acknowledgement is not sent, and the operation retries next scan.
+  - **The retry is real, and it is bounded — the load-bearing paragraph of this
+    pull request.** The sender's scan lists only `--status done` cards
+    (`chat-reply:222-224`) and `handle()` refuses a card in any other status
+    (`chat-reply:164-166`), so **blocking the intake card is what ends the
+    retry**, not what reports it. The two cannot fire on the same failure. So:
+    - a non-zero `--record` increments a decimal count in
+      `<root>/<op>/.tracker-record-failures`, mode `0600`, written with a plain
+      open rather than `O_EXCL` for the reason §3.2 gives about
+      `.tracker-recorded` (`dd-tracker.md:251-260`) — it is a counter, not a
+      once-only marker;
+    - **below `TRACKER_RECORD_ATTEMPTS` (5, a named constant) nothing blocks and
+      nothing alerts.** The card stays `done`, the shipped loop calls `handle()`
+      again next minute, and `--record` runs again. That is the retry the design
+      describes (`dd-tracker.md:240-242`), and five scans is five minutes,
+      because the scan is the clock and a counter is the only state that
+      survives a restart of the sender;
+    - **on the attempt that reaches the budget, and immediately on a refusal
+      (exit 2, where there is nothing to retry), `block_and_alert()` fires
+      once.** That is §3.4's "repeating retry" (`dd-tracker.md:328-330`), and
+      the end of the automatic path **on purpose**: an acknowledgement held by a
+      tracker that has been failing for five minutes is the quiet failure §3.4
+      exists to make loud. Recovery is runbook step 9, named rather than left to
+      the reader;
+    - **any exit 0 removes the counter**, including "tracker not configured", so
+      an outage followed by a success does not leave the next failure one
+      attempt from the ceiling.
+    No retry can send twice: no marker is written until `post()` succeeds
+    (`chat-reply:200-206`), `chat-route` is idempotent, and `--record` is
+    idempotent by thread key and by `.tracker-recorded`.
   - In `scan()`, once, after `instance_config()` and before the board loop:
     `tracker("--settle")`. A non-zero exit sets the scan's status and alerts;
     the loop continues.
-  - Both failures go through chat plan PR 3's `block_and_alert()`, fired **on a
-    refusal and on a repeating retry alike** and guarded by an
-    `.alerted-<kind>` sentinel, so a loop reports itself once rather than every
-    minute (`dd-tracker.md:326-332`). The two sentinel kinds this pull request
-    adds are `tracker-record` and `tracker-settle`.
+  - **A `--settle` failure alerts and blocks nothing**, once per failing
+    operation, guarded by `.alerted-tracker-settle` in that operation's
+    directory and keyed off the `settle-failed: <op_id>` lines PR 2 prints. §3.4
+    names one card to block, and it is the intake card whose acknowledgement is
+    held; by the time `--settle` runs the reply is already out
+    (`dd-tracker.md:240-243`), so there is no card whose progress a block would
+    protect and a blocked done card would be board noise a worker never clears.
+    The alert is the whole signal here, with `notifier/poller.py:121-127` as the
+    backstop the design names.
+  - **The `--record` path uses chat plan PR 3's `block_and_alert()` whole; the
+    `--settle` path uses only its alert half** — `notify()`
+    (`maintain-pr:303-305`), which that helper itself calls — because
+    `block_and_alert()` blocks by definition and `--settle` has no card to
+    block. Both are guarded by an `.alerted-<kind>` sentinel, so a loop reports
+    itself once rather than every minute (`dd-tracker.md:326-332`). The two
+    sentinel kinds this pull request adds are `tracker-record` and
+    `tracker-settle`.
   - `docs/operations.md`: one short tracker section — what the two sentinels
-    mean, what a blocked card with a tracker reason is, where the key file
-    lives, and the three admin-interface steps D1 needs (the account, the custom
-    field, Q2's statuses). `docs/workflows.md:82-92`'s chat-loop owner list
+    mean, what a blocked card with a tracker reason is **and how to clear it
+    (runbook step 9)**, where the key file lives, and the three admin-interface
+    steps D1 needs (the account, the custom field, Q2's statuses).
+    `docs/workflows.md:82-92`'s chat-loop owner list
     gains `tracker-sync` as the step between the acknowledgement and the reply.
     **This is the tracker's own runbook text, not the chat runbook**, which is
     chat plan PR 8's; if that pull request has not merged, this section is
@@ -418,9 +498,22 @@ design's, stated there and not re-argued here (`dd-tracker.md:317-320`).
     test.
   - Unit: `--settle` runs once per scan, before any card is handled; a non-zero
     `--settle` sets the scan status, alerts once, and **stops no reply from
-    going out**.
-  - Unit: a repeating `--record` failure blocks the card once and alerts once; a
-    second scan over the same operation and kind alerts no second time.
+    going out**; a second scan with the same `settle-failed:` operation alerts
+    no second time, and **no card is blocked** by either scan.
+  - **Unit, the retry, which is the test this pull request exists for:** one
+    non-zero `--record` blocks nothing and alerts nothing, and **the next scan
+    over the same still-`done` card calls `--record` again**. Asserted on the
+    card listing the second scan makes, not on the counter file: the defect
+    this replaces was a plan in which the second scan could not see the card.
+  - Unit: five consecutive non-zero `--record` calls block the card once and
+    alert once, on the fifth; a sixth scan alerts no second time.
+  - Unit: four failures then a success clears `.tracker-record-failures`, the
+    acknowledgement goes out, and a later failure starts counting from one.
+  - Unit: a `--record` **refusal** (exit 2) blocks and alerts on the first
+    failure, with no retry budget spent.
+  - Unit: with no key file (`--record` exits 0, "tracker not configured"), no
+    counter file is ever created and `block_and_alert()` is never called. The
+    inertness claim on the failure path, as a test.
   - Unit: with `RALPH_TRACKER_CONTAINER` set the call is a `docker exec`; with
     it unset the same arguments run locally.
 
@@ -504,9 +597,23 @@ pull request here merges with none of it done.
    with the key, checking that the project exists and the custom field comes
    back, is the whole step.
 8. **Watch the first acknowledgement.** The first `--record` against live
-   traffic is the first write. If it fails, §3.4's alert fires once and the card
-   blocks; the requester gets nothing they would not have got anyway, because a
-   failed record holds the acknowledgement rather than sending a wrong one.
+   traffic is the first write. If it fails, the sender retries it for five
+   scans; if it is still failing after that, §3.4's alert fires once and the
+   card blocks. The requester gets nothing they would not have got anyway,
+   because a failed record holds the acknowledgement rather than sending a wrong
+   one.
+9. **Clearing a card blocked with a tracker-record reason** — the one recovery
+   step, and the only thing that restarts a held acknowledgement. The block is
+   deliberate (PR 3): five scans of failures mean the tracker, not the moment.
+   In order: fix the tracker, **or** rename the key file, which makes
+   `tracker-sync` inert again and lets the acknowledgement go out untracked;
+   delete `.alerted-tracker-record` and `.tracker-record-failures` from
+   `<chat-inbox>/<operation>/`, or the next alert will not fire and the counter
+   starts at the ceiling; then unblock the intake card. **Nothing here is
+   urgent and nothing is lost by waiting** — the request is already an
+   orchestrator card, because `--record` runs only after `chat-route` confirms
+   one (`chat-reply:193-199`). What the requester is missing is the
+   acknowledgement, not the work.
 
 ---
 
@@ -558,9 +665,41 @@ not repeated.
 10. **The two tracker evals run in CI from PR 1** on `ubuntu-latest` with stdlib
     Python, the shape `skills-public.yml:27-33` uses. No eval in this plan
     reaches the network or needs a credential.
+11. **"A repeating retry" is five consecutive failed `--record` calls, counted
+    in a file the sender owns** (PR 3). §3.4 says the block and the alert fire
+    on a repeating retry and gives no number (`dd-tracker.md:328-330`); a plan
+    that leaves the number out either blocks on the first failure, which strands
+    the acknowledgement, or never blocks, which is the quiet failure §3.4
+    exists for. Five is one per scan and so five minutes. The counter lives with
+    the sender rather than in `tracker-sync` because the retry policy is the
+    sender's — it is the party that decides to hold a send — and because
+    `tracker-sync` must stay callable by hand without spending a budget.
+12. **Unblocking the intake card is enough to resume a held acknowledgement**
+    (runbook step 9). The sender's scan reads `--status done`
+    (`chat-reply:222-224`); whether an unblock restores `done` directly or
+    returns the card for the chat-maintainer to complete again, the next scan
+    sees it either way, and every step after it is idempotent — no marker was
+    written, so nothing was sent (`chat-reply:200-206`). **The kanban kernel is
+    not in this repository and was not read**, so the exact post-unblock status
+    is the one claim here taken from behaviour rather than from source. It
+    changes no file list: if an unblock turns out to need a second action, that
+    is a line in `docs/operations.md`, which PR 3 already writes.
+13. **A `--settle` failure alerts and blocks no card** (PR 3). §3.4 names a
+    block without naming which card, and `--settle` has no card: it runs once
+    per scan over a directory walk, after every reply is out. Alerting is the
+    half of §3.4 that applies.
 
 ### Observations, out of scope
 
+- **The chat plan's `block_and_alert()` has the same shape on its own retryable
+  failures, and that is the chat plan's question, not this one's.** Chat plan
+  PR 3 fires it "on a refusal and on a retryable failure alike"
+  (`plan-chat.md:261-265`), and a block takes any intake card out of the
+  `--status done` listing the retry is drawn from — the same mechanism this
+  plan's v3 fixes for `--record`. Whether a failed `post()` should keep its
+  retry is for `Zhachory1/docs#22` to answer; **naming it here rather than
+  editing that document**, because one plan editing another's pull request is
+  how two plans stop agreeing.
 - **`RALPH_TRACKER_HOST` and this plan's `url` are two names for one host.** The
   chat plan's PR 4 refuses any reply that mentions the tracker host, reading it
   from `RALPH_TRACKER_HOST` in the instance env (its assumption 6); this plan
