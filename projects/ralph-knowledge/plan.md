@@ -1,7 +1,7 @@
 ---
 id: plan-ralph-knowledge
 title: Ralph knowledge ships in four pull requests, service first, so each one is usable and reversible on its own
-status: in review
+status: approved
 owner: Zhachory1
 card: none (owner request in session, 2026-11-08)
 revision: v1
@@ -15,9 +15,9 @@ supersedes: none
 
 # Ralph knowledge ships in four pull requests, service first, so each one is usable and reversible on its own
 
-Status: **in review**. Implements `dd-ralph-knowledge` (approved, docs#10).
-Merging this approves the plan; the orchestrator then creates one build card per
-PR below, exactly as written (Ralph#120).
+Status: **approved** by the owner (merge of Zhachory1/docs#11, 2026-11-08).
+Implements `dd-ralph-knowledge` (docs#10). Build follows one PR per section
+below, exactly as written (Ralph#120).
 
 All PRs are in `Zhachory1/ralph`, against `main` at `ff6ef4a` or later.
 
