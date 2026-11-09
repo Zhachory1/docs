@@ -1,7 +1,7 @@
 ---
 id: dd-ralph-librarian
 title: The librarian runs from a weekly card on `queues`, changes the docs repository through one pull request, and the review loop re-indexes as soon as that pull request lands
-status: in review
+status: approved
 owner: Zhachory1
 card: t_563fd4f6
 revision: v1
@@ -19,6 +19,7 @@ prs:
 > appears here. The work instance's docs repository is "the work docs
 > repository".
 
+Status: **approved** by the owner (merge of Zhachory1/docs#21, 2026-11-09).
 Implements `prd-ralph-librarian` (approved, merged at `Zhachory1/docs#19`).
 Nothing is built. This document settles the five unknowns that PRD left to
 design time, specifies the profile and its installation, and names the pull
@@ -40,7 +41,9 @@ on — those paths are data here, not links.
 
 ## Review header
 
-### Decisions needed from you: two
+### Decisions needed from you: none, both settled
+
+**Owner, 2026-11-09:** accepted both recommendations below. D-A: the librarian reuses `RALPH_MAINTAIN_TOKEN`. D-B: the forced re-index fires on any docs default-branch change. The table keeps the reasoning.
 
 | # | Decision | Why it is yours | Recommendation |
 |---|---|---|---|
