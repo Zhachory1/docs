@@ -1,7 +1,7 @@
 ---
 id: plan-ralph-librarian
 title: The librarian ships in four pull requests — the profile, the forced re-index, the weekly card, then the documentation
-status: in review
+status: approved
 owner: Zhachory1
 card: t_f0a3aa2b
 revision: v2
@@ -18,7 +18,7 @@ prs:
 > **This repository is public.** No employer, person, space or message content
 > appears here.
 
-Status: **in review**. Implements `dd-ralph-librarian` (approved, merged at
+Status: **approved** by the owner (merge of Zhachory1/docs#25, 2026-11-09). Implements `dd-ralph-librarian` (approved, merged at
 `Zhachory1/docs#21`). Nothing is built. This document turns that design into
 the pull requests a builder opens, in build order.
 
@@ -30,7 +30,9 @@ from a checkout. I read the code; I ran nothing.
 
 ## Review header
 
-### Decisions needed from you: two
+### Decisions needed from you: none, both settled
+
+**Owner, 2026-11-09:** accepted both recommendations below. D-1: four pull requests, with the design's §5 row 2 split into PR 2 and PR 3. D-2: the diagrams are left as they are. The table keeps the reasoning.
 
 | # | Decision | Why it is yours | Recommendation |
 |---|---|---|---|
