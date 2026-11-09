@@ -1,7 +1,7 @@
 ---
 id: dd-ralph-knowledge
 title: Each Ralph instance runs one QMD service over a checkout of its docs repository, and every searching profile reaches it as an HTTP MCP server
-status: in review
+status: approved
 owner: Zhachory1
 card: none (owner request in session, 2026-11-08)
 revision: v1
@@ -19,19 +19,19 @@ supersedes: none
 > appears here. The work instance's docs repository is "the work docs
 > repository".
 
-Status: **in review**. Implements `prd-ralph-knowledge` (approved). Merging this
-approves the design and releases the implementation plan (Ralph#120).
+Status: **approved** by the owner (merge of Zhachory1/docs#10, 2026-11-08).
+Implements `prd-ralph-knowledge`. The implementation plan follows as its own
+pull request (Ralph#120).
 
 ## Review header
 
-**Decisions needed from you:**
+**Decisions needed from you:** none.
 
-1. **QMD runs as its own compose service per instance** (D1), not inside the
-   hermes container or each sandbox. One process loads the models once; agents
-   reach it over HTTP. Accept?
-2. **Query expansion off by default** (D4). Search uses BM25 + vectors + the
-   re-ranker (~1 GB of models). The 1.1 GB query-expansion model is optional,
-   to keep memory down on the 12 GB VM. Accept, or turn it on?
+**Decisions you made** (owner, 2026-11-08):
+
+1. **QMD runs as its own compose service per instance** (D1).
+2. **Query expansion is off** (D4). Turning it on is a future question, not part
+   of this design.
 
 **Scope rating:** M, about four build PRs (the plan sizes them):
 the QMD service; the shared MCP block in install; memories and principles;
@@ -109,8 +109,9 @@ never goes down because GitHub is unreachable (acceptance 4).
 ### D4. Search quality and memory
 
 `index.yml` sets the embedding model (`embeddinggemma-300M`, ~300 MB) and the
-re-ranker (`qwen3-reranker-0.6b`, ~640 MB). Query expansion is off
-(`RALPH_KNOWLEDGE_EXPANSION=0`); turning it on adds ~1.1 GB and is one setting.
+re-ranker (`qwen3-reranker-0.6b`, ~640 MB). Query expansion is off and
+not configurable in this design (owner decision 2); enabling it later is a
+separate question.
 Agents send typed `lex`/`vec` sub-queries themselves, so expansion is not needed
 for good recall.
 
