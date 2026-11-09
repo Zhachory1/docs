@@ -8,7 +8,7 @@ revision: v1
 date: 2026-11-09
 implements: prd-ralph-redmine
 prs:
-  - Zhachory1/docs#13
+  - Zhachory1/docs#15
 supersedes: Zhachory1/docs#7   # closed by the owner; this is part 2 of 2
 ---
 
