@@ -4,7 +4,7 @@ title: The chat half ships in eight pull requests, the sender's bounds first and
 status: draft
 owner: Zhachory1
 card: t_5576e6da
-revision: v2
+revision: v3
 date: 2026-11-09
 implements: dd-ralph-redmine-chat
 part: 1 of 2 (chat setup; the tracker plan is its own document)
@@ -23,28 +23,37 @@ Implements `dd-ralph-redmine-chat` at v2 (`Zhachory1/docs#14`, amended by
 document. Nothing it settled is re-opened here.
 
 All eight pull requests are in `Zhachory1/ralph`, against `main` at
-**`f679e098`** or later. **The design cited `e5ce164`; `main` has moved since.**
-Every chat file this plan touches is byte-identical at `f679e098` —
+**`9e19569`** or later. **The design cited `e5ce164`; `main` has moved twice
+since.** Every chat file this plan touches is byte-identical at `9e19569` —
 `bootstrap/chat-reply`, `bootstrap/chat-route`, `bootstrap/inbox-producer`,
 `skills/ops/google-chat/gchat.py`, `profiles/chat-maintainer/*` and the three
-chat evals are untouched between the two commits, so every line citation in the
-design still resolves. **Two of the design's citations have drifted** and this
-plan uses the new numbers: `bootstrap/install:170-179` is now `:178-187` and
-`:186-191` is now `:194-199` (`#129` added eight lines above both), and
-`docker-compose.yml:369,371` is now `:374,376` (`#129` added five lines above).
-`docker-compose.yml:31`, `:90`, `:93`, `:163-171`, `:226-228`, `:261` and
-`docs/workflows.md:84,89,92,110` are unmoved.
+chat evals are untouched across both moves, so every line citation in the
+design still resolves. **Two of the design's citations drifted in the first
+move** and this plan uses the new numbers: `bootstrap/install:170-179` is now
+`:178-187` and `:186-191` is now `:194-199` (`#129` added eight lines above
+both), and `docker-compose.yml:369,371` is now `:374,376` (`#129` added five
+lines above). **The second move shifted nothing**: `#131` replaced one line
+each in `docs/workflows.md:126` and `docs/infrastructure.md:119` and touched no
+chat file. So `docker-compose.yml:31`, `:90`, `:93`, `:163-171`, `:226-228`,
+`:261` and `docs/workflows.md:84,89,92,110` are unmoved from the design's text.
 
 ---
 
 ## Review header
 
-### Decisions needed from you: two
+### Decisions needed from you: none open, both answered
 
-| # | Decision | Why it is yours | Blocks |
+You answered both on 2026-11-09. The plan now carries the answers instead of
+the questions, recorded here so the next reader sees what was decided.
+
+| # | Decision | Your answer | What it changed in this plan |
 |---|---|---|---|
-| **P1** | **D9's default: does the send switch ship on or off?** The design's v2 amendment recommends **on**, because the overlay producer and the host `chat-reply` LaunchAgent already answer requesters every sixty seconds, so off is a deliberate silence on a live reply path rather than a ramp (§4.8; `dd-chat.md:571-577`). **This plan does not settle it** and PR 5 is one token either way. | It decides whether people who hear from Ralph today keep hearing from it. The design calls it a product call, not a file layout. | PR 5 only. PRs 1-4 and 6-8 are unaffected. |
-| **P2** | **Does the private overlay job `chat_inbox.py` stage under the same operation id the public producer will use — `chat-<sha256 of the latest message's resource name>`?** I settled the design's open question in favour of **replacing** the overlay job rather than running both (§3, `dd-chat.md:252-255`; see "What this plan settles" below), but the cutover's safety depends on this answer and `chat_inbox.py` is not readable from the public repository. | Only you can read the overlay. | PR 7's cutover runbook step. If the ids differ, the first scan after cutover re-stages up to five minutes of already-answered messages, because the sent markers live in a directory named by the operation id. |
+| **P1** | **D9's default: does the send switch ship on or off?** | **On**, with the design's recommendation (§4.8; `dd-chat.md:571-577`). | PR 5 ships `CHAT_SEND` defaulting on, so the requesters who hear from Ralph today keep hearing from it and the switch is a stop button, not a ramp. One token, and PR 5 is the only pull request affected. |
+| **P2** | **Does the private overlay job `chat_inbox.py` stage under the same operation id the public producer will use?** | **Deferred, and not a blocker.** You will deal with the overlay later; the cutover does not wait on the answer. | PR 7 gains a **cutover guard** that is safe whichever way the answer falls (PR 7, and runbook steps 2 and 3). No pull request and no owner step now depends on reading `chat_inbox.py`. |
+
+What is still yours is in the runbook, and none of it is a decision this plan
+needs: the credential copy, the cutover, setting the switch, the first threaded
+reply in a space of your own, and the pilot spaces.
 
 ### Council dissent
 
@@ -66,6 +75,36 @@ defects, both fixed in this revision and neither contested:
 Two non-blocking observations (the sender unit's line-count reconciliation, the
 total-size rounding) were raised and need no change.
 
+**A second verdict, from the review queue**, staged against `1a79d44` — not a
+GitHub review round, and not the card's author-facing round, which is the one
+above. Three lenses agreed on one defect, and it is the reason for v3: at
+cutover, if P2's answer is no, the overlay's sent markers sit in directories
+the new producer cannot name, so §4.4's per-thread ceiling counts zero and a
+thread already acknowledged can be acknowledged a second time. The runbook had
+no safe branch for that case. **Resolved in favour of a guard rather than a
+wait**: you have deferred P2, so v3 makes the cutover safe without the answer
+(PR 7's cutover guard, runbook steps 2 and 3) instead of making the cutover
+depend on reading `chat_inbox.py`.
+
+### What changed in v3
+
+- **PR 7 gains the cutover guard.** The producer stages nothing for a thread
+  that carries a reply of Ralph's and no visible prior operation directory —
+  exactly the shape a P2-negative cutover makes. One rule, one flag, one test.
+  PR 7 grows from ~310 to ~345 changed lines, still under the cap.
+- **Runbook step 2 is rewritten as a branch**, and the deferred half of P2
+  becomes its own step 3: cut over now, bring the skipped threads back when you
+  want them.
+- **P1 is answered on, P2 deferred.** The decisions table records answers, and
+  PR 5 and the switch step read as settled rather than open.
+- The scope total now reads ~2,200 changed lines, which is what the eight
+  estimates sum to. v2 said ~2,000, and the reviewer was right about the
+  rounding.
+- Re-grounded from `f679e098` to `9e19569`. No chat file moved and no cited
+  line shifted; see the opening paragraph.
+- **No pull request was added, removed or re-ordered**, and no
+  `<planned_files>` block changed. PR 7 is the only one resized.
+
 ### What changed in v2
 
 - Runbook item 1 rewritten: the D8 step is `bootstrap/chat-creds-copy` against
@@ -78,10 +117,11 @@ total-size rounding) were raised and need no change.
 - No pull request was added, removed, resized or re-ordered. The eight PRs,
   their `<planned_files>`, dependencies and test plans are untouched.
 
-### Scope: eight pull requests, roughly 2,000 changed lines
+### Scope: eight pull requests, roughly 2,200 changed lines
 
-**The design rated this half at six to seven, and this is eight.** The
-arithmetic, so the difference is checkable rather than a drift:
+**The design rated this half at six to seven, and this is eight; you accepted
+eight, preferring smaller pull requests.** The arithmetic, so the difference is
+checkable rather than a drift:
 
 | Design's unit (`dd-chat.md:106-113`) | Pull requests here |
 |---|---|
@@ -109,9 +149,15 @@ units.
   intake cards for one message: two model runs, and a second acknowledgement
   that §4.4's ceiling then refuses, blocks and alerts on. Replacing costs one
   owner action in PR 8's runbook and keeps the overlay job as the rollback.
-  **The blast radius if P2's answer is "no" is bounded by §3.3's five-minute
-  window:** at cutover the new producer can only re-stage messages from the last
-  five minutes, never the thread's history.
+  **If P2's answer is "no", two things are bounded, not one.** Re-staging is
+  bounded by §3.3's five-minute window: at cutover the new producer can only
+  re-stage messages from the last five minutes, never the thread's history. The
+  second is the ceiling, and §3.3 does not bound it — markers the producer
+  cannot name are markers §4.4 cannot count (`dd-chat.md:453-456`), so a thread
+  answered under the overlay looks unanswered and can be acknowledged a second
+  time, at any later message, not only within five minutes. **PR 7's cutover
+  guard bounds that one**: it refuses the thread rather than acknowledging it
+  twice, which is why the cutover no longer waits on P2.
 - **The chat CI workflow ships in PR 1, not with the refusals** (§4.7's gap,
   `dd-chat.md:556-562`). The design says it ships with the sender's code; PR 1
   *is* the first sender change, and putting it there means every later pull
@@ -331,22 +377,25 @@ units.
 - **Implements:** §4.8 (`dd-chat.md:564-624`), decision **D9**.
 - **Class: 1, and the design's named exception.** Every other class-1 pull
   request here only reduces; this one's **default decides whether a live reply
-  path goes quiet**, which is why it is a decision and not a choice
+  path goes quiet**, which is why it was a decision and not a choice
   (`dd-chat.md:125-130`, `:571-577`).
-- **Gated by: your answer to P1**, and by nothing else. The code is identical
-  either way; the default is one token in the instance env's documented value.
-- **Inertness:** not inert by construction. With the switch **on** — the
-  design's recommendation — nothing a requester can notice changes, and the
-  switch is a stop button. With it **off**, the producer still stages, the agent
-  still decides, `chat-route` still routes and the tracker still records; only
-  `post()` is skipped, and the replies people get today stop.
+- **Gated by: nothing. P1 is answered — the switch ships on.** The code is
+  identical either way; the answer is one token in the value
+  `compose/.env.example` documents, and `on` is what it documents. Setting it
+  off on your instance stays yours, and is not a pull request.
+- **Inertness:** not inert by construction, but **shipping on**, nothing a
+  requester can notice changes: the producer stages, the agent decides,
+  `chat-route` routes, the tracker records and `post()` is called exactly as it
+  is today. What the pull request adds is a stop button. Turned off later, the
+  loop keeps running and only `post()` is skipped — which is the silence the
+  design warned about and the reason the default is on.
 - **Depends on:** PR 3 (ceilings count sent markers; the held marker must be
   excluded from that count) and PR 4.
 - **Size:** ~170 changed lines.
 - **What:**
   - `bootstrap/chat-reply`: `instance_config()` (`:41-53`) learns a fourth key,
-    `CHAT_SEND`, read once per scan, parsed as a boolean with an explicit
-    default recorded in `compose/.env.example`.
+    `CHAT_SEND`, read once per scan, parsed as a boolean, **defaulting on** when
+    the key is absent (P1), and documented in `compose/.env.example`.
   - A held reply writes `.held-<kind>` in place of the marker `mark()` would
     have written, through the same `O_EXCL` open (`:145-147`). `scan()` and
     `handle()` treat either marker as "nothing to do here", so the loop stays
@@ -435,13 +484,16 @@ units.
 - **Implements:** §3.1 (`dd-chat.md:257-288`), the schema this half publishes;
   E2, E16, R3 (`prd.md:399-401`).
 - **Class: 2, sidecar and credential.** Gated by **D8** for the container, and
-  by the **overlay cutover** (P2, PR 8's runbook) for the host.
+  by the **overlay cutover** (runbook step 2) for the host. **It is not gated
+  by P2:** the cutover guard below is what makes the cutover safe whichever way
+  that answer falls, so neither this pull request nor the cutover waits on
+  anyone reading `chat_inbox.py`.
 - **Inertness:** inert on merge, for the same reason as PR 6: nothing invokes
   the producer. It writes its first file only when an owner runs it or PR 8's
   service starts.
 - **Depends on:** PR 6 (same file) and PR 1 (the record it writes must satisfy
   the shared reader; that reader is the acceptance test for this schema).
-- **Size:** ~310 changed lines.
+- **Size:** ~345 changed lines.
 - **What:**
   - `bootstrap/chat-producer` gains `--once` and the staging half. Per eligible
     message: `chat-inbox/chat-<sha256 of the message resource name>/evidence/`
@@ -456,6 +508,27 @@ units.
     operation id it would have; kept only when that directory already exists
     under the root; newest first; capped at 20, and never containing this
     operation (`chat-route:71-74`).
+  - **The cutover guard, one rule, and the only thing in this plan that
+    survives a "no" to P2.** Before it stages, the producer asks whether the
+    thread's own evidence and the directories it can see agree. If any message
+    in the thread carries `from_ralph: true` **and** `prior_operations` came out
+    empty, then Ralph has replied in this thread through markers this producer
+    cannot name — which is exactly the shape an overlay using a different
+    operation id leaves behind. The producer stages nothing for that message,
+    creates no card, prints one line naming the operation id and the thread, and
+    exits 0. `--allow-unseen-history` turns the guard off, for the owner to pass
+    once the old directories are visible or the duplicate is accepted (runbook
+    step 3). **It cannot fire in steady state:** after the cutover, a thread
+    Ralph has replied in has a staged directory for the message it replied to,
+    so `prior_operations` is not empty.
+  - **Why the guard refuses rather than sends.** When it fires wrongly, the cost
+    is one thread that gets no reply until the owner acts, printed where it can
+    be seen. When it is missing, the cost is a second acknowledgement into a
+    thread a requester is already reading, and the token holds no delete scope
+    (`gchat.py:60-66`), so that one cannot be withdrawn. §4.4's ceiling is the
+    rule the guard is protecting (`dd-chat.md:453-456`, the `ack` row): it counts
+    markers in `prior_operations` directories, and counts nothing when there are
+    none.
   - One intake card through `docker exec … hermes kanban create`
     (`inbox-producer:148-154`): board `queues`, assignee
     `ralph-chat-maintainer`, body carrying exactly one `operation_id:` line,
@@ -480,6 +553,12 @@ units.
     carries the earlier ones as context (E16).
   - Unit: `sender` is present and `from_ralph` is true for exactly Ralph's own
     messages.
+  - Unit, the cutover guard, three cases of one rule: a thread carrying a
+    `from_ralph` message with no discoverable prior operation directory stages
+    nothing and creates no card; the same thread with one prior directory
+    present stages normally; and with `--allow-unseen-history` the guarded
+    thread stages. This is the test that proves a P2-negative cutover cannot
+    produce a second acknowledgement.
 
 ## PR 8: the sidecar services, the credential step, and the runbook
 
@@ -583,24 +662,41 @@ These are yours. None is a pull request, and nothing in the plan schedules them.
    second copy of it comes into existence. What you give up is in §4.2: that
    copy has no machine binding left and can post as you until you revoke the
    grant in your Google account.
-2. **Answer P2, then cut over from the overlay job.** Read `chat_inbox.py` and
-   check whether it stages under `chat-<sha256 of the message resource name>`.
-   Then, in this order: stop the overlay cron job, start the sidecar
+2. **Cut over from the overlay job. You do not need P2's answer first.**
+   In this order: stop the overlay cron job, start the sidecar
    (`docker compose --profile chat up -d chat-sender`), and unload the host
    `chat-reply` LaunchAgent — the sidecar runs the same scan. **After PR 8
    merges and after step 1.** If the sidecar misbehaves, the rollback is the
    reverse: stop the service, re-enable the overlay job, reload the LaunchAgent.
    `install-chat-reply-launchd` is deleted by no pull request in this plan.
-3. **Decide and set the send switch (D9/P1).** The variable ships documented in
-   `compose/.env.example` at PR 5; setting it on your instance is yours. The
-   design recommends **on**.
-4. **Run one threaded reply in a space of your own before the first real send.**
+   **What PR 7's guard does for you here:** if the overlay staged under a
+   different operation id, every thread Ralph answered before the cutover is
+   skipped and printed, not acknowledged a second time. Threads nobody has been
+   answered in, and every thread started after the cutover, are unaffected. So
+   the worst case of a wrong guess about the overlay is some quiet old threads
+   you can see in the log, not a duplicate message to a requester.
+3. **Bring the skipped threads back, when you want them. This is P2, which you
+   deferred, and it has no deadline.** Read `chat_inbox.py` and compare the
+   directory name it stages under with
+   `chat-<sha256 of the message resource name>`. If they match, nothing was ever
+   skipped and there is nothing to do. If they differ, pick one: rename the old
+   operation directories under the work root to the new name, after which the
+   guard stops firing on its own and the old markers start counting toward
+   §4.4's ceilings again; or run the producer once with
+   `--allow-unseen-history`, accepting at most one duplicate acknowledgement per
+   already-answered thread. Until you take this step, those threads stay quiet.
+4. **Set the send switch (D9/P1 — answered: on).** PR 5 ships `CHAT_SEND`
+   documented in `compose/.env.example` and defaulting **on**, so after the
+   cutover the replies people get today keep arriving. Turning it off is your
+   stop button: an instance setting, not a pull request, and not a decision this
+   plan is waiting on.
+5. **Run one threaded reply in a space of your own before the first real send.**
    `evals/test_gchat_send.py:34-40` proves the code asks for
    `REPLY_MESSAGE_OR_FAIL`, not what the service does with a thread id captured
    minutes earlier (§4.5's R8 paragraph). The design calls this "yours, but not
    a decision", and the token holds no delete scope (`gchat.py:60-66`), so a
    wrong-thread message can be reported and not withdrawn.
-5. **Pick the pilot spaces knowing Ralph reads every human message in them**
+6. **Pick the pilot spaces knowing Ralph reads every human message in them**
    (§3.2). Every one is an operation, an intake card and one model run.
 
 ---
@@ -662,7 +758,8 @@ design's own twelve (`dd-chat.md:667-716`) still stand and are not repeated.
    plan's largest safety inference.
 2. **The sidecar producer replaces the overlay job** (PR 7, PR 8). The design
    handed this to the plan and could not settle it (`dd-chat.md:252-255`). The
-   cutover's cost depends on P2.
+   cutover's cost no longer depends on P2: assumption 11's guard refuses a
+   thread the overlay already answered rather than acknowledging it twice.
 3. **The thread lock lives at `<root>/.locks/<sha256 of the thread name>.lock`,
    mode `0600`** (PR 3). The design names the mechanic — an exclusive `flock` on
    a file named for the thread — and not the path.
@@ -692,3 +789,16 @@ design's own twelve (`dd-chat.md:667-716`) still stand and are not repeated.
 10. **The chat CI workflow runs the four evals on `ubuntu-latest` with stdlib
     Python**, as `skills-public.yml:33,36` already does. No eval in this plan
     reaches the network or needs a credential.
+11. **A thread that carries a message of Ralph's and an empty `prior_operations`
+    has been answered through markers this producer cannot name** (PR 7's
+    cutover guard). Neither the design nor the card states this; it is an
+    inference from two things the design does state — §4.4 counts markers only
+    in `prior_operations` directories (`dd-chat.md:453-456`), and §3.1 marks
+    Ralph's own messages `from_ralph` (`dd-chat.md:272-275`). It is wrong when a
+    message of Ralph's reached a thread some other way, a hand-run send or a
+    digest, and then it refuses a thread no ceiling would have stopped. Chosen
+    in that direction on purpose: being wrong this way costs one printed skip,
+    and being wrong the other way sends a message that cannot be withdrawn. This
+    is the second-largest safety inference in the plan, after assumption 1, and
+    the two are the same shape — both are about what a marker that cannot be
+    seen means.
