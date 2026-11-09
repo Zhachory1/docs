@@ -4,7 +4,7 @@ title: The librarian ships in four pull requests — the profile, the forced re-
 status: in review
 owner: Zhachory1
 card: t_f0a3aa2b
-revision: v1
+revision: v2
 date: 2026-11-09
 implements: dd-ralph-librarian
 issue: Zhachory1/ralph#130
@@ -50,7 +50,27 @@ CI cap.
 
 ### What changed since the last revision
 
-v1. Nothing yet.
+**v2 — review round 1 (`ralph-reviewer`), citation corrections only. No pull
+request was added, removed, resized or reordered; no `<planned_files>` block
+changed.**
+
+- **Profile count was wrong in two places, and is fixed.** There are **18**
+  profile directories at `f679e098`, not twenty. Adding `librarian` makes
+  **19**, not 21. Verified with `git ls-tree -d --name-only f679e098:profiles`
+  and by confirming each of the 18 holds a `SOUL.md`, which is what
+  `test_there_are_profiles` counts (`evals/test_profile_config.py:205-209`).
+  PR 1's test plan carried the wrong number where a builder would have read it
+  as an expected value, so that line now also says not to write the count into
+  an assertion: the test asserts a floor.
+- `bootstrap/install` push-token message cited as `:248`, corrected to `:249`;
+  `:248` is the loop's closing `done'`.
+- PR 2's claim that an unset `RALPH_DOCS_REPO` leaves the refresh block doing
+  nothing was wrong, and is replaced. `:115-116` gates on the knowledge
+  container alone. An unset variable is passed through empty at `:118` and only
+  suppresses a **first clone** (`refresh-knowledge:39-43`); with a checkout
+  already present the refresh still pulls and re-indexes.
+- The Buildkite test is named in full
+  (`…_after_profiles_exist`) so a builder grepping for it finds it.
 
 ---
 
@@ -121,11 +141,11 @@ graph LR
 3. **`bootstrap/install`**, three edits and nothing else:
    - `knowledge_profile()` at `:135` — add `librarian` to the case list.
    - The push-token loop at `:235` — `for profile in ralph-maintainer
-     ralph-builder ralph-author ralph-librarian; do`, with the message at `:248`
+     ralph-builder ralph-author ralph-librarian; do`, with the message at `:249`
      updated to name it. **Note:** there is a second `for profile in ralph-…`
      loop in this file, the Buildkite one, and
-     `test_buildkite_token_goes_only_to_maintainer_and_builder` pins its
-     contents. Editing the wrong loop fails that test.
+     `test_buildkite_token_goes_only_to_maintainer_and_builder_after_profiles_exist`
+     pins its contents. Editing the wrong loop fails that test.
    - The read-token skip list at `:384` — add `*/ralph-librarian/*` to the
      `case`, so the librarian keeps the push token.
    - **Do not add it to `repo_cache_profile()` at `:124-129`** (design §4.2).
@@ -154,8 +174,9 @@ graph LR
     `/ralph/skills/voice`, reaches GitHub from a `terminal`, carries
     `approvals: approve`, says "You are Ralph", and follows
     `simplified-technical-english` with `caveman` refused (`:132`, `:211`,
-    `:357`, `:362`). `test_there_are_profiles` asserts at least 16; this makes
-    21.
+    `:357`, `:362`). `test_there_are_profiles` asserts at least 16, counting
+    `profiles/*/SOUL.md` (`:205-209`); there are 18 today, so this makes 19.
+    Do not write 19 into an assertion: the test asserts a floor, not a count.
   - Run: `python3 evals/test_profile_config.py`.
   - Not covered by any test, and named as such (design §6): the run itself —
     the duplicate gates, the archive rule, the index format. Those are a
@@ -185,8 +206,13 @@ graph LR
   failed refresh retries on the next poll instead of recording a lie. The
   hourly stamp keeps its current touch-before-run behaviour (`:117`): that is
   what stops a persistently failing refresh from running every poll.
-- Unset `RALPH_DOCS_REPO`, or a knowledge container that is not running, leaves
-  the block doing nothing, exactly as today (`:116`).
+- A knowledge container that is not running leaves the block doing nothing,
+  exactly as today: that is the only thing `:115-116` gates on. **Unset
+  `RALPH_DOCS_REPO` does not skip the refresh** — `:118` passes
+  `KNOWLEDGE_REPO` through empty, and `refresh-knowledge` reads it only to
+  decide a first clone (`refresh-knowledge:39-43`). With a checkout already
+  there it still pulls and re-indexes. So the forced refresh must not assume an
+  unset variable is a no-op; it is gated on the container alone.
 
 **Planned files:**
 <planned_files>
@@ -413,7 +439,13 @@ assumptions (its §9) still hold and are not repeated here.
   built and unexercised") and nothing checks either number. This is the second
   feature in a row that has to hand-correct it. A one-line test, or dropping
   the count, would end that; it is not this plan's to add.
-- `evals/test_profile_config.py`'s `ALL` tuple (`:81`) lists ten of the twenty
-  profile directories, and which ten is written down nowhere. Someone adding a
-  profile has to guess whether theirs belongs. Worth one sentence of comment at
-  the next edit to that file.
+- `evals/test_profile_config.py`'s `ALL` tuple (`:81`) lists ten of the eighteen
+  profile directories, and the rule for which ten is written down nowhere —
+  but it is discoverable: those ten are **exactly** the ten rows of the
+  `README.md` profile table (`:36-45`), in the same order. I checked name by
+  name. So the real invariant is "`ALL` mirrors the README table", and this
+  plan keeps it: PR 1 adds `librarian` to `ALL`, PR 4 adds its README row.
+  Between those two merging the pair is briefly out of step, which breaks
+  nothing because no test compares them. One sentence of comment on `:81`
+  naming the README table as the source would stop the next person guessing;
+  it is not this plan's to add.
