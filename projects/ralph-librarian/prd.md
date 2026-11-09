@@ -3,7 +3,7 @@ id: prd-ralph-librarian
 title: A weekly librarian keeps each instance's docs repository organised, so knowledge search returns current documents and not stale or duplicate ones
 status: approved
 owner: Zhachory1
-card: none yet (owner brief, 2026-11-09)
+card: t_e54f319b
 revision: v1
 date: 2026-11-09
 prs:
