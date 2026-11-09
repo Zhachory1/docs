@@ -9,7 +9,7 @@ date: 2026-11-09
 implements: dd-ralph-redmine-chat
 part: 1 of 2 (chat setup; the tracker plan is its own document)
 prs:
-  - "TBD"   # this plan
+  - Zhachory1/docs#22   # this plan
 ---
 
 # The chat half ships in eight pull requests, the sender's bounds first and the sidecar last
