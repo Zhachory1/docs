@@ -4,7 +4,7 @@ title: The tracker half ships in three pull requests, the client first and the l
 status: draft
 owner: Zhachory1
 card: t_a875dd0b
-revision: v1
+revision: v2
 date: 2026-11-09
 implements: dd-ralph-redmine-tracker
 part: 2 of 2 (the tracker; the chat plan is its own document)
@@ -56,8 +56,32 @@ own, `P` the chat plan's. This plan's are **`Q`**, so none of the four collide.
 
 ### Council dissent
 
-None yet. One independent review round follows this draft; its findings and
-their resolution land in v2 of this document.
+One independent review round (`ralph-reviewer`, comment-only). It raised one
+blocking finding and three observations, and it re-resolved roughly thirty of
+this document's citations against the source rather than trusting the narrative.
+
+- **Blocking, accepted in full.** v1 said `.final-sent` "arrives" in the chat
+  plan's PR 2, in the cross-plan table and again in assumption 6. It does not:
+  `.final-sent` is the shipped sender's own marker today (`chat-reply:27`), and
+  only `.clarify-sent` is new. The consequence v1 drew from it was wrong too —
+  `--settle` is not a no-op until chat PR 2, only its `Waiting on requester`
+  half is. No `depends on` line changed, because none of them was wrong; the
+  narrative around them was. Fixed in both places.
+- **Observation, accepted.** One citation ran a line long
+  (`dd-tracker.md:142-145`, now `:142-144`). The reviewer read it as starting
+  two lines earlier; the start was right and the end was not.
+- **Observation, no change, deliberately.** PR 1 adds
+  `.github/workflows/tracker.yml`, which §7 does not name. The reviewer agreed
+  with the reasoning and flagged it so you see it was a judgment call rather
+  than an oversight. It is named in Scope, below, and it is yours to strike.
+- **Observation, no change.** `docs/workflows.md` is edited by this plan's PR 3
+  and the chat plan's PR 8. The rebase risk and the order (tracker first) were
+  already stated; the reviewer called that acceptable.
+
+### What changed in v2
+
+Three narrative corrections and this header. No pull request, file list,
+dependency, size or test plan changed, and no decision was re-opened.
 
 ### Scope: three pull requests, roughly 950 changed lines
 
@@ -109,7 +133,7 @@ a different question and not a reason to hold a pull request.
 |---|---|---|---|
 | `evidence/item.json`, including **`sender`** | the public producer | **PR 7, "the producer stages the item record and creates the intake card"** | **No.** Functional. Until it merges the record comes from the overlay job, which may or may not carry `sender`; `--record` leaves the requester field unset rather than failing. |
 | `bootstrap/chat_evidence.py`, the shared reader | the refactor | **PR 1, "one staged-evidence reader, and the chat evals run in CI"** | **Yes, for PR 2.** `tracker-sync` imports it. A second copy of those checks is the thing the rule of three exists to stop. |
-| `.clarify-sent` and `.final-sent`, the per-kind markers `--settle` walks for | the sender | **PR 2, "`reply_kind` and `kind`, and one marker per reply kind"** | **No.** Functional. Without it `.clarify-sent` never exists and `--settle`'s pending half finds nothing; `.final-sent` arrives in the same pull request, so in practice `--settle` is a no-op until chat PR 2 lands. |
+| `.clarify-sent`, the one **new** marker `--settle` walks for | the sender | **PR 2, "`reply_kind` and `kind`, and one marker per reply kind"** | **No.** Functional, and only for half of `--settle`. `.final-sent` ships today (`chat-reply:27`, `MARKERS`), so the `Resolved` half works the day this plan's PR 2 merges, given chat plan PR 1. It is the `Waiting on requester` half that finds nothing until chat PR 2 creates `.clarify-sent`. |
 | `kind` on the done card's decision metadata (R4's classification) | `chat-route`'s widened allow-list (`chat-route:55-56`) | **PR 2** | **No.** Functional. Absent, `--record` leaves the kind field unset. |
 | `block_and_alert()` and its `.alerted-<kind>` sentinel | the sender's alerting | **PR 3, "the per-thread ceilings, and a failure you can see"** | **Yes, for PR 3.** §3.4 says the tracker reuses the same block and the same best-effort alert; a second copy in one file would be two mechanisms doing one job. |
 | The `tracker-creds` volume and the `tracker-sync` service stanza | compose | **PR 8, "the sidecar services, the credential step, and the runbook"**, subject to **Q3** | **No.** Functional, and it is half of D1: with no volume there is no key file, which is the condition every pull request here is safe under. |
@@ -231,8 +255,8 @@ design's, stated there and not re-argued here (`dd-tracker.md:317-320`).
   success (`dd-tracker.md:262-268`).
 - **Depends on:** **PR 1** (it imports the module) and, across plans, **chat
   plan PR 1** (it imports `bootstrap/chat_evidence.py`). Functionally but not
-  for the merge: chat plan PR 7 for `sender`, chat plan PR 2 for the per-kind
-  markers and `kind`.
+  for the merge: chat plan PR 7 for `sender`, chat plan PR 2 for the
+  `.clarify-sent` marker and `kind`.
 - **Size:** ~385 changed lines. **If the build comes in over 400, the split is
   decided here rather than improvised:** `--record` with the guard in one pull
   request, `--settle` with the evidence removal in a second, same files, same
@@ -334,7 +358,7 @@ design's, stated there and not re-argued here (`dd-tracker.md:317-320`).
   succeeds, the acknowledgement goes out unchanged, and the only measurable
   difference is one extra process per acknowledgement. **Adding `--record`
   before the acknowledgement can only delay a send, never add one**
-  (`dd-tracker.md:142-145`): it sits on the branch that already holds the
+  (`dd-tracker.md:142-144`): it sits on the branch that already holds the
   acknowledgement until `chat-route` confirms (`chat-reply:193-199`), and a
   non-zero exit sends nothing and retries next scan, exactly as a failed
   `chat-route` does today. **`--settle` cannot touch a send at all.** It runs at
@@ -516,8 +540,9 @@ not repeated.
    (`dd-tracker.md:131-134`), which names this half as the third caller without
    saying it imports it. The alternative is a third copy of the refusals.
 6. **A clarification marker means `.clarify-sent` and a final marker means
-   `.final-sent`** (PR 2) — the names the chat plan's PR 2 introduces. §3.1 says
-   "a clarification marker" and names no file.
+   `.final-sent`.** §3.1 says "a clarification marker" and names no file.
+   `.final-sent` is the shipped sender's own marker (`chat-reply:27`); only
+   `.clarify-sent` is new, and the chat plan's PR 2 adds it.
 7. **`RALPH_TRACKER_CONTAINER` on the sender and `RALPH_TRACKER_CREDS` on the
    tracker service are the two variables the compose stanza must carry** (PR 3,
    Q3). The design names the local-or-exec behaviour and the volume, not the
