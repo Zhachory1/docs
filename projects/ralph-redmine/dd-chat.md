@@ -34,7 +34,8 @@ and **six of its citations have drifted since**: `compose/docker-compose.yml` by
 roughly seventy lines, `bootstrap/install` by thirty, `orchestrator/SOUL.md`
 from `:19` to `:25`, `maintain-pr` by two, `run-notifier` and `run-review-loop`
 by one each. I read the code; I did not run it. Redmine claims belong to the
-other half.
+other half. Every `prd.md:N` is `projects/ralph-redmine/prd.md` at **v7**
+(`Zhachory1/docs#12`, merged 2026-11-09), the current `main` of this repository.
 
 ---
 
@@ -57,10 +58,10 @@ message in them (§3.2).
 
 | # | What you decided | What it fixes here |
 |---|---|---|
-| **D2** | Where shipped code and the PRD disagreed, the shipped behaviour wins: Ralph writes the acknowledgement and the refusal in its own words. | The sender's refusal checks are the **whole** content bound (§4.5); no constant text sits behind them. PRD v6 is already reconciled (`prd.md:343-369`), so no `SOUL.md` line changes. |
+| **D2** | Where shipped code and the PRD disagreed, the shipped behaviour wins: Ralph writes the acknowledgement and the refusal in its own words. | The sender's refusal checks are the **whole** content bound (§4.5); no constant text sits behind them. PRD v7 already carries it (`prd.md:175-177` and `prd.md:424-425`), so no `SOUL.md` line changes. |
 | **D4** | "Don't cap anything. Just check for chats from the last 5 minutes for the account from the room." | No rate limit on requesters, ever (§5). A five-minute window every 60 seconds (§3.3). The per-thread reply ceilings are **not** that cap and stay (§4.4). |
 | **D5** | "Take the sidecar please." | Producer and sender run as a compose service beside the agent, not as a second LaunchAgent (§4.1). D8 is the consent that answer requires. |
-| **D6** | "Keep it only to approved chat rooms please" / "@ mentions and direct messages can come later." | The approved room is the whole eligibility gate (§3.2). PRD v6 already says this (`prd.md:473-507`), so this design no longer diverges from it. |
+| **D6** | "Keep it only to approved chat rooms please" / "@ mentions and direct messages can come later." | The approved room is the whole eligibility gate (§3.2). PRD v7 already says this (`prd.md:556-562`), so this design no longer diverges from it. |
 | — | The agent never holds the chat credential; the tracker is its own script the sender calls and cannot import. | §4.1 (placement is the boundary) and §4.7 (the eval asserts both halves). |
 
 ### Council dissent
@@ -111,8 +112,8 @@ closes the most exposure, because the shipped sender has none of the ceilings
 today. The sidecar comes **last**: everything before it runs by hand. The
 breakdown belongs to the implementation plan.
 
-**Length, declared rather than hidden.** This is 658 lines against the card's
-450-line target — 57% of the 1146-line document it replaces, and it carries
+**Length, declared rather than hidden.** This is 662 lines against the card's
+450-line target — 58% of the 1146-line document it replaces, and it carries
 roughly half of that document's subject matter, so it is denser per topic but
 still over budget. The three blocks I would cut first, in order, and what each
 costs you: §4.1's mount derivation and exec-reach paragraphs (~25 lines; you
@@ -128,10 +129,10 @@ any of the three goes.
 §3.1 with **one addition**: the record carries `sender`, as
 `profiles/chat-maintainer/SOUL.md:11` already documents and the closed schema
 omitted. No code reads it — only the model does — but R3 ("a person opening one
-item can tell who asked", `prd.md:326`) needs it, so the tracker should take the
-requester identity from that field rather than invent a second source. Nothing
-else in §3.1 moves. If D9 is taken, §4.8 names two further things the tracker
-design inherits.
+item can tell who asked", `prd.md:399-401`) needs it, so the tracker should
+take the requester identity from that field rather than invent a second source.
+Nothing else in §3.1 moves. If D9 is taken, §4.8 names two further things the
+tracker design inherits.
 
 ---
 
@@ -233,12 +234,13 @@ decision (`SOUL.md:19`) is the backstop, at one card and one model run each.
 
 Nothing is asked about *who* the human is or what the message says: a message is
 eligible because of the room it was sent in. That is R18 as the merged PRD now
-states it (`prd.md:473-482`), so no divergence is left to reconcile. **The cost,
+states it (`prd.md:556-562`), so no divergence is left to reconcile. **The cost,
 where it cannot be missed:** every human message in a pilot room is an
 operation, an intake card and one model run — your conversation with someone
 else in that room included. `ignore` ends those at one card each, D4 waived any
-volume cap, and nothing else bounds the count (`prd.md:495-501`). Choose pilot
-rooms you are willing to have Ralph read in full.
+volume cap, and the PRD states the consequence itself — nothing bounds the
+volume (`prd.md:578-584`). Choose pilot rooms you are willing to have Ralph
+read in full.
 
 `sender_trusted` therefore stops being a judgement about a person and becomes a
 restatement of the first condition. `chat-route:63-64` and `chat-reply:78` still
@@ -372,11 +374,11 @@ the container go away.
 `.clarify-sent`, `.decline-sent`, `.reply-sent`, `.receipt-sent`, `.final-sent`
 — extending the three that ship (`chat-reply:27`). `kind`, one of R4's
 actionable kinds, is recorded on `route` because an **update** is acknowledged
-and nothing more (R6, `prd.md:355-356`; E10): `chat-route` omits the
-"finish with one ralph-chat-maintainer card" line from the brief when the kind
-is `update` (`:89-92`), so no final card exists to send. Both keys are safe to
-add — `chat-reply` ignores unknown metadata keys (`:90-93`) and `chat-route`'s
-allow-list widens in the same change.
+and nothing more (R6, `prd.md:428-429`; E10, `prd.md:673-674`): `chat-route`
+omits the "finish with one ralph-chat-maintainer card" line from the brief when
+the kind is `update` (`:89-92`), so no final card exists to send. Both keys are
+safe to add — `chat-reply` ignores unknown metadata keys (`:90-93`) and
+`chat-route`'s allow-list widens in the same change.
 
 ### 4.4 The ceilings, read by the sender from the thread
 
@@ -387,10 +389,10 @@ in `item.json` — staged evidence, never agent text.
 
 | Rule | Ceiling | On breach |
 |---|---|---|
-| A17 (`prd.md:714`) | at most 2 `clarify` per thread: one question, one follow-up | refused; the card is blocked and an alert posted (§4.6); the request stays pending |
-| A15 / R7 (`prd.md:368-369`) | at most 1 `decline` per thread, and a decline creates no tracker item | refused and blocked |
-| R6 (`prd.md:343,353`) | at most 1 `ack` per thread, and only after the tracker item exists | held, retried next scan |
-| R11 (`prd.md:388`) | at most 1 `final` per thread, and only after `ack` — shipped at `chat-reply:183-184` | refused |
+| A17 (`prd.md:797-802`; applied at E18, `prd.md:714-718`) | at most 2 `clarify` per thread: one question, one follow-up | refused; the card is blocked and an alert posted (§4.6); the request stays pending |
+| A15 / R7 (`prd.md:440-442`) | at most 1 `decline` per thread, and a decline creates no tracker item | refused and blocked |
+| R6 (`prd.md:416-417,426-427`) | at most 1 `ack` per thread, and only after the tracker item exists | held, retried next scan |
+| R11 (`prd.md:464-465,482-483`) | at most 1 `final` per thread, and only after `ack` — shipped at `chat-reply:183-184` | refused |
 
 The lock is on the thread, not the operation, for the reason the first review
 round found: several messages in one thread are separate operations, and
@@ -411,10 +413,10 @@ can therefore quote a private repository the requester cannot open, so the bound
 cannot be "the agent could not reach it". **It is a refusal in the sender, not a
 trim.** Before any send of agent text — `ack`, every `reply_kind`, `final` — the
 sender refuses text containing a tracker reference (the instance host, an
-`/issues/<n>` path, a bare `#<n>`; R1, `prd.md:511-512`); a URL not in a
+`/issues/<n>` path, a bare `#<n>`; R1, `prd.md:594-595`); a URL not in a
 `reachable` list the sender builds, where a URL qualifies only if provably
 public — for a GitHub pull request, one API read showing the repository is
-public, everything else named in words (R19, `prd.md:514-515`); or a
+public, everything else named in words (R19, `prd.md:597-598`); or a
 credential-shaped string (`SOUL.md:29`). **The honest limit:** prose cannot be
 proven to come from this request. A refusal rule catches references and links,
 not a sentence that *paraphrases* a private document. D2 makes these checks the
@@ -451,8 +453,8 @@ settle pass closes the item afterwards, so a tracker outage delays the close and
 never re-sends the reply. **Silence on failure (E11)** partly follows from the
 graph — a blocked or abandoned work card never lets the final card run — but a
 final card whose parents completed with a failed result is told to "say so
-plainly" (`SOUL.md:23`), and D2 keeps that; PRD v6 splits E11 the same way
-(`prd.md:400-405`).
+plainly" (`SOUL.md:23`), and D2 keeps that; PRD v7 splits E11 the same way
+(`prd.md:676-682`).
 
 **Failure is invisible today.** `chat-reply` signals by exit code and stderr
 only — `1` retry, `2` refused (`:160,190,198,208`). It blocks nothing and tells
@@ -535,8 +537,9 @@ the held marker too, and each held transition needs one fixed internal note —
 "reply withheld" — so an item never claims a requester was told something they
 were not (R3, R13).
 
-**Where the held text is visible.** On the done card, where it already is
-(`chat-reply:157-162`), and deliberately nowhere else — not through the alert
+**Where the held text is visible.** On the done card, where it already is: the
+sender reads `decision`, `ack` and `body` straight out of that card's metadata
+(`chat-reply:168-176,182`), and deliberately nowhere else — not through the alert
 webhook, which posts to a space of yours, because routing withheld reply text
 through it would put agent-composed text into Chat by a second path, the one
 thing §4.7's bound exists to prevent.
@@ -573,10 +576,11 @@ thing §4.7's bound exists to prevent.
 - **The tracker.** Item schema, statuses, classification and the tracker account
   are the sibling design. This document publishes §3.1, names the two things
   §4.8 forces on it, and says nothing else.
-- **Editing the PRD.** `prd.md` v6 already carries D2 and D6. Its "Current
-  state" section and R15's closing paragraph are stale — they say no chat sender
-  exists on this path, which `SKILL.md:44` and `bootstrap/chat-reply`
-  contradict — and that correction belongs to the PRD card.
+- **Editing the PRD.** `prd.md` is at v7 (`Zhachory1/docs#12`), which carries D2
+  and D6 and has already corrected "Current state" and R15 to say that
+  `bootstrap/chat-reply` ships. Nothing here needs the PRD changed; what v7
+  left for this design — A17's ceiling and R19's provenance rule, its design
+  unknowns 5 and 12 — is settled in §4.4 and §4.5.
 - **Implementing any of this.** Work starts after this document is merged.
 
 ---
