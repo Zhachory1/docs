@@ -10,7 +10,7 @@ implements: dd-ralph-librarian
 issue: Zhachory1/ralph#130
 supersedes: none
 prs:
-  - Zhachory1/docs#PENDING   # this plan
+  - Zhachory1/docs#25   # this plan
 ---
 
 # The librarian ships in four pull requests — the profile, the forced re-index, the weekly card, then the documentation
