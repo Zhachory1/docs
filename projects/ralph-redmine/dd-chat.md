@@ -9,6 +9,8 @@ date: 2026-11-09
 implements: prd-ralph-redmine
 part: 1 of 2 (chat setup; the tracker is its own design)
 supersedes: Zhachory1/docs#7   # closed at the owner's direction, not on substance
+prs:
+  - Zhachory1/docs#14
 ---
 
 # How a chat message reaches Ralph, and how its replies are bounded
@@ -109,7 +111,7 @@ closes the most exposure, because the shipped sender has none of the ceilings
 today. The sidecar comes **last**: everything before it runs by hand. The
 breakdown belongs to the implementation plan.
 
-**Length, declared rather than hidden.** This is 657 lines against the card's
+**Length, declared rather than hidden.** This is 659 lines against the card's
 450-line target — 57% of the 1146-line document it replaces, and it carries
 roughly half of that document's subject matter, so it is denser per topic but
 still over budget. The three blocks I would cut first, in order, and what each
