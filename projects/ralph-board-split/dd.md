@@ -8,7 +8,7 @@ revision: v1
 date: 2026-11-11
 implements: prd-ralph-board-split
 prs:
-  - Zhachory1/docs#28   # this design
+  - Zhachory1/docs#30   # this design
 issue: Zhachory1/ralph#159
 supersedes: none
 ---
