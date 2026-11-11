@@ -1,7 +1,7 @@
 ---
 id: dd-ralph-skills
 title: Publish 50 skills in ralph, keep 17 in the private overlay, and mount them per profile as read-only lanes
-status: in review
+status: approved
 owner: Zhachory1
 card: t_78046316
 revision: v3
