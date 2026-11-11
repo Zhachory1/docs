@@ -10,7 +10,7 @@ implements: dd-ralph-board-split
 issue: Zhachory1/ralph#159
 supersedes: none
 prs:
-  - Zhachory1/docs#TBD   # this plan
+  - Zhachory1/docs#31   # this plan
 ---
 
 # The board split ships in six pull requests — the variables, the loop, the synthesis check, the notifier, the words, the pictures
