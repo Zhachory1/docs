@@ -1,10 +1,10 @@
 ---
 id: prd-ralph-board-split
-title: Split `queues` into one board per workflow — review and maintenance get their own boards, chat intake keeps `queues`, and no existing card moves
+title: Split review and maintenance onto their own boards; keep intake on `queues` with no card moves
 status: draft
 owner: Zhachory1
 card: t_93c40618
-revision: v1
+revision: v2
 date: 2026-11-11
 prs:
   - Zhachory1/docs#27   # this PRD
@@ -12,39 +12,31 @@ issue: Zhachory1/ralph#159
 supersedes: none
 ---
 
-# Split `queues` into one board per workflow — review and maintenance get their own boards, chat intake keeps `queues`, and no existing card moves
+# Split review and maintenance onto their own boards; keep intake on `queues` with no card moves
 
 > **This repository is public.** No employer, person, space, message content or
 > private repository appears here. The two deployments are "the work instance"
 > and "the personal instance".
 
 Status: **draft**. This is the PRD step only. The design follows as its own
-pull request, and the implementation plan after that. Nothing is built yet.
+pull request, and the implementation plan after that. The board split is not
+built; only the existing `queues` display name has changed.
 
 ## Review header
 
-**Decisions needed from you**
+**Owner decisions** (feedback on docs#27):
 
-1. **The review board's name.** `review` is already the name of a per-card
-   *status* — the column `kanban_request_review` moves a card into
-   (`docs/spikes/hermes-capabilities.md:85`: `list --status review`, called out
-   there as "a separate status!"). Naming a board `review` makes "a card in
-   review on the review board" a sentence this system will produce. `lenses` is
-   one alternative. **I did not pick.** Every requirement below is written
-   against "the review-workflow board", so your answer changes one name and no
-   requirement (R2).
-2. **Whether `queues` keeps one live workflow.** Chat intake (6 cards) is the
-   only producer I recommend leaving on `queues` (R8), because its board
-   identity is load-bearing in four scripts. The cost: `queues` is frozen for
-   review and maintenance, not frozen absolutely. If you want it strictly
-   frozen, say so and the design gives chat intake its own board instead —
-   that is a bigger change, for reasons in R8.
-3. **Whether the email-inbox path is still live.** `bootstrap/inbox-producer`
-   and `bootstrap/inbox-writer` default to `--board queues`, but no
-   `ralph-inbox-drafter` lane appears in the measured counts. Retire it, or
-   route it like the others? I could not tell from the code.
+1. The review-workflow board's slug is `lenses`, not `review`, which is already
+   a per-card status.
+2. Chat intake stays on the existing `queues` slug. Hermes `boards rename`
+   changes only its display name, not its slug; the owner chose the smaller
+   option, **Intake** as the display name, on both instances. Verified on each
+   instance with `hermes kanban boards rename --help` ("slug is immutable")
+   and before/after `boards list`: `queues` and its cards remain in place.
+3. Email inbox is still live and uses the same `queues` board as Chat intake.
 
-**Council dissent:** none yet. This is v1; the agent review round follows.
+**Council dissent:** none yet. This is v2, incorporating owner feedback and
+read-only audit findings; the agent review round follows.
 
 **Scope:** M. Roughly four to six build pull requests in the Ralph repository,
 across about fifteen files. The design sizes them; the plan splits them.
@@ -62,7 +54,8 @@ across about fifteen files. The design sizes them; the plan splits them.
 
 **Not for:** the lens, synthesis, maintainer and chat-maintainer profiles
 themselves. Their card bodies, assignees, statuses, workspaces, budgets and
-prompts do not change. Only the board a card is created on changes.
+prompts do not change. Only where new review and maintenance cards are created
+changes; the existing intake board also gets a clearer display name.
 
 ## Terms, settled by the owner (ralph#159)
 
@@ -90,7 +83,11 @@ named below in a fresh checkout.
 me resolve only my own card. The numbers below are the owner's measurement of
 2026-11-10, carried from ralph#159 and **not** independently confirmed by me.
 See assumption A1 — nothing in this PRD depends on the exact figures, only on
-the shape (two workflows hold almost everything).
+the shape (two workflows hold almost everything). A separate read-only audit on
+2026-11-11 found 4,270 work and 743 personal `queues` cards (ralph#163);
+review plus maintenance accounted for 4,239 (99.3%) and 736 (99.1%) of them,
+respectively. These are newer snapshots, not replacements for the detailed
+2026-11-10 lane table below.
 
 **The density, as measured by the owner on 2026-11-10.** Work instance,
 `queues`: 4,073 cards across 11 assignee lanes.
@@ -107,9 +104,11 @@ two short of the stated total; two cards sit in a lane the measurement did not
 name (observation O2). Personal instance: `queues` at 610 cards, same shape at
 smaller scale. The `ralph` board (feature work) sits at 27 (work) / 74
 (personal) and is not part of this problem. `default` is empty on both.
-`ralph-evals` exists on both with no real cards.
+A later read-only audit found 116 archived test cards on the personal
+`ralph-evals` board and no `ralph-evals` board on the work instance (ralph#163).
+No board deletion is part of this split.
 
-**Two boards exist, and `bootstrap/install` creates them.** `BOARD` at
+**Two workflow boards are created by `bootstrap/install`.** `BOARD` at
 `install:11` (`${RALPH_BOARD:-ralph}`), created at `:301-309`; `QUEUES_BOARD`
 at `:319` (`${RALPH_QUEUES_BOARD:-queues}`), created at `:320-328`. Both
 creations are already guarded by a `boards list | grep` existence check, so
@@ -176,12 +175,10 @@ enumerates every board Hermes knows rather than a fixed list, archived boards
 included, and `:172` deletes nothing if any board is unreadable. That is the
 pattern the rest should follow.
 
-**`ralph-evals` is a leftover, and the test that made it no longer can.**
-`evals/test_orchestration.py:30-34` now builds its `Board("ralph-evals", ...)`
-against a private temporary database, explicitly "a private DB the gateway
-never ticks", and `evals/board.py:15-26` omits `--board` entirely when a
-`db_path` is pinned. So the live `ralph-evals` board is residue from an older
-fixture, and deleting it will not recreate it.
+**The test board is outside this change.** `evals/test_orchestration.py:30-34`
+now uses a private temporary database, but the personal `ralph-evals` board
+still holds 116 archived test cards (ralph#163). The work instance has no such
+board. Neither board nor card history is deleted as part of this split.
 
 **Hermes has no move-a-card-between-boards operation.** No such command appears
 in `docs/spikes/hermes-capabilities.md` or in any board call across
@@ -190,10 +187,10 @@ migration.
 
 ## The outcome
 
-Opening a board shows one workflow. The review-workflow board holds review
-graphs; the maintenance board holds maintenance cards; `ralph` holds feature
-work; `queues` holds chat intake and the historical record of everything the
-old shared board ever carried. Gates reach the owner from whichever board they
+New cards land on the board for their workflow. The `lenses` board holds review
+graphs; `maintain` holds maintenance cards; `ralph` holds feature work; `queues`
+(display name **Intake**) holds chat and email intake plus the historical record
+of everything the old shared board ever carried. Gates reach the owner from whichever board they
 occur on. A fresh instance comes up with the same set of boards without anyone
 editing code, and no card that exists today is moved, archived or lost.
 
@@ -208,14 +205,12 @@ editing code, and no card that exists today is moved, archived or lost.
   `ralph-maintainer`. This confirms the split proposed in ralph#159: those two
   workflows are 99.6% of the measured volume, and they are the only two that
   grow without a human asking for anything.
-- **R2.** The review-workflow board's slug is the owner's choice at approval of
-  this PRD — `review`, `lenses`, or another name (decision 1). The maintenance
-  board's slug is `maintain`; it collides with nothing. Every requirement here
-  is written against the role, not the slug, so the answer changes one name in
-  the design and no requirement in this document.
-- **R3.** `queues` is **not** deleted, archived, emptied or renamed. Every card
-  on it keeps its id, status, history, comments and attachments, and stays
-  readable by `list` and `show` for historical lookups.
+- **R2.** The review-workflow board's slug is `lenses`; the maintenance
+  board's slug is `maintain`. `review` remains a per-card status, not a board.
+- **R3.** The `queues` slug is **not** deleted, archived, emptied or changed.
+  Its display name is **Intake** on both instances. Every card on it keeps its
+  id, status, history, comments and attachments, and stays readable by `list`
+  and `show` for historical lookups.
 - **R4.** The `ralph` board's structure, assignees and purpose do not change.
 - **R5.** No card is moved between boards. The new boards start empty and fill
   from new work only. Hermes has no move operation, so this is not a choice
@@ -232,22 +227,18 @@ editing code, and no card that exists today is moved, archived or lost.
   maintenance-workflow board. Review and maintenance must be separately
   configurable: one board variable can no longer drive both
   (`run-review-loop:14` feeding `:82` and `:99`).
-- **R8.** **Chat intake stays on `queues`** and routed chat work stays on
-  `ralph`. Not because of volume — six cards do not matter either way — but
-  because three readers use the board itself as a fact:
-  `chat-reply:511` and `:513` decide which reply kind an operation still owes
-  from whether the card is on `ralph` or `queues`, and `tracker-sync:203-230`
-  tells the intake card from the report card the same way. Moving intake to
-  `ralph` collapses both sides onto one board and makes that distinction
-  unexpressible; it would also put cards whose bodies are untrusted chat
-  content (`chat-route:80`) on the human feature board. The honest consequence:
-  `queues` is frozen for review and maintenance, and remains the live chat
-  intake board. It stops growing by thousands; it does not stop growing.
-- **R9.** Every board any producer writes to is settable per instance by the
-  same kind of mechanism `ralph` and `queues` use today, so two instances can
-  differ without a code change. Specifically, no board name may remain a bare
-  string literal (`chat-producer:211`) or a closed enumeration that rejects a
-  valid board (`chat-reply:527`).
+- **R8.** **Chat and email intake stay on `queues`** (display name **Intake**),
+  while routed chat work stays on `ralph`. The Chat boundary is load-bearing:
+  `chat-reply:511,513` and `tracker-sync:203-230` use the board to distinguish
+  intake from the report card. Moving intake to `ralph` would collapse that
+  distinction and put untrusted chat content on the human feature board.
+  `inbox-producer:95` and `inbox-writer:67` already default to `queues`; the
+  live email path stays there. `queues` is frozen for new review and maintenance
+  work, not for intake; it stops growing by thousands, not altogether.
+- **R9.** The new `lenses` and `maintain` board names are configurable per
+  instance; their producers and readers must agree on them. Existing Chat and
+  email paths continue to use the `queues` slug. Changing their literals or
+  enums is not needed to add these two boards.
 - **R10.** Review synthesis keeps its parent-handoff restriction, and that
   restriction follows the review-workflow board. `lens-tools:431` must permit
   synthesis on the new board and must still refuse it everywhere else. This is
@@ -272,8 +263,9 @@ editing code, and no card that exists today is moved, archived or lost.
 
 - **R14.** A fresh install creates every board the instance needs, idempotently,
   in the same shape as the existing checks at `install:301-309` and `:320-328`:
-  a second run creates nothing and fails nothing. This holds on both instance
-  shapes, work and personal.
+  a second run creates nothing and fails nothing. The existing `queues` board
+  retains its **Intake** display name. This holds on both instance shapes,
+  work and personal.
 - **R15.** The new board names are visible where an operator configures an
   instance — `compose/.env.example` and `compose/docker-compose.yml` — not only
   as inline defaults inside scripts. `compose/.env.example:157` lists only
@@ -300,8 +292,8 @@ editing code, and no card that exists today is moved, archived or lost.
 ## Acceptance examples
 
 1. **Fresh install, both shapes.** On a clean instance, `bootstrap/install`
-   runs and `hermes kanban boards list` shows `ralph`, `queues`, the
-   review-workflow board and `maintain`. Running `bootstrap/install` a second
+   runs and `hermes kanban boards list` shows `ralph`, `queues` (display name
+   **Intake**), `lenses` and `maintain`. Running `bootstrap/install` a second
    time prints "already exists" for all four, creates nothing, and exits 0.
    Verified on both the work and personal instance shapes.
 2. **A review graph lands on the review board.** With the review loop running,
@@ -338,28 +330,23 @@ editing code, and no card that exists today is moved, archived or lost.
    `blocked` to `ready`, as `notifier/approvals.py` does on `queues` today.
 9. **Nothing on `queues` moves.** Before and after, `hermes kanban --board
    queues list --archived --json` returns the same card ids with the same
-   statuses, except for new chat intake cards (R8). A card id from the old
-   review backlog still resolves with
-   `hermes kanban --board queues show <id> --json`, with its comments and
-   events intact.
-10. **Chat intake is unchanged end to end.** A new chat message creates one
-    intake card on `queues` with one `operation_id:` line, assignee
+   statuses, except for new intake cards (R8). The slug remains `queues` and
+   the display name is **Intake** on both instances. A card id from the old
+   review backlog still resolves with `hermes kanban --board queues show <id>
+   --json`, with its comments and events intact.
+10. **Intake is unchanged end to end.** A new chat message creates one card
+    on `queues` with one `operation_id:` line, assignee
     `ralph-chat-maintainer`, idempotency key the operation id
     (`chat-producer:206-215`); `chat-route` creates the orchestrator card on
     `ralph`; `chat-reply --scan` finds both and sends the reply kind each side
     owes; `tracker-sync` resolves the intake card on `queues` and the report
-    card on `ralph`. The six existing chat cards stay where they are.
-11. **A board name can be changed without editing code.** Setting the review
-    board's variable to a different value on one instance routes new review
-    graphs there, and the other instance is unaffected. No board name remains a
-    bare literal.
-12. **`ralph-evals` is gone.** The owner (or ops) deletes the `ralph-evals`
-    board on both instances; `hermes kanban boards list` no longer shows it,
-    and a full `evals/` run afterwards passes without recreating it
-    (`evals/test_orchestration.py:30-34` uses a private temporary database).
-    **This is an owner/ops action, not a build card** — deleting a board is not
-    a code change.
-13. **Sandbox cleanup is still safe.** With four boards live, a running card's
+    card on `ralph`. Email intake also continues to create and read cards on
+    `queues`. The existing intake cards stay where they are.
+11. **New board names can differ by instance.** Setting the review board's
+    variable to a different value on one instance routes new review graphs
+    there, and the other instance is unaffected. Existing intake paths keep
+    the `queues` slug.
+12. **Sandbox cleanup is still safe.** With four boards live, a running card's
     checkout on the new review board is not deleted by `cleanup-sandboxes`, and
     a cleanup run that cannot read one board deletes nothing (`:172`).
 
@@ -371,32 +358,16 @@ editing code, and no card that exists today is moved, archived or lost.
 - **N3.** No change to assignee lanes or status within a board.
 - **N4.** No change to the `ralph` board's own structure.
 - **N5.** No change to what any profile does on a card: prompts, bodies,
-  budgets, retries, workspaces and handoffs are untouched. Only the board a
-  card is created on changes.
+  budgets, retries, workspaces and handoffs are untouched. New review and
+  maintenance cards change boards; the intake board changes display name only.
 - **N6.** No change to the review loop's discovery rules, allowlists, cost
   bounds or publishing idempotency.
-
-## Open questions for the owner
-
-- **The `review` name** (decision 1). `review` is already a card status. Keep
-  the collision, or pick another slug.
-- **Whether `queues` stays live for chat intake** (decision 2). R8 recommends
-  yes, with the two-sided boundary as the reason. If you want `queues` strictly
-  frozen, the only other shape is a fourth board for chat intake — which means
-  changing `chat-reply:511-513` and `tracker-sync:203-230` from "which board"
-  to some other discriminator. That is real design work, and I am not assuming
-  you want it.
-- **The email-inbox path** (decision 3). `inbox-producer:95` and
-  `inbox-writer:67` default to `queues`; no `ralph-inbox-drafter` lane appears
-  in the measured counts. Retire it, or route it like the rest?
 
 ## Unknowns to settle at design time
 
 - **How the review loop names two boards instead of one.** `run-review-loop:14`
   is a single `BOARD` used for publish, discover and maintain. Two variables, a
   per-stage flag, or a small config read — the design picks.
-- **Whether `chat-reply`'s enum becomes an open argument or a wider enum**, and
-  what rejects an unknown board if the enum goes.
 - **How `lens-tools:431` expresses "the review board"** without widening to any
   board: an environment variable the lens sandbox already trusts, or a value
   derived from the alias binding it already validates (`:436-437`).
@@ -406,17 +377,15 @@ editing code, and no card that exists today is moved, archived or lost.
 - **Cutover order on a live instance.** The review loop and notifier run
   continuously. The design says what happens to a graph half-created when the
   board changes, and whether anything must be stopped first.
-- **Board display names and descriptions** for the two new boards, matching the
-  shape of `install:302-305` and `:321-324`.
+- **Display names and descriptions** for `lenses` and `maintain`, matching
+  `install:302-305` and `:321-324`. The existing `queues` display name is
+  **Intake**; the design must preserve it on reinstall.
 
 ## Assumptions
 
 - **A1.** The owner's 2026-11-10 counts are accurate. I could not re-verify
   them: this sandbox has no `hermes` binary and no board database. Nothing here
   depends on the exact figures, only on two workflows holding almost everything.
-- **A2.** Deleting a board is an operation the owner can perform. ralph#159
-  states `ralph-evals` "can be deleted"; I did not verify a command exists, and
-  this PRD does not depend on one beyond acceptance 12.
 - **A3.** The personal instance has the same board-touching scripts as the work
   instance, differing only in volume. Both run from the same Ralph repository.
 - **A4.** The WebUI density problem is card count on one board, not total cards
@@ -443,9 +412,9 @@ editing code, and no card that exists today is moved, archived or lost.
   cards sit in a lane the measurement did not name — possibly unassigned. Worth
   a look before the design assumes the lane list is complete.
 - **O3.** `inbox-producer` and `inbox-writer` default to `queues` and appear in
-  `compose/README.md:279-293` as a manual procedure, but no
-  `ralph-inbox-drafter` cards were measured. The path may be dead code
-  (decision 3).
+  `compose/README.md:279-293` as a manual procedure. The owner confirmed the
+  email inbox is live, even though no `ralph-inbox-drafter` cards appeared in
+  the older board-count snapshot.
 - **O4.** `bootstrap/scope-check:176` defaults to `--board ralph` — correct for
   build pull requests, and unaffected by this split. Noted so the design does
   not "fix" it.
