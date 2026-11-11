@@ -1,7 +1,7 @@
 ---
 id: prd-ralph-redmine
 title: Ralph keeps work requests in a private tracker only the owner and Ralph can read, and replies in the requester's own chat thread — asking first when the ask is unclear, once when work starts, and once with the outcome itself
-status: in review
+status: approved
 owner: Zhachory1
 card: t_8e5a6fa4
 revision: v7

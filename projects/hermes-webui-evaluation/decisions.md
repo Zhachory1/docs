@@ -1,7 +1,7 @@
 ---
 id: dec-hermes-webui-evaluation
 title: Keep the built-in dashboard as the monitor; adopt hermes-webui as the chat space
-status: in review
+status: approved
 owner: Zhachory1
 card: t_f34790a4
 source: Zhachory1/ralph#2
