@@ -7,7 +7,7 @@ card: t_08c142ea
 revision: v1
 date: 2026-11-11
 prs:
-  - Zhachory1/docs#TBD   # this PRD
+  - Zhachory1/docs#28   # this PRD
 issue: Zhachory1/ralph#160
 supersedes: none
 ---
