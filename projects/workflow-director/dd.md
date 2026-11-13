@@ -74,8 +74,8 @@ flowchart TB
     end
 
     wf_update -. "reflects stage\n(no new status names)" .-> tracker
-    wf -- "reports done" --> orch
-    orch -- "4. --close" --> tracker
+    wf -- "4. one card to orchestrator,\nparented to its terminal card(s),\nwork_id + completion summary" --> orch
+    orch -- "5. --close" --> tracker
 
     style orch fill:#FFF6D6
     style wf fill:#E8F1FB
@@ -85,6 +85,7 @@ flowchart TB
 - **Orchestrator classifies, opens, hands off, watches, closes — and nothing else.** It stops containing any one workflow's graph-building logic, and it does not pick a workflow's mode either (see [Mode levels](#mode-levels-lite--default--deep)). "A feature runs PRD→design→plan→build" moves out of orchestrator's prompt and into a `feature-workflow` profile's own prompt; "discover, stage evidence, fan out lenses, synthesize" moves from `build-review-graph`'s Python into a `review-workflow` profile's own prompt.
 - **A workflow profile owns one shape — but only when that shape earns the abstraction.** A workflow profile is warranted when its sub-steps are complicated *and* non-deterministic enough to need coordinating multiple cards or profiles: a parallel fan-out (review's lenses), a branching multi-document gate chain (feature's PRD/design/plan), a loop with a stop condition that depends on evidence (an ML experiment's hypothesis/train/validate). A long but deterministic checklist run by one profile claiming one card — librarian's nine ordered steps, none of them branching into new cards — does not meet that bar and stays exactly what it already is: a regular profile working a fixed sequence, no sub-graph, no workflow-profile wrapper. "Complicated" alone is not the test; a long deterministic list is still simple in the sense that matters here.
 - **The tracker item is the spine, not a side channel.** One Redmine issue per unit of work, opened once by orchestrator at classification time, carried through every stage regardless of which workflow or how many cards it took, closed once by orchestrator when it judges the work done. Only orchestrator ever calls `--open`/`--close` — settled explicitly in conversation: the director declares a work order complete; a workflow profile reports done, it does not close its own bug.
+- **"Reports done" is a kanban card, not an implicit signal.** Settled in conversation 2026-11-13: once a workflow profile's own sub-graph is fully done, its last act is creating **one card assigned to `ralph-orchestrator`**, parented to its own terminal card(s), body carrying `work_id` and a completion summary — the same shape orchestrator already uses today in the other direction (it ends a Chat-sourced graph with one card assigned to `ralph-chat-maintainer`, parented to the work cards, which "reports finished work"). Orchestrator does not poll or watch a workflow's sub-graph for completion; it claims the reporting card, reads the summary, calls `tracker-work --close <work_id>`, and completes its own card. This is how orchestrator can stop watching dozens of cards it no longer owns and still know, concretely, when to close the bug.
 - **Direct-triggered, fixed-shape jobs stay outside this, and get no tracker bug at all.** PR review and librarian are mechanical, predetermined, and high-frequency — hundreds of review graphs over time, one librarian run a week. A Redmine issue per run would flood the tracker with noise nobody reads, defeating its purpose as a signal for real units of work a human or workflow is actually waiting on. Each already has its own visible record where it belongs: a review's result is the PR itself; a librarian run's result is its own pull request. They keep their own outside-the-graph triggers (`discover-reviews`'s poll, `review-loop`'s weekly card) and never call `tracker-work` at all, in any mode.
 
 ## Why a rewrite, not a wrapper
@@ -138,7 +139,7 @@ flowchart LR
     style close fill:#FFF6D6
 ```
 
-The loop-stop condition (metric hit / compute cap / diminishing returns) is `ml-experiment-workflow`'s own business, the same way review's lens-count and synthesis-parent rule is `review-workflow`'s own business. Orchestrator never needs to know what "diminishing returns" means for an ML experiment; it only needs to know the workflow eventually reports done. **Deferred** — not one of the first two profiles built; picked up later, against real need.
+The loop-stop condition (metric hit / compute cap / diminishing returns) is `ml-experiment-workflow`'s own business, the same way review's lens-count and synthesis-parent rule is `review-workflow`'s own business. "Verdict + handoff" would be the same card-to-orchestrator mechanism as `feature-workflow`'s: one card assigned to `ralph-orchestrator`, parented to the validate card, `work_id` and the verdict as its completion summary. **Deferred** — not one of the first two profiles built; picked up later, against real need.
 
 ## What this is not
 
@@ -170,3 +171,4 @@ Today both candidate workflows are already one fixed shape regardless of how sma
 ## Open questions
 
 1. **The exact mode-selection thresholds**, within each workflow profile's own judgment — e.g., which diff properties make a PR `lite` versus `default` for `review-workflow`. *Who* decides is settled (the workflow profile, from its own context, never orchestrator); the precise criteria still need deciding against real PRs and real feature requests, not guessed here.
+2. **Does `review-workflow` also report back to orchestrator, despite having no tracker bug?** `review-workflow` is a direct-triggered lane with no orchestrator involvement on either end (`discover-reviews` → `review-workflow` → `publish-review` → GitHub) — unlike `feature-workflow`, there is no tracker bug for orchestrator to close, so the card-to-orchestrator mechanism above may have nothing for orchestrator to *do* with it. Open whether `review-workflow` stays fully outside orchestrator's awareness (as today), or still reports back for visibility/exception-watching without a tracker close attached.
