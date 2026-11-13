@@ -1,14 +1,14 @@
 ---
 id: dd-workflow-director
 title: Orchestrator becomes a director — workflow profiles own their own shape, mode, and brief depth; the work tracker is the spine across every lane
-status: draft
+status: approved
 owner: Zhachory1
 revision: v2
 date: 2026-11-13
 issue: Zhachory1/ralph#180
 supersedes: none
 prs:
-  - Zhachory1/docs#TBD   # this design
+  - Zhachory1/docs#32   # this design
 ---
 
 # Orchestrator becomes a director — workflow profiles own their own shape, mode, and brief depth; the work tracker is the spine across every lane
@@ -17,7 +17,7 @@ prs:
 > appears here. The work instance's docs repository is "the work docs
 > repository".
 
-Status: **draft**, not yet approved. A design spike for [ralph#180](https://github.com/Zhachory1/ralph/issues/180), read alongside [ralph#163](https://github.com/Zhachory1/ralph/issues/163) (a separate, read-only audit of what exists today — its findings may change or delay this). `bootstrap/tracker-work` and its `--open`/`--update`/`--close` shape ([ralph#177](https://github.com/Zhachory1/ralph/pull/177), merged) already exist; this design widens who uses it and extracts logic that already exists elsewhere into new profiles, rather than inventing new mechanics.
+Status: **approved** by the owner (merge of Zhachory1/docs#32, 2026-11-13). A design spike for [ralph#180](https://github.com/Zhachory1/ralph/issues/180), read alongside [ralph#163](https://github.com/Zhachory1/ralph/issues/163) (a separate, read-only audit of what exists today — its findings may change or delay this). `bootstrap/tracker-work` and its `--open`/`--update`/`--close` shape ([ralph#177](https://github.com/Zhachory1/ralph/pull/177), merged) already exist; this design widens who uses it and extracts logic that already exists elsewhere into new profiles, rather than inventing new mechanics.
 
 ## Review header
 
