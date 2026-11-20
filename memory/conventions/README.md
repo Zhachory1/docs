@@ -1,6 +1,6 @@
 ---
 kind: index
-updated: 2026-11-11
+updated: 2026-11-20
 ---
 
 # conventions
@@ -10,3 +10,4 @@ updated: 2026-11-11
 - [Re-check a document's citations against the target branch head just before pushing, not when drafting starts.](2026-11-09-reground-citations-before-push-t_1b391076.md)
 - [Renaming the sent-once marker files of a live reply loop re-sends to every thread that already has one](2026-11-09-sent-marker-rename-resends-t_5576e6da.md)
 - [An author sandbox cannot read `hermes-home`, but `df` inside it does measure both the VM disk and the host disk, so disk-pressure claims are verifiable from an author card](2026-11-11-author-sandbox-df-verifies-disk-pressure-t_08c142ea.md)
+- [A pull request that regenerates a Graphviz diagram cannot meet the 400-line scope cap, so plan it as its own labelled pull request](2026-11-11-regenerated-diagrams-need-their-own-scope-approved-pr-t_49d744df.md)

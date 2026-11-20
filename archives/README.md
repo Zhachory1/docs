@@ -1,6 +1,6 @@
 ---
 kind: index
-updated: 2026-11-11
+updated: 2026-11-20
 ---
 
 # archives
@@ -8,3 +8,4 @@ updated: 2026-11-11
 Finished or paused items from projects, areas, or resources, moved whole.
 
 - [ralph-knowledge](ralph-knowledge/)
+- [ralph-librarian](ralph-librarian/)

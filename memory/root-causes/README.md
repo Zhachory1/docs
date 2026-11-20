@@ -1,6 +1,6 @@
 ---
 kind: index
-updated: 2026-11-11
+updated: 2026-11-20
 ---
 
 # root-causes
@@ -9,3 +9,6 @@ updated: 2026-11-11
 - [A design's inertness argument must name the owner action that gates the code path, never the absence of a caller — "nothing calls it yet" ages out silently.](2026-11-09-inertness-claimed-from-absence-t_d306f347.md)
 - [The review loop's eval harness stubs `docker` as `exit 0`, so every periodic block guarded by a container check is silently untested](2026-11-09-review-loop-eval-harness-hides-periodic-blocks-t_f0a3aa2b.md)
 - [The author sandbox has no `hermes` binary and no board database, so a card that asks the author to re-verify live board counts cannot be satisfied there](2026-11-11-author-sandbox-cannot-read-live-boards-t_93c40618.md)
+- [An approval gate card can complete against the merge of a different pull request, releasing the next card early](2026-11-11-gate-completed-against-the-wrong-pull-request-t_49d744df.md)
+- [No agent profile has a board-wide list or count tool for kanban tasks](2026-11-11-no-board-list-tool-t_2a85150f.md)
+- [The review-loop container is passed no board variable, so it and the notifier agree only because their two defaults happen to match](2026-11-11-review-loop-container-has-no-board-variable-t_7898132f.md)
