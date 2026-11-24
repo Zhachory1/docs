@@ -1,12 +1,13 @@
 ---
 id: prd-paperclip-infrastructure
 title: Paperclip provides a shared platform and MCP gateway for Ralph
-status: draft
+status: in review
 owner: Zhachory1
 card: none
 revision: v1
 date: 2026-11-24
-prs: []
+prs:
+  - Zhachory1/docs#36
 issue: Zhachory1/ralph#338
 supersedes: none
 ---
