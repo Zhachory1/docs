@@ -6,7 +6,8 @@ owner: Zhachory1
 card: none
 revision: v1
 date: 2026-11-24
-prs: []
+prs:
+  - Zhachory1/docs#37
 implements: prd-paperclip-infrastructure
 issue: Zhachory1/ralph#338
 supersedes: none
