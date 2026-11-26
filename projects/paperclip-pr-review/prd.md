@@ -4,7 +4,7 @@ title: Paperclip submits one automated review for each eligible PR head
 status: in review
 owner: Director
 card: none
-revision: v1
+revision: v2
 date: 2026-11-26
 prs:
   - Zhachory1/docs#38
@@ -14,10 +14,12 @@ supersedes: none
 
 # Paperclip submits one automated review for each eligible PR head
 
-**Decision needed:** Approve automatic COMMENT reviews for open, non-draft PRs
-assigned to the Director's configured GitHub identity. The first release covers
-one configured Paperclip company and an explicit repository scope. It does not
-approve or merge PRs.
+**Decision needed:** Approve automatic reviews for open, non-draft PRs assigned
+to the Director's configured GitHub identity. The reviewer chooses APPROVE,
+REQUEST_CHANGES, or COMMENT from the evidence and separates blocking findings
+from non-blocking suggestions. The first release covers one configured
+Paperclip company and an explicit repository scope. Merging still requires
+explicit human instruction.
 
 This proposal needs one PRD PR, followed by a separate design PR after PRD
 approval. No workflow has been enabled as part of this draft.
@@ -36,16 +38,15 @@ by [#339](https://github.com/Zhachory1/ralph/issues/339).
 
 ## Release boundary and alternatives
 
-The first release submits COMMENT reviews with findings or an explicit
-no-findings result. That meets the automatic-review outcome without choosing
-an approval policy for agent-authored work. The existing repository policy
-still governs other workflows; this release does not impose a global approval
-ban or change the human merge gate.
+The first release lets the reviewer approve work it judges ready, request
+changes for actual blockers, or comment when it cannot reach either verdict.
+Non-blocking suggestions may accompany an approval. The Director does not need
+to submit each review or approve its verdict by hand.
 
-Manual pending-review staging would leave the Director responsible for
-submission and would not meet this outcome. Automated APPROVE and
-REQUEST_CHANGES events can follow under a separate approved scope; neither is
-needed to prove this first review workflow.
+COMMENT-only automation would omit the reviewer's approval judgment.
+Manual pending-review staging would leave submission with the Director.
+Neither meets the revised requirements in the
+[Director's review](https://github.com/Zhachory1/docs/pull/38#discussion_r4713007270).
 
 Prefer the verified Paperclip platform, native routines, task ownership and
 gateway. The design must verify their fit before proposing another scheduler,
@@ -74,16 +75,20 @@ queue, datastore or MCP server.
    if their head or base changed. Submit against the identified head.
 6. **Publish with explicit attribution.** Use an authorized reviewer identity
    and identify the review as automated. Do not impersonate a human or turn
-   automated findings into a human approval. This release submits COMMENT
-   events only and never merges.
+   automated findings into a human approval. Submit the reviewer's verdict
+   under the rules below. Do not approve the reviewer's own work; approving
+   another agent's work follows the Director's current repository policy.
+   A review approval, passing checks, or an agent request does not authorize
+   a merge.
 7. **Deduplicate and reconcile.** Submit at most one review per repository,
    PR, head and reviewer identity across repeated scans and restarts. Review a
    new eligible head again. If submission is uncertain, read GitHub state
    before retrying; a successful local process exit is not proof of delivery.
 8. **Keep an operator-visible record.** Record the trigger, expert/reviewer
-   handoff, reviewed revisions, actual checks, GitHub review ID/link, and
-   terminal or blocked state in Paperclip. Keep private code, credentials and
-   raw transcripts out of public documentation.
+   handoff, reviewed revisions, verdict, blocking/non-blocking classification,
+   actual checks, GitHub review ID/link, and terminal or blocked state in
+   Paperclip. Keep private code, credentials and raw transcripts out of public
+   documentation.
 9. **Respect launch and task limits.** Obtain Director launch approval and
    agreed task spend/attempt limits before paid live acceptance. Do not impose
    a monthly cap. Keep the workflow disabled until its boundaries and identity
@@ -96,13 +101,39 @@ flowchart LR
     Expert --> Reviewer["Independent reviewer"]
     Reviewer --> Sandbox["Isolated authorized checks"]
     Sandbox --> Recheck["Recheck eligibility, head and base"]
-    Recheck --> Review["Submitted COMMENT review"]
+    Recheck --> Review["Submit reviewer's verdict"]
     Review --> Record["Paperclip result and GitHub review link"]
 ```
 
 The Director approves the workflow at launch rather than submitting each
 review. The expert owns review delivery; the operator can trace its evidence
 through Paperclip and the submitted GitHub review.
+
+## Blocking findings and reviewer verdicts
+
+Each review summary has separate **Blocking findings**, **Non-blocking
+suggestions**, and **Checks** sections. Inline comments carry the same blocking
+or non-blocking label; severity alone does not determine whether a finding blocks.
+
+A blocking finding identifies a PR-caused correctness, security, data-loss, or
+agreed-requirement defect that must be fixed before merge. It needs concrete
+evidence or a reproduction, the affected location, and an actionable correction.
+Pre-existing problems and optional improvements do not block this PR.
+
+Non-blocking suggestions cover optional improvements, preferences, and
+out-of-scope observations. They do not prevent approval. An uncertain concern
+should identify its missing evidence rather than claim a proven blocker.
+
+| Verdict | Reviewer judgment |
+| --- | --- |
+| APPROVE | The reviewer judges the change ready, with sufficient evidence and no blocking findings. Non-blocking suggestions may remain. |
+| REQUEST_CHANGES | One or more substantiated blocking findings require correction. |
+| COMMENT | Evidence or clarification is insufficient for approval, but the reviewer has not established a must-fix blocker. |
+
+Do not submit APPROVE with unresolved blocking findings. Report failed or
+unavailable checks in every verdict; distinguish a PR-caused failure from an
+unrelated failure or an unavailable check. Missing evidence does not justify
+inventing a defect, and review approval never grants merge permission.
 
 ## Success and acceptance
 
@@ -111,7 +142,9 @@ journey. Native gateway availability and a configured roster do not count.
 
 | Acceptance | Required evidence |
 | --- | --- |
-| One eligible real PR receives a submitted COMMENT review | Normal Paperclip trigger and expert/reviewer records, plus the GitHub review ID and reviewer identity |
+| One eligible real PR receives an automatically submitted review | Normal Paperclip trigger and expert/reviewer records, plus the GitHub review ID, event and reviewer identity |
+| Reviewer judgment selects the verdict | Controlled cases cover APPROVE with no blockers, APPROVE with non-blocking suggestions, REQUEST_CHANGES with a substantiated blocker, and COMMENT for insufficient evidence |
+| Readers can distinguish blockers from suggestions | Separate summary sections and matching inline labels; no APPROVE result contains unresolved blocking findings |
 | No review of draft, closed or unassigned PRs | Controlled negative cases and a final eligibility check before submission |
 | CI does not gate discovery | An eligible PR with failing or pending CI reaches review; the report identifies its check state |
 | Repeated scans/restart do not duplicate a review | Same repository/PR/head/reviewer produces one GitHub review; a new eligible head produces a new review |
@@ -128,7 +161,6 @@ with a fixture, CLI-only manual review, or a successful process exit.
 ## Non-goals
 
 - PR maintenance, code changes to reviewed PRs, feature delivery, or merges.
-- Automatic approval or changes-requested review events in the first release.
 - New company/agent provisioning, a broader expert-team rollout, or memory
   backend selection.
 - A new gateway, general workflow engine, or independent queue/scheduler.
@@ -153,10 +185,16 @@ with a fixture, CLI-only manual review, or a successful process exit.
   `review-requested:@me` and manual pending-review submission. Those paths do
   not satisfy this issue's assignment-based, submitted-review outcome.
 
+## Observations
+
+- Issue #339 retains an earlier prohibition on agent-authored approvals; align
+  that text with the Director's current repository policy and this PRD before
+  enabling the workflow. This draft changes no live permissions.
+
 ## Assumptions
 
-- COMMENT reviews satisfy the initial automatic-review outcome; approval
-  events are not required for this first release.
+- The reviewer can exercise judgment within the approved repository and
+  authorship rules; non-blocking suggestions do not require another human gate.
 - The Director will identify the initial repository scope and authorize the
   reviewer identity before launch, without sharing credentials in documents.
 - The workflow will use an existing configured company and roster.
@@ -169,6 +207,7 @@ with a fixture, CLI-only manual review, or a successful process exit.
 - [Infrastructure closeout #338](https://github.com/Zhachory1/ralph/issues/338)
   and [dd-paperclip-infrastructure](https://github.com/Zhachory1/docs/pull/37).
 - Ralph at `35d36cf`:
+  [repository approval and merge policy](https://github.com/Zhachory1/ralph/blob/35d36cf4372ccaa00a7cf0c0816d4e6254721abb/AGENTS.md#L22-L27),
   [current workflow status, lines 1-6](https://github.com/Zhachory1/ralph/blob/35d36cf4372ccaa00a7cf0c0816d4e6254721abb/docs/workflows.md#L1-L6)
   and [platform boundary, lines 15-38](https://github.com/Zhachory1/ralph/blob/35d36cf4372ccaa00a7cf0c0816d4e6254721abb/compose/PAPERCLIP.md#L15-L38).
 - Paperclip `v2026.1117.0`:
