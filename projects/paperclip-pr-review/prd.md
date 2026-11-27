@@ -4,11 +4,13 @@ title: Paperclip submits one automated review for each eligible PR head
 status: in review
 owner: Director
 card: none
-revision: v4
-date: 2026-11-26
+revision: v5
+date: 2026-11-27
 prs:
   - Zhachory1/docs#38
   - Zhachory1/docs#39
+  - Zhachory1/docs#40
+  - Zhachory1/ralph#345
 issue: Zhachory1/ralph#339
 design: dd-paperclip-pr-review
 supersedes: none
@@ -20,6 +22,9 @@ supersedes: none
 [docs#38](https://github.com/Zhachory1/docs/pull/38). The scope covers automatic
 reviews of open, non-draft PRs assigned to the Director's configured GitHub
 identity, within one configured Paperclip company.
+The trusted-author/local-execution clarifications were then approved through
+[docs#39](https://github.com/Zhachory1/docs/pull/39); v5 records the subsequent
+Director-confirmed summary-format amendment.
 
 **Director clarifications:** Publish only APPROVE or COMMENT, never
 REQUEST_CHANGES. Review PRs assigned to `Zhachory1` and authored by `zhachbot`,
@@ -33,6 +38,12 @@ Record these clarifications alongside the technical design rather than
 repeating PRD approval. The Director confirmed local execution after the risk
 explanation: PR scripts run with the OS user's access; an author allowlist does
 not isolate them. No workflow has been enabled.
+
+**Format amendment:** On 2026-11-27 the Director chose a single submitted
+summary, with labeled findings and file/line references, instead of inline
+threads. This uses the native tool's supported direct-submission contract and
+removes the unsupported pending-draft recovery assumptions. APPROVE/COMMENT,
+deduplication, uncertainty handling and the launch gate remain unchanged.
 
 ## Problem and outcome
 
@@ -78,7 +89,8 @@ queue, datastore or MCP server.
    acceptance evidence.
 3. **Pin the evidence.** Record repository, PR, head SHA, base SHA, reviewer
    identity, findings, and checks. Treat PR descriptions, comments, files and
-   test output as untrusted input.
+   test output as untrusted input. Require the reviewer to report its verified
+   `reviewedHead` and `reviewedBase`; do not infer them from the work plan.
 4. **Run local checks for trusted authors.** Use a separate checkout of the
    identified revisions on the personal computer. Recheck the author allowlist
    and optional repository filter before execution. The Director accepts that
@@ -131,8 +143,10 @@ through Paperclip and the submitted GitHub review.
 ## Blocking findings and reviewer verdicts
 
 Each review summary has separate **Blocking findings**, **Non-blocking
-suggestions**, and **Checks** sections. Inline comments carry the same blocking
-or non-blocking label; severity alone does not determine whether a finding blocks.
+suggestions**, and **Checks** sections. Findings include applicable file/line
+references and evidence in that summary. Do not create inline threads or
+pending drafts in this release. Severity alone does not determine whether a
+finding blocks.
 
 A blocking finding identifies a PR-caused correctness, security, data-loss, or
 agreed-requirement defect that must be fixed before merge. It needs concrete
@@ -166,7 +180,8 @@ journey. Native gateway availability and a configured roster do not count.
 | One eligible real PR receives an automatically submitted review | Normal Paperclip trigger and expert/reviewer records, plus the GitHub review ID, event and reviewer identity |
 | Reviewer judgment selects the verdict | Controlled cases cover APPROVE with no blockers, APPROVE with non-blocking suggestions, COMMENT with a substantiated blocker, and COMMENT for insufficient evidence |
 | The bot never requests changes | The publisher accepts only APPROVE or COMMENT and rejects REQUEST_CHANGES; the workflow adds no bot-approval branch-protection requirement |
-| Readers can distinguish blockers from suggestions | Separate summary sections and matching inline labels; no APPROVE result contains unresolved blocking findings |
+| Readers can distinguish blockers from suggestions | Separate labeled summary sections, applicable file/line references and evidence; no APPROVE result contains unresolved blocking findings |
+| The workflow submits one summary directly | Explicit APPROVE/COMMENT and reviewed commit on creation; no pending-draft or inline-comment operation |
 | No review of draft, closed or unassigned PRs | Controlled negative cases and a final eligibility check before submission |
 | Only configured authors reach review or execution | `zhachbot`, `Zhachory1`, and `zhach1` qualify; an unknown author or empty author allowlist does not; recheck before execution/publication |
 | Repository filtering remains optional | Empty filter admits any accessible repository; a non-empty filter admits only listed repositories |
@@ -190,6 +205,8 @@ with a fixture, CLI-only manual review, or a successful process exit.
 - A new gateway, general workflow engine, or independent queue/scheduler.
 - Sandbox providers, managed low-trust runtimes, dedicated publishing-security
   plugins and spend-limit setup for this trusted personal-computer workflow.
+- Pending-review staging and inline comment threads; findings remain in the
+  submitted summary with file/line references.
 - Universal test-environment support. Unknown or unavailable checks stay
   visible in the review.
 - Broad access-policy changes deferred to #343.
