@@ -4,25 +4,29 @@ title: Paperclip submits one automated review for each eligible PR head
 status: in review
 owner: Director
 card: none
-revision: v2
+revision: v3
 date: 2026-11-26
 prs:
   - Zhachory1/docs#38
 issue: Zhachory1/ralph#339
+design: dd-paperclip-pr-review
 supersedes: none
 ---
 
 # Paperclip submits one automated review for each eligible PR head
 
-**Decision needed:** Approve automatic reviews for open, non-draft PRs assigned
-to the Director's configured GitHub identity. The reviewer chooses APPROVE,
-REQUEST_CHANGES, or COMMENT from the evidence and separates blocking findings
-from non-blocking suggestions. The first release covers one configured
-Paperclip company and an explicit repository scope. Merging still requires
-explicit human instruction.
+**Approved base:** The Director approved v2 by merging
+[docs#38](https://github.com/Zhachory1/docs/pull/38). The scope covers automatic
+reviews of open, non-draft PRs assigned to the Director's configured GitHub
+identity, within one configured Paperclip company and repository scope.
 
-This proposal needs one PRD PR, followed by a separate design PR after PRD
-approval. No workflow has been enabled as part of this draft.
+**Director clarification:** Publish only APPROVE or COMMENT. Do not submit
+REQUEST_CHANGES or add a bot-controlled merge block. Keep blocking findings
+distinct from non-blocking suggestions. Merging still requires explicit human
+instruction.
+
+Record this clarification alongside the technical design rather than repeating
+PRD approval. No workflow has been enabled.
 
 ## Problem and outcome
 
@@ -38,10 +42,11 @@ by [#339](https://github.com/Zhachory1/ralph/issues/339).
 
 ## Release boundary and alternatives
 
-The first release lets the reviewer approve work it judges ready, request
-changes for actual blockers, or comment when it cannot reach either verdict.
-Non-blocking suggestions may accompany an approval. The Director does not need
-to submit each review or approve its verdict by hand.
+The first release lets the reviewer approve work it judges ready or comment
+with concerns, including serious findings. Non-blocking suggestions may
+accompany an approval. The Director does not need to submit each review or
+approve its verdict by hand. The workflow never submits REQUEST_CHANGES or
+changes branch protections to require the bot's approval.
 
 COMMENT-only automation would omit the reviewer's approval judgment.
 Manual pending-review staging would leave submission with the Director.
@@ -76,8 +81,10 @@ queue, datastore or MCP server.
 6. **Publish with explicit attribution.** Use an authorized reviewer identity
    and identify the review as automated. Do not impersonate a human or turn
    automated findings into a human approval. Submit the reviewer's verdict
-   under the rules below. Do not approve the reviewer's own work; approving
-   another agent's work follows the Director's current repository policy.
+   using only APPROVE or COMMENT. Reject other publication events, including
+   REQUEST_CHANGES, at the publisher boundary. Do not approve the reviewer's own
+   work; approving another agent's work follows the Director's current
+   repository policy.
    A review approval, passing checks, or an agent request does not authorize
    a merge.
 7. **Deduplicate and reconcile.** Submit at most one review per repository,
@@ -119,6 +126,9 @@ A blocking finding identifies a PR-caused correctness, security, data-loss, or
 agreed-requirement defect that must be fixed before merge. It needs concrete
 evidence or a reproduction, the affected location, and an actionable correction.
 Pre-existing problems and optional improvements do not block this PR.
+Here, "blocking" describes the reviewer's recommendation, not a GitHub
+change-request state. Publish these findings as COMMENT and withhold approval;
+the human retains the merge decision.
 
 Non-blocking suggestions cover optional improvements, preferences, and
 out-of-scope observations. They do not prevent approval. An uncertain concern
@@ -127,8 +137,7 @@ should identify its missing evidence rather than claim a proven blocker.
 | Verdict | Reviewer judgment |
 | --- | --- |
 | APPROVE | The reviewer judges the change ready, with sufficient evidence and no blocking findings. Non-blocking suggestions may remain. |
-| REQUEST_CHANGES | One or more substantiated blocking findings require correction. |
-| COMMENT | Evidence or clarification is insufficient for approval, but the reviewer has not established a must-fix blocker. |
+| COMMENT | Blocking findings, concerns, or insufficient evidence prevent the reviewer from approving. The comment explains the concern without placing a GitHub change-request block. |
 
 Do not submit APPROVE with unresolved blocking findings. Report failed or
 unavailable checks in every verdict; distinguish a PR-caused failure from an
@@ -143,7 +152,8 @@ journey. Native gateway availability and a configured roster do not count.
 | Acceptance | Required evidence |
 | --- | --- |
 | One eligible real PR receives an automatically submitted review | Normal Paperclip trigger and expert/reviewer records, plus the GitHub review ID, event and reviewer identity |
-| Reviewer judgment selects the verdict | Controlled cases cover APPROVE with no blockers, APPROVE with non-blocking suggestions, REQUEST_CHANGES with a substantiated blocker, and COMMENT for insufficient evidence |
+| Reviewer judgment selects the verdict | Controlled cases cover APPROVE with no blockers, APPROVE with non-blocking suggestions, COMMENT with a substantiated blocker, and COMMENT for insufficient evidence |
+| The bot never requests changes | The publisher accepts only APPROVE or COMMENT and rejects REQUEST_CHANGES; the workflow adds no bot-approval branch-protection requirement |
 | Readers can distinguish blockers from suggestions | Separate summary sections and matching inline labels; no APPROVE result contains unresolved blocking findings |
 | No review of draft, closed or unassigned PRs | Controlled negative cases and a final eligibility check before submission |
 | CI does not gate discovery | An eligible PR with failing or pending CI reaches review; the report identifies its check state |
@@ -217,7 +227,7 @@ with a fixture, CLI-only manual review, or a successful process exit.
 
 ## Next gate
 
-The Director approves this PRD by merging its approval PR. Then prepare the
-technical design against verified native capabilities. Design approval precedes
-implementation; launch approval precedes enabling the workflow or publishing
-its real acceptance review.
+The PRD base is approved through docs#38. Carry the two-event clarification into
+the technical design approval PR. Design approval precedes implementation;
+launch approval precedes enabling the workflow or publishing its real
+acceptance review.
