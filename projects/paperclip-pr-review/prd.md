@@ -9,6 +9,8 @@ date: 2026-11-27
 prs:
   - Zhachory1/docs#38
   - Zhachory1/docs#39
+  - Zhachory1/docs#40
+  - Zhachory1/ralph#345
 issue: Zhachory1/ralph#339
 design: dd-paperclip-pr-review
 supersedes: none

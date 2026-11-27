@@ -8,6 +8,8 @@ revision: v3
 date: 2026-11-27
 prs:
   - Zhachory1/docs#39
+  - Zhachory1/docs#40
+  - Zhachory1/ralph#345
 implements: prd-paperclip-pr-review
 issue: Zhachory1/ralph#339
 supersedes: none
@@ -31,9 +33,9 @@ here: no repository restriction within the connection's access. Local checks
 run with the OS user's access. Spend-limit setup remains deferred.
 
 Record the format clarification in [prd-paperclip-pr-review][prd] alongside this
-design. Continue local implementation against the Director's explicit choice.
-Publishing the amendment and implementation PRs still needs authorization;
-enabling the workflow and its real acceptance review still needs launch approval.
+design. The Director authorized publication of this amendment and
+[ralph#345](https://github.com/Zhachory1/ralph/pull/345) for review only.
+Enabling the workflow and its real acceptance review still need launch approval.
 
 ## Native capability and the corrected protocol
 
