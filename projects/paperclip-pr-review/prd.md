@@ -8,6 +8,7 @@ revision: v3
 date: 2026-11-26
 prs:
   - Zhachory1/docs#38
+  - Zhachory1/docs#39
 issue: Zhachory1/ralph#339
 design: dd-paperclip-pr-review
 supersedes: none

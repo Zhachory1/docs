@@ -6,7 +6,8 @@ owner: Director
 card: none
 revision: v1
 date: 2026-11-26
-prs: []
+prs:
+  - Zhachory1/docs#39
 implements: prd-paperclip-pr-review
 issue: Zhachory1/ralph#339
 supersedes: none
