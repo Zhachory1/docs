@@ -4,7 +4,7 @@ title: Paperclip keeps the Director's pull requests ready for human merge
 status: in review
 owner: Director
 card: none
-revision: v2
+revision: v3
 date: 2026-11-27
 prs:
   - Zhachory1/docs#41
@@ -29,7 +29,8 @@ it does not establish #339 acceptance or authorize workflow launch.
 After opening a PR, the Director should not need to supervise routine repairs.
 The responsible expert and one writer diagnose CI failures, address feedback,
 update the branch, verify fixes, commit, push and resolve comments themselves.
-The Director receives a result summary, not a queue of fixes to verify.
+The PR's commits, CI results and thread activity are the Director-facing work
+record. Do not send a separate routine maintenance summary.
 
 The merged [review helpers][review-code] already use native task ownership,
 documents and gateway access. They do not implement PR maintenance. The
@@ -100,7 +101,10 @@ The baseline for this issue is **zero verified v4 maintenance journeys**.
    human holds still pause affected work. Record the exact blocker and unblock
    action rather than bypassing it or claiming completion. Record the trigger,
    expert/writer identities, revisions, feedback, checks, push evidence, replies
-   and remaining work in Paperclip. Do not silently clear or retry a human hold.
+   and remaining work in Paperclip for internal recovery and audit. Do not
+   duplicate the PR's work record with routine summary comments, reports or
+   success-only notifications. Material-decision escalations and genuine block
+   reports remain necessary. Do not silently clear or retry a human hold.
 
 ```mermaid
 flowchart LR
@@ -135,6 +139,7 @@ push; an operator performing the agent's work does not qualify.
 | Handle all three maintenance conditions | One PR's before/after feedback, CI and base-conflict evidence, linked native runs, local checks, pushed commit and authoritative remote readback. |
 | Act on any remaining condition; stop when clean | Tests cover feedback-only, red-CI-only, conflict-only and unfinished-recovery cases. A clean PR with no pending work produces no repair actions. |
 | Complete routine repairs without human verification | The agent verifies fixes, commits, pushes, replies and resolves threads without per-fix approval; escalate only material scope/architecture decisions or genuine blocks. |
+| Avoid routine reporting noise | Ordinary repairs add no separate maintenance summary or success-only notification. Commits, CI and relevant thread replies provide the work record; required escalations and internal recovery state remain. |
 | Keep one writer and preserve new feedback | Concurrent/repeated-trigger tests plus a documented run where new feedback remains visible while older work is active. |
 | Recover without duplicate external actions | Restart and uncertain-response tests for pushes, replies and resolution; reconcile exact remote state before any allowed retry. |
 | Respect safety and approval gates | Tests reject rebase/force-push/PR-merge paths; record repository permission/protection qualification, independent review for material changes and separate human launch approval. |
@@ -162,6 +167,7 @@ invariant; instructions alone are insufficient.
 - Creating feature PRs, approving or merging PRs, or completing feature delivery.
 - Maintaining PRs by additional authors without explicit configuration.
 - Acting on every optional suggestion, changing CI policy, or bypassing a hold.
+- Separate routine maintenance summaries, reports or success-only notifications.
 - New services, credential fallbacks or changes to repository protections.
 - Declaring #339 qualified because maintenance work or its local tests pass.
 
