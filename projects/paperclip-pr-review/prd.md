@@ -4,7 +4,7 @@ title: Paperclip submits one automated review for each eligible PR head
 status: in review
 owner: Director
 card: none
-revision: v3
+revision: v4
 date: 2026-11-26
 prs:
   - Zhachory1/docs#38
@@ -19,15 +19,20 @@ supersedes: none
 **Approved base:** The Director approved v2 by merging
 [docs#38](https://github.com/Zhachory1/docs/pull/38). The scope covers automatic
 reviews of open, non-draft PRs assigned to the Director's configured GitHub
-identity, within one configured Paperclip company and repository scope.
+identity, within one configured Paperclip company.
 
-**Director clarification:** Publish only APPROVE or COMMENT. Do not submit
-REQUEST_CHANGES or add a bot-controlled merge block. Keep blocking findings
-distinct from non-blocking suggestions. Merging still requires explicit human
-instruction.
+**Director clarifications:** Publish only APPROVE or COMMENT, never
+REQUEST_CHANGES. Review PRs assigned to `Zhachory1` and authored by `zhachbot`,
+`Zhachory1`, or `zhach1`. Keep an optional repository filter, empty for this
+instance: empty means no repository restriction within the connection's access.
+Run checks locally for those trusted authors; sandboxing and spend-limit setup
+are not requirements of this change. Keep blocking findings distinct from
+suggestions, and keep merging behind explicit human instruction.
 
-Record this clarification alongside the technical design rather than repeating
-PRD approval. No workflow has been enabled.
+Record these clarifications alongside the technical design rather than
+repeating PRD approval. The Director confirmed local execution after the risk
+explanation: PR scripts run with the OS user's access; an author allowlist does
+not isolate them. No workflow has been enabled.
 
 ## Problem and outcome
 
@@ -60,10 +65,13 @@ queue, datastore or MCP server.
 
 ## Requirements
 
-1. **Discover eligible PRs.** Find open PRs assigned to the configured Director
-   identity with `isDraft = false`. A separate review request and green CI are
-   not prerequisites. Do not assume the scanner's authenticated `@me` is the
-   Director.
+1. **Discover eligible PRs.** Find open, non-draft PRs assigned to `Zhachory1`
+   whose GitHub author matches `zhachbot`, `Zhachory1`, or `zhach1`. Apply the
+   optional repository filter only when non-empty; use an empty filter for this
+   instance. An empty author allowlist permits nobody. Check authoritative
+   metadata before routing, fetching PR contents or running checks. A separate
+   review request and green CI are not prerequisites. Do not assume the
+   scanner's authenticated `@me` is the Director.
 2. **Use the normal agent path.** A Paperclip trigger routes the PR to its
    relevant domain expert. The expert delegates review of the identified head
    and base to its reviewer. A manually posted review does not qualify as
@@ -71,14 +79,17 @@ queue, datastore or MCP server.
 3. **Pin the evidence.** Record repository, PR, head SHA, base SHA, reviewer
    identity, findings, and checks. Treat PR descriptions, comments, files and
    test output as untrusted input.
-4. **Contain execution.** Run authorized PR checks in an ephemeral,
-   network-isolated sandbox without host credentials, host home/repository
-   mounts, or the host Docker socket. Do not execute PR scripts on the host.
-   Report unavailable checks and their reasons; do not enable network access
-   or claim success to get past a failed sandbox check.
+4. **Run local checks for trusted authors.** Use a separate checkout of the
+   identified revisions on the personal computer. Recheck the author allowlist
+   and optional repository filter before execution. The Director accepts that
+   PR scripts have the OS user's access; no sandbox, network-denial proof or
+   managed low-trust runtime is required. Report actual commands/results and
+   checks not run with reasons. Do not widen permissions or hide failures to
+   make a check pass.
 5. **Revalidate before publishing.** Recheck open state, assignment, readiness,
-   head, base and prior reviews before submission. Invalidate prepared results
-   if their head or base changed. Submit against the identified head.
+   author policy, repository filter, head, base and prior reviews before
+   submission. Invalidate prepared results if their head or base changed.
+   Submit against the identified head.
 6. **Publish with explicit attribution.** Use an authorized reviewer identity
    and identify the review as automated. Do not impersonate a human or turn
    automated findings into a human approval. Submit the reviewer's verdict
@@ -97,18 +108,18 @@ queue, datastore or MCP server.
    actual checks, GitHub review ID/link, and terminal or blocked state in
    Paperclip. Keep private code, credentials and raw transcripts out of public
    documentation.
-9. **Respect launch and task limits.** Obtain Director launch approval and
-   agreed task spend/attempt limits before paid live acceptance. Do not impose
-   a monthly cap. Keep the workflow disabled until its boundaries and identity
-   have passed validation.
+9. **Respect launch approval.** Keep the workflow disabled until the Director
+   approves launch and the normal identity and publication path passes
+   validation. Spend-limit setup is deferred; the Director can configure native
+   budget controls later.
 
 ```mermaid
 flowchart LR
-    PR["Open, assigned, non-draft PR"] --> Trigger["Paperclip trigger"]
+    PR["Open, assigned, non-draft PR by allowed author"] --> Trigger["Paperclip trigger"]
     Trigger --> Expert["Relevant domain expert"]
     Expert --> Reviewer["Independent reviewer"]
-    Reviewer --> Sandbox["Isolated authorized checks"]
-    Sandbox --> Recheck["Recheck eligibility, head and base"]
+    Reviewer --> Checks["Authorized local checks"]
+    Checks --> Recheck["Recheck eligibility, author, head and base"]
     Recheck --> Review["Submit reviewer's verdict"]
     Review --> Record["Paperclip result and GitHub review link"]
 ```
@@ -157,11 +168,13 @@ journey. Native gateway availability and a configured roster do not count.
 | The bot never requests changes | The publisher accepts only APPROVE or COMMENT and rejects REQUEST_CHANGES; the workflow adds no bot-approval branch-protection requirement |
 | Readers can distinguish blockers from suggestions | Separate summary sections and matching inline labels; no APPROVE result contains unresolved blocking findings |
 | No review of draft, closed or unassigned PRs | Controlled negative cases and a final eligibility check before submission |
+| Only configured authors reach review or execution | `zhachbot`, `Zhachory1`, and `zhach1` qualify; an unknown author or empty author allowlist does not; recheck before execution/publication |
+| Repository filtering remains optional | Empty filter admits any accessible repository; a non-empty filter admits only listed repositories |
 | CI does not gate discovery | An eligible PR with failing or pending CI reaches review; the report identifies its check state |
 | Repeated scans/restart do not duplicate a review | Same repository/PR/head/reviewer produces one GitHub review; a new eligible head produces a new review |
 | Changes before submission invalidate stale results | Head/base drift and eligibility-change cases stop stale publication |
 | Delivery uncertainty does not cause a duplicate | Reconciliation finds the committed review or leaves an explicit unresolved state without blind resubmission |
-| The sandbox enforces the boundary | Evidence of network denial, no host credentials or Docker socket, and cleanup of the ephemeral test environment |
+| Trusted-author checks run locally | Normal reviewer path uses a separate checkout at the recorded revisions and reports actual commands/results or omissions; no sandbox/provider setup is required |
 | The review describes what ran | Reviewed head/base, actual commands/results, and checks not run with reasons |
 | Launch remains a human gate | Recorded Director approval before enabling the live workflow |
 
@@ -175,20 +188,21 @@ with a fixture, CLI-only manual review, or a successful process exit.
 - New company/agent provisioning, a broader expert-team rollout, or memory
   backend selection.
 - A new gateway, general workflow engine, or independent queue/scheduler.
+- Sandbox providers, managed low-trust runtimes, dedicated publishing-security
+  plugins and spend-limit setup for this trusted personal-computer workflow.
 - Universal test-environment support. Unknown or unavailable checks stay
-  visible in the review instead of weakening isolation.
+  visible in the review.
 - Broad access-policy changes deferred to #343.
 
 ## Risks and design questions
 
-- **Reviewer identity:** The Director must authorize the actual publishing
-  identity and repository scope before launch. The design must prove the
-  intended gateway/runtime path uses that identity; another client's identity
-  or a tool catalog is insufficient.
-- **Sandbox capability:** Native Paperclip documentation describes routines
-  and low-trust containment, but scheduling alone does not enforce test
-  isolation. The design must verify an available provider's network, filesystem
-  and credential boundaries before relying on it.
+- **Reviewer identity:** Configure `Zhachory1` as the assignment and publishing
+  identity per the Director's review. Verify the publishing account through the
+  actual gateway/runtime path before launch; another client's identity or a
+  tool catalog is insufficient. Its own PRs receive COMMENT, not self-approval.
+- **Local execution:** Allowlisted authors or their accounts can supply harmful
+  code. The Director accepts local execution with the OS user's access. The
+  author filter is a trust decision, not a sandbox or prompt-injection boundary.
 - **Uncertain writes:** GitHub submission and Paperclip bookkeeping can fail at
   different points. The design must reconcile a remote commit without treating
   an unknown result as permission to submit again.
@@ -201,13 +215,18 @@ with a fixture, CLI-only manual review, or a successful process exit.
 - Issue #339 retains an earlier prohibition on agent-authored approvals; align
   that text with the Director's current repository policy and this PRD before
   enabling the workflow. This draft changes no live permissions.
+- Issue #339 also retains the former sandbox acceptance requirement; the
+  Director's [design review](https://github.com/Zhachory1/docs/pull/39#discussion_r4715386033)
+  and subsequent local-execution confirmation replace it for this instance.
 
 ## Assumptions
 
 - The reviewer can exercise judgment within the approved repository and
   authorship rules; non-blocking suggestions do not require another human gate.
-- The Director will identify the initial repository scope and authorize the
-  reviewer identity before launch, without sharing credentials in documents.
+- Repository filtering defaults to empty here; authorship, assignment and
+  existing connection permissions determine the initial scope.
+- `Zhachory1` names both configured identities in the Director's review; actual
+  connection authentication still needs verification, without exposing secrets.
 - The workflow will use an existing configured company and roster.
 - The GitHub issue is the work brief; no separate execution card exists yet.
 
@@ -215,6 +234,10 @@ with a fixture, CLI-only manual review, or a successful process exit.
 
 - [Issue #339](https://github.com/Zhachory1/ralph/issues/339) and
   [roadmap #337](https://github.com/Zhachory1/ralph/issues/337).
+- Director feedback on
+  [local execution](https://github.com/Zhachory1/docs/pull/39#discussion_r4715386033),
+  [identity and authorship](https://github.com/Zhachory1/docs/pull/39#discussion_r4715398740),
+  and [deferring spend limits](https://github.com/Zhachory1/docs/pull/39#discussion_r4715400961).
 - [Infrastructure closeout #338](https://github.com/Zhachory1/ralph/issues/338)
   and [dd-paperclip-infrastructure](https://github.com/Zhachory1/docs/pull/37).
 - Ralph at `35d36cf`:
@@ -222,13 +245,11 @@ with a fixture, CLI-only manual review, or a successful process exit.
   [current workflow status, lines 1-6](https://github.com/Zhachory1/ralph/blob/35d36cf4372ccaa00a7cf0c0816d4e6254721abb/docs/workflows.md#L1-L6)
   and [platform boundary, lines 15-38](https://github.com/Zhachory1/ralph/blob/35d36cf4372ccaa00a7cf0c0816d4e6254721abb/compose/PAPERCLIP.md#L15-L38).
 - Paperclip `v2026.1117.0`:
-  [native routines](https://github.com/paperclipai/paperclip/blob/v2026.1117.0/skills/paperclip/references/routines.md),
-  [low-trust containment](https://github.com/paperclipai/paperclip/blob/v2026.1117.0/doc/LOW-TRUST-PRESETS.md),
-  and [untrusted-review security limits](https://github.com/paperclipai/paperclip/blob/v2026.1117.0/doc/UNTRUSTED-PR-REVIEW.md).
+  [native routines](https://github.com/paperclipai/paperclip/blob/v2026.1117.0/skills/paperclip/references/routines.md).
 
 ## Next gate
 
-The PRD base is approved through docs#38. Carry the two-event clarification into
-the technical design approval PR. Design approval precedes implementation;
+The PRD base is approved through docs#38. Carry these Director clarifications
+into the technical design approval PR. Design approval precedes implementation;
 launch approval precedes enabling the workflow or publishing its real
 acceptance review.
