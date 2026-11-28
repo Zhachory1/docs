@@ -1,10 +1,10 @@
 ---
 id: dd-paperclip-pr-maintenance
-title: Maintain PRs with one native writer and reconciled GitHub actions
+title: Maintain PRs with code-only polling and one writer
 status: in review
 owner: Director
 card: none
-revision: v1
+revision: v2
 date: 2026-11-27
 prs:
   - Zhachory1/docs#42
@@ -13,381 +13,327 @@ issue: Zhachory1/ralph#340
 supersedes: none
 ---
 
-# Maintain PRs with one native writer and reconciled GitHub actions
+# Maintain PRs with code-only polling and one writer
 
-**Decision requested:** Approve native Paperclip tasks and documents for
-ownership/recovery, with managed run-bound Git/`gh` for repository operations.
-Use trusted local execution and one writer per PR. Add one Ralph helper and
-focused tests; no service, database, MCP server or shared-runtime extension.
+**Decision requested:** Use one native code-only checker to poll GitHub, then
+start an expert and one writer only for work that needs them. GitHub remains
+the source of truth. Keep a small internal ledger for job exclusion,
+deduplication and uncertain writes, not a second PR tracker.
 
-**Approved scope:** The Director merged [prd-paperclip-pr-maintenance][prd]
-through [docs#41][approval]. Agents handle routine fixes, verification,
-commits, pushes, relevant replies and thread resolution. Any remaining
-feedback, red CI, base conflict or unfinished recovery can trigger work.
-The PR is the work record; do not post routine summaries or success notices.
-Material scope/architecture decisions need human input; genuine blocks and
-explicit holds remain blocking. PR merge and workflow launch remain human gates.
+The Director approved [prd-paperclip-pr-maintenance][prd] through
+[docs#41][approval]. This revision incorporates the simplicity and LLM-cost
+feedback on docs#42. No new service, database, MCP server or core extension.
+Implementation, managed connection setup and launch remain separate gates.
 
-Plan one complete implementation PR, followed only by in-scope qualification
-fixes if necessary. Keep #339 open, paused and unverified during development.
-An implementation PR can provide its review candidate, not its acceptance proof.
-
-## Verified reuse and alternatives
-
-Native evidence refers to Paperclip
-`e716c6cea0e3672d02fd97df20804743be4d8308`. These are source contracts,
-not proof that the configured actors have passed them live.
-
-| Existing capability | Consequence |
-| --- | --- |
-| [Run-scoped client][client] and [review ownership checks][review-client] | Reuse the local adapter's own run JWT and native task/document operations. Do not inject operator credentials. |
-| [Unassigned document writes][ledger-auth] | A visible, genuinely unassigned ledger supports cross-task records under ordinary standard-trust run authority. Same project alone does not grant access. |
-| [Checkout][checkout] and [document revisions][documents] | Checkout fences one task; a durable PR mapping must prevent competing tasks. Require acknowledged canonical-key writes and revision CAS. |
-| [Issue attachments][attachments] | Hand an unpushed Git bundle to a reviewer through native upload/download and provenance checks, not another actor's workspace. |
-| [Managed Git/gh credential resolution][git-identity] | Use the accepted run's responsible-user identity and installed managed connection. A catalog-only MCP PAT is insufficient. |
-| [GitHub connection methods][github-methods] and [OAuth completion][oauth] | Normal managed OAuth supplies the required encrypted access reference and identity metadata. No supported MCP-PAT-to-shell promotion was found. |
-| [Review replies][replies], [review threads][threads] and [commit statuses][statuses] | Use stable feedback IDs and exact-head evidence; reply to the root comment and read back individual thread state. |
-
-| Option | Scope/effort | Trade-off and reversibility |
-| --- | --- | --- |
-| A: MCP-only | Smallest tool surface. | Reject: existing catalog evidence does not establish local push or exact thread operations. |
-| **B: Native tasks plus managed Git/gh** | Ralph helper, tests, private configuration and paused native wiring. | Select: existing actor path; pause intake to roll back. Shell authority is broader than MCP tool permissions. |
-| C: New governed writer/runtime | New enforcement boundary and deployment. | Outside scope. Return for approval rather than build a fallback. |
-
-## Actors and control flow
-
-The routine coordinator discovers work and routes each PR to its configured
-expert. The expert delegates to exactly one builder or SRE. Only that selected
-writer performs repair commits, pushes, feedback replies and resolutions.
-An independent reviewer evaluates material repairs; the expert retains the
-workflow's ownership and recorded decision.
+## Flow and responsibilities
 
 ```mermaid
 flowchart LR
-    Tick["Paused native routine until launch"] --> Scan["Author and work inventory"]
-    Scan -->|clean| Idle["No writer or public action"]
-    Scan --> Ledger["Canonical PR record"]
-    Ledger --> Expert["One expert task"]
-    Expert --> Writer["One builder or SRE task"]
-    Writer --> Prepared["Checks and prepared commit bundle"]
-    Prepared --> Review["Independent pre-push review when material"]
-    Review --> Push["Same writer pushes reviewed commit"]
-    Push --> Follow["Verify remote CI; reply and resolve fixed items"]
-    Follow --> Fresh["Reconcile and refresh remaining work"]
-    Fresh -->|work remains| Expert
-    Fresh -->|clear| Idle
+    Poll["Native schedule: code only"] --> Check["Read GitHub and internal receipts"]
+    Check -->|no ready work or worker already active| Stop["No LLM start"]
+    Check -->|claim one bounded job| Expert["Expert: context and repair plan"]
+    Expert --> Writer["One builder or SRE: fix, commit and check"]
+    Writer --> Review["Independent review only when material"]
+    Review --> Publish["Same writer: push, reply and resolve fixed threads"]
+    Publish --> End["Finish this job; normal polls inspect GitHub again"]
+    Writer -->|at most one clarification| Expert
 ```
 
-The scan never waits for one PR's repairs or blocks future routine ticks.
-Expert/writer work continues through native dependencies and resumptions.
-There is no routine success report; commits, CI and relevant thread replies
-show the work, while native records retain internal recovery evidence.
-
-## Durable PR identity and one writer
-
-1. Define `P` from company, stable base-repository ID and PR number. Use a
-   versioned, unambiguous encoding and bounded deterministic document key.
-   Head/base SHAs identify evidence, not a new PR or permission for a new writer.
-2. Before creating tasks, reserve `pr-<digest(P)>` on the configured unassigned
-   ledger. The record holds canonical expert/writer task IDs, selected writer,
-   work inventory, phase, active run references and unresolved action intents.
-   Private configuration supplies identities, project, routes and ledger.
-3. Provision canonical tasks in backlog, persist their exact IDs, then wake
-   them. Only the acknowledged reservation winner may provision; record its
-   run and nonce. A successor needs terminal prior runs, reconciled intents
-   and an acknowledged CAS ownership update before advancing. Other scans
-   observe or add pending work rather than creating a second chain.
-   Use native creation keys for initial provisioning only: those keys
-   expire and are not a permanent ownership ledger. An uncertain creation
-   blocks another creation until reconciled; never spawn a replacement chain
-   merely because a request timed out or its idempotency retention elapsed.
-4. Use one standalone expert task with its writer as a direct child. Reopen
-   these canonical tasks for later work rather than manufacturing a writer
-   per scan. Native issue checkout admits one run for the writer task.
-5. Validate company/task/run binding, assignment, selected writer and phase.
-   Each external dispatch needs acknowledged admission into the same canonical
-   PR record by revision CAS. To hand off, first CAS the record into `draining`,
-   which denies new admissions, including queued old-writer wakes. Then settle
-   already-admitted actions and confirm old runs are terminal. Only then CAS
-   the new owner/phase and desired wake. A queued old run cannot pass admission
-   after draining; an earlier admitted action must settle before handoff.
-6. On every document write, require the expected key, revision and body
-   acknowledgement. A conflict, uncertain response or locked-document fork
-   gives no write authority. Re-read canonical state; never adopt a fork,
-   delete a reservation or reset a key to obtain another attempt.
-7. Keep the writer selection across temporary holds and task completion.
-   Native checkout plus the canonical mapping serializes compliant workers;
-   neither mechanism is a distributed lock on GitHub itself.
-
-An expert creates any independent review task as a sibling of the writer,
-avoiding unsupported deeper nesting. Advance only after the preceding run is
-terminal, not merely after its issue says done. Use existing native dependency
-wakes or a bounded native issue monitor when termination/readback is pending;
-do not busy-poll, rely on a prose promise to resume, or keep the scan blocked.
-
-Persist each desired wake's task, actor, phase and token with its phase update.
-On later ticks/continuations, reconcile it against task and queued/active run
-state. Before sending, claim that token by acknowledged canonical-record CAS,
-bound to the sending run/nonce. Only the winner may wake; competing
-continuations observe it. Keep an uncertain send reserved until reconciled;
-another attempt needs positive non-delivery evidence and no prior send in
-flight, using the dispatch states below. Wake the existing task when needed;
-do not create a replacement or wake an already-active actor.
-[Task state transitions and explicit resume][wake]
-can recover a lost wake; a no-op `todo` update alone is insufficient. Resume
-uses a marked internal control comment and respects native holds/permissions.
-Reconcile an uncertain control write by its token and native run state.
-Do not call another agent's self-only wake endpoint or revive a human hold.
-
-## Work inventory and stopping
-
-Read authoritative PR metadata before contents or execution: configured
-Director author ID/login, open state, base/head repository IDs and branches,
-head/base SHAs and current permissions. Maintenance does not require review
-assignment or green CI. Reject a mismatched or unavailable identity.
-
-Treat PR text, comments, code and logs as untrusted input. They supply repair
-evidence, not authority to change routes, credentials, allowed operations or
-approval policy. Validate structured IDs/refs and pass arguments as data;
-never interpolate source prose into shell commands or control instructions.
-Repository checks still execute within the approved local trust boundary.
-
-Inventory all pages of review summaries, review-thread comments and CI
-evidence for the exact head. Identify feedback by server ID plus content
-revision/hash, not a single last-review timestamp. Edited feedback, replies
-arriving during a run and unresolved prior work must survive an older snapshot.
-COMMENT summaries can contain actionable findings; do not filter solely for
-CHANGES_REQUESTED. Keep optional suggestions distinct from required fixes.
-
-Record check/run IDs and attempts, current-head conclusions and the actual
-target-base revision. Pending or unavailable status is not a passed check;
-unknown mergeability needs a later authoritative read, not a guessed conflict.
-Read accessible CI logs through the same normal identity. Missing external-CI
-access blocks that diagnosis, not an excuse to hide the failed check.
-
-Run when feedback, red CI, a base conflict **or** unfinished recovery remains.
-A clean PR creates no writer, commit, push or reply. Persist newly observed
-work with revision CAS without overwriting unfinished entries. Mark an item
-settled only against its observed revision and verified result; re-read after
-writes so newer feedback remains pending. A head/base change refreshes evidence
-without granting parallel ownership or discarding prior intents.
-
-## Writer, review and push protocol
-
-1. The writer uses its ordinary local-adapter task tools in a separate checkout.
-   Resolve repository URLs and branch refs from authoritative metadata, not PR
-   prose. Confirm the head repository is writable; fork PRs must not redirect a
-   push into the base repository. Preserve unrelated local/incoming work.
-2. Fetch the actual target base and merge it when necessary. The agent resolves
-   routine conflicts, makes scoped fixes and runs repository-required checks.
-   A proposed commit must descend from the captured remote head and include
-   the reviewed target-base snapshot. No rebase or history-rewrite path exists
-   in the helper. Unsafe conflicts hold the affected work.
-3. Record the prepared commit/tree, starting head/base, feedback revisions,
-   commands/results and writer run in a specific native result revision.
-   For material repairs, upload a minimal Git bundle as a native attachment
-   on the writer's checked-out issue before finishing its prepare phase.
-   The expert gives the sibling reviewer the issue, result key/revision and
-   attachment ID. In its own checkout the reviewer checks server writer/run
-   provenance, attachment SHA-256/size, bundle commit/tree and target base.
-   It records its independent result against those exact objects. No public
-   push or cross-workspace file access is needed to obtain review.
-4. A changes-requested review resumes the same writer in a repair-only phase,
-   with no GitHub write admission. Successful material review of the exact
-   prepared commit/base gates the push phase, not further repairs. Any change
-   to either invalidates approval and requires re-review before push.
-   The helper verifies those native result revisions,
-   local ancestry and exact refs; caller text is not repository/head proof.
-   No second writer acts during review, and there is no extra public summary.
-5. Reserve a push intent before transport. Before each external action, recheck
-   configured authorship, open state, head repository/branch, actual target
-   base, assignment and run authority. For a push, also recheck remote head
-   and prepared commit. Use an explicit normal push
-   of that commit to the captured head repository/ref. Never use force,
-   force-with-lease, rebase, a default-branch fallback or a PR-merge API.
-   A rejected non-fast-forward push returns to reconciliation and refresh.
-6. Confirm remote ref/PR identity and the pushed commit through authoritative
-   reads. Follow the new commit's CI; a local pass or successful push does not
-   prove remote CI recovered. Do not invent an empty commit just to trigger CI.
-   A later head invalidates fix verification until rechecked: commit ancestry
-   can confirm delivery, but does not prove the fix still holds at the new tip.
-7. Reply and resolve only against the verified pushed fix and current feedback.
-   Review findings and fresh CI/feedback feed the internal pending inventory.
-
-Attachment metadata supplies ID, SHA-256, size, creating agent and originating
-run; bind these to the pinned result revision. Reviewer issue-read authorization
-is required: an attachment ID grants no access. Verify/import the bundle without
-executing its code to establish the reviewed objects. The default upload cap is
-10 MiB; if a minimal bundle cannot fit the deployment's limit, hold that handoff
-rather than push unreviewed code or introduce another storage service.
-
-The agent resolves routine ambiguity from available context. If a safe fix
-still lacks evidence, keep that item pending and continue independent repairs.
-Only larger scope/architecture decisions ask the Director; true permission,
-safety or unrecoverable execution blocks and explicit holds still stop affected
-work. Use the existing native waiting/interaction mechanisms, not a new notifier.
-Record the exact blocker and unblock action. Report a genuine block or material
-decision through that native path; do not turn ordinary progress into a report.
-
-## External actions and uncertain outcomes
-
-Create one immutable native action-intent document before each external write.
-Store the stable PR/source-item revision, operation, payload hash, expected
-before-state, desired after-state, evidence and owning task/run. Keep receipts
-and intents across task rounds, retries and restarts. Dispatch state lives in
-the canonical PR record, so draining and admission use the same CAS boundary:
-
-- `reserved`: immutable intent exists, but no external I/O is permitted.
-- `ready`: a CAS-admitted attempt has a run/nonce; it still cannot dispatch.
-- `dispatching`: only a newly acknowledged CAS from `ready` permits that
-  attempt's one transport invocation. A missing acknowledgement grants no send.
-- `confirmed`, `not_sent` or `unknown`: retain authoritative receipt, positive
-  non-delivery evidence or unresolved uncertainty, respectively.
-
-A crash while merely reserved/ready is distinguishable from possible dispatch.
-After dispatch begins, absence of a remote result is not non-delivery proof.
-Only positive evidence of no I/O or definitive rejection before mutation,
-terminal/no-in-flight prior execution, fresh evidence and a new acknowledged
-CAS may retry the **same intent and payload** with a new attempt nonce.
-Otherwise keep it unknown and continue independent work without replay.
-If the payload is stale, settle proven non-delivery before preparing a linked
-replacement; never replace an unknown intent to escape its reservation.
-
-| Action | Confirmation and recovery |
+| Part | Responsibility |
 | --- | --- |
-| Normal push | Compare intended commit with the authoritative head ref and commit graph. Confirm the intended commit if it is the tip or an ancestor of a later tip; preserve later commits. Otherwise retain uncertainty until transport evidence proves the outcome. Never turn a missing read into a force-push or a new intent. |
-| Feedback reply | Key by source feedback identity/revision and operation, not each retry's head. Associate the response with its verified pushed fix commit. Include automated attribution and a stable marker in a concise relevant reply. Confirm reply ID, root-comment association, publishing account and exact marked body. Preserve an uncertain send; do not send again because a list is empty. |
-| Thread resolution | Re-read the exact thread and all comments, resolution state, current head and verified fix. If new feedback appeared, leave it open. Resolve by thread node ID; confirm returned/read-back state and resolver. Already-resolved external work is observed state, not evidence that this run performed it. |
+| Checker | Deterministic code, not an LLM coordinator. Finds changed work, admits one job and advances recorded execution steps. |
+| Ledger | Passive internal storage. Tracks active-job exclusion, handled input versions, holds and unresolved action receipts. It does not decide what a PR needs. |
+| Expert | Reads the PR, repository conventions and available project background once, then gives the writer a self-contained plan. |
+| Writer | Makes changes, commits, runs checks, pushes, replies and resolves comments it judges fixed after verification. |
+| Reviewer | Checks material changes before push. Routine repairs still require writer-side verification, but not an extra reviewer unless repository policy requires one. |
 
-GitHub's [reply endpoint][replies] targets a top-level review comment; replies
-to replies are unsupported. Use [thread pagination and resolution][threads]
-for individual review threads. Read review summaries through their native
-review identity; if a concise response is necessary, use the PR conversation
-with the same per-item intent/readback rules, not a general completion summary.
-GraphQL `clientMutationId` is a correlation value, not proof of deduplication.
+Maintenance does not submit a separate PR review or success summary.
+The independent review here checks a proposed repair; #339 separately publishes
+APPROVE/COMMENT reviews. The writer's commits, CI and relevant thread activity
+are the public work record. The Director retains the PR merge decision.
 
-No GitHub operation atomically compares our entire PR/feedback snapshot.
-Recheck immediately before and after a write. If new feedback races resolution,
-leave it pending. Reopening is a separate reconciled write, allowed only with
-evidence that it reverses this run's exact resolution, not an intervening human
-resolution. Current resolver identity alone is insufficient. If readback cannot
-establish that ordering, do not reopen automatically: record the reconciliation
-block and retain new feedback. Never report the PR clear from an older snapshot
-or dismiss unrelated human work.
+## Check in code before spending LLM calls
 
-## Proposed helper and permissions
+Assign a native three-minute routine to a dedicated [local `process` execution
+identity][process], with `skip_if_active`, `skip_missed` and activity gate
+`always`. Paperclip calls this an agent record, but the adapter has `models: []`.
+Leave its AI binding unset and run a fixed, operator-managed helper command.
+It [spawns code without a shell][process-execute], not a model.
 
-Add `bootstrap/paperclip_maintain.py`; reuse `paperclip_client.py`, adding only
-the small multipart-upload/binary-download operations needed by native
-attachments and their client tests. No new framework or dependency.
-Proposed actions are paused `routine` rendering,
-coordinator `discover`, expert `advance`, actor `preflight`, native
-`record-result`, and selected-writer `push`, `reply`, `resolve`. These are
-planned interfaces, not installed commands. Reject actor/phase mismatches.
+The checker uses its own run JWT and managed Git/`gh` reads. Do not route these
+poll reads through an LLM or MCP output-classification path. Process runs do
+not export `PAPERCLIP_TASK_ID`; resolve and validate the checker's own bound
+issue through the [run-read API][run-read]. Explicitly settle each poll
+execution; exit `0` alone is not a native task-completion protocol.
 
-Use standard-trust local adapters that supply their own short-lived run JWT.
-Native Runner does not export that helper environment to child programs.
-Managed Git/`gh` must use the same accepted responsible-user grant and account.
-Normal [managed connection setup][github-methods] is required before shell
-qualification. Do not copy operator tokens, synthesize OAuth metadata, inject
-legacy GitHub environment credentials or change adapters as an implicit fallback.
-When replacing a shared connection, update both workflows' private references,
-avoid ambiguous installed identities and requalify #339. Preserve its receipts.
+A clean tick still makes GitHub reads and creates normal Paperclip execution
+records. **Zero idle LLM cost does not mean zero scheduler/audit records.**
+It creates no PR repair job and invokes no model.
+Clean or unchanged polls start zero LLMs.
 
-The helper's fixed operations, actor checks, normal fast-forward-only push
-semantics and GitHub protections guard the intended workflow. Configure narrow
-MCP profiles without merge/history-rewrite tools and qualify actual branch
-permissions/rulesets; do not modify protection or use bypass rights.
-**Managed shell access is broader than those MCP profiles.** The broker does
-not enforce per-command GitHub writes or audit their outcomes. Native intents
-and remote receipts supply workflow evidence. Trusted local execution is not
-adversarial shell containment, and this design does not claim it makes an
-arbitrary terminal script incapable of merging or exfiltrating data. If that
-stronger boundary is required, stop for a separately scoped design.
+Before starting an LLM, code checks:
 
-## Implementation and validation
+1. Is this an open PR by the configured Director identity? Read authoritative
+   author, repository IDs, head branch, actual target base and permissions.
+2. Is a job already admitted? Do not create another job or repeat its expert
+   planning. If its current step is queued/running or waiting only for CI,
+   start no LLM. Code may advance a genuinely ready repair/review step once.
+3. Is there new or unhandled feedback, failed current-head CI, a base conflict
+   or unfinished repair work? Pending CI or unknown mergeability alone needs
+   another code poll, not an LLM.
+4. Has this exact input already been handled or held? Compare feedback
+   IDs/content revisions, head/base and check-run/attempt evidence. Do not
+   reprocess unchanged inputs or repeatedly wake an agent for a known block.
 
-Plan **one implementation PR** on Ralph `clean-slate`: the helper,
-`evals/test_paperclip_maintain.py`, a deny-by-default placeholder configuration,
-and concise setup/workflow/operations documentation. Include the verified
-attachment client operations and focused `test_paperclip_client.py` coverage.
-At most one additional in-scope qualification-fix PR; broader work renews scope.
-No CI configuration, lockfile, service or dependency changes are planned.
+New text may need one expert triage to determine whether it is actionable.
+An empty approval or an agent's own maintenance receipt is not new repair work.
+Record a no-action decision for that input version so later polls do not pay
+for the same judgment again. Only changed evidence or meaningful unfinished
+work can justify another model execution.
 
-| Requirement | Required validation |
+Enumerate all pages of submitted review summaries, including actionable
+COMMENT reviews, and review-thread comments; distinguish optional suggestions
+from required corrections. Read both check runs and commit-status contexts,
+using the latest effective result per context/attempt for the exact head.
+Seeing an unresolved failure is not handling it: red CI stays
+eligible until fixed, superseded or genuinely held. Skip an own reply only when
+it matches a confirmed stored receipt, not merely its publishing account.
+
+Code advances execution steps and checks post-push CI. It does not wake the
+expert merely to move phases, inspect a pending check or report progress.
+Existing native turn, timeout, retry and budget limits still apply; this design
+does not promise one provider request per agent execution.
+
+## GitHub is the source of truth, not a permanent PR task
+
+There is no dedicated watcher/process per PR, permanent expert/writer task,
+reopened PR tracking card or copied PR-progress model. Normal polls read the
+actual PR again to decide what remains.
+
+Configure one stable, shared `ledgerIssueId` for this workflow, with no agent
+or user assignee. Every poll and worker uses that same issue, never its own
+execution issue. Do not switch it while jobs or uncertain effects remain.
+This single issue is a native document container, not a PR tracking card.
+
+Use the existing [unassigned ledger document API][ledger-auth] for only:
+
+| Internal data | Why retain it? |
 | --- | --- |
-| Any-trigger/no-op | Feedback-only, CI-only, conflict-only, unfinished recovery and clean snapshots; no clean-PR write or success notification. |
-| One writer | Concurrent provisioning, expired creation keys, lost acknowledgements, CAS forks/conflicts, queued old wakes racing drain/admission, simultaneous checkouts and reassignment only after draining admitted actions. |
-| Durable continuation and review | Crash after task/phase persistence but before wake; reconcile desired wakes without duplicate actors. Verify bundle hash/provenance and exact prepared-commit/base approval before material push; reject drift. |
-| Fresh evidence | Tests for edited/new feedback, head/base/branch drift, pending/unknown CI, exact target-base merge, forks and incoming commits; a documented native run showing new feedback stays visible while older work is active. |
-| Safe writes | Reject force/rebase/PR-merge operations, wrong actors/refs, missing ancestry or review evidence; require normal push and remote readback. |
-| Recovery | Crash at reserved/ready/dispatching states; positive non-delivery retry versus unknown/no-resend; lost responses, late visibility, manual replies/resolution, repeated scans and reopening races. No duplicate replies or abandoned work. |
-| Autonomous completion | Agent-side checks and material review; no per-fix human approval, routine report or completion-only notification; explicit item-scoped blocks and human holds. |
+| Active job ID and its execution references | Prevent two polls from starting competing writers. |
+| Handled input versions and explicit holds | Avoid paying to reconsider unchanged feedback or a known block. |
+| Unfinished effects and receipts | Avoid duplicate replies or replaying a push whose outcome is unknown. |
 
-Use the existing stdlib eval stack:
-`python3 -m unittest discover -s evals -v`, focused maintenance/client tests,
-offline CLI checks and `git diff --check`. Fixtures prove implementation
-behavior, not real delivery. Preserve failing tests and report unavailable checks.
+Paperclip still needs short-lived execution tasks to run the expert, writer
+and reviewer with their own identities. They describe steps of one bounded job,
+not the lifetime or progress of a PR. Do not reopen them across later
+maintenance jobs. Use explicit job/step references rather than a permanent
+PR-parent graph or parent-completion wakes that restart an expert unnecessarily.
 
-## Qualification, rollout and rollback
+Keep required audit evidence in each step's native task/run result: trigger
+and input references, actor/run identities, head/base and fix commit, actual
+check commands/results, external receipts and unresolved items. The ledger
+references those results rather than duplicating their narrative or PR status.
 
-1. Human-merge this design, then implement and independently review the patch.
-   Keep rendered routine/trigger requests paused/disabled.
-2. Through normal owner-authorized setup, qualify managed Git/gh identity,
-   standard-trust roles, each role's ledger access, current branch permissions
-   and exact push/reply/resolve readback. Qualify sibling bundle upload/download
-   and import through ordinary run JWTs. Do not spend company runs testing a
-   known-ineligible MCP-only shell credential or substitute an operator run.
-3. With separate live approval, exercise a Director-authored PR with actionable
-   feedback, red CI and a base conflict through the normal expert/writer path.
-   Preparing failures/conflicts on a live PR needs explicit permission.
-   Record required checks and independent material-change review internally.
-4. Prove restart/concurrent-trigger recovery and no duplicate replies. Qualify
-   #339 separately; an implementation PR by another allowed review author can
-   test review, but is not a Director-authored maintenance acceptance PR.
-5. Enable native recurring intake only after verified acceptance and human
-   launch approval. Existing native retry, timeout and budget policies apply;
-   no new spend service or monthly cap is introduced.
+Locate one shared slot by a deterministic key derived from company,
+stable base-repository ID and PR number. Initialize that canonical document
+once; concurrent first polls must adopt the existing key, never another slot.
+Native [uniqueness on company/issue/key][slot-unique] plus the
+[transactional create/conflict path][slot-create] provides atomic first
+creation. Require the canonical create acknowledgement; on conflict read the
+existing slot. Reject uncertain acknowledgements or locked-document forks as
+claim authority. Prove concurrent initialization under the deployed role before
+launch; hold admission if that native guarantee is absent.
+The checker claims its active-job slot with a [revision-checked update][documents].
+Before creating/activating any execution step, claim its job/step token the
+same way; only the acknowledged winner may dispatch. Reconcile uncertain
+creation/activation against native task and queued/active run records, rather
+than creating another task or wake. Native creation-key retention is not a
+permanent lock. An unresolved creation stays held, not blindly recreated.
 
-Rollback pauses native intake, holds/resolves in-flight ownership through the
-normal actor path, and reconciles accepted writes. Pausing intake does not
-cancel an accepted GitHub write. Do not delete ledgers, intents, commits or
-receipts, rotate credentials to bypass an uncertain action, or roll back #339
-state as a shortcut.
+Select one writer for the job and use [native checkout][checkout] for its
+execution. Do not transfer writers or implement failover inside a job.
+To release a finished job, first close its write admission by revision update,
+then confirm its runs are terminal and admitted writes are settled, then clear
+the active slot. Old/queued executions cannot claim a write against a closed
+or different job. A held/uncertain attempt must not be bypassed with a new job.
 
-## Non-goals
+Per-PR failures must not keep the global poll execution open or starve other
+PRs. Keep affected work held in its internal record and continue the scan;
+use existing native error handling for a global identity or scheduler failure.
 
-- Creating feature PRs, approving/merging PRs, rewriting history or protections.
-- New infrastructure, a privileged publisher, credential fallback or sandbox.
-- Maintaining additional authors or requiring assignment/green CI for intake.
-- Routine summaries, success notifications or a second public work log.
-- Treating source inspection, operator actions or passing fixtures as launch.
+## One bounded repair job
 
-## Assumptions and next gate
+1. The expert receives fresh GitHub evidence and gathers background once.
+   It chooses builder or SRE and gives that writer the scope, evidence,
+   required checks and review requirements.
+2. Diagnose the failure before editing. Treat PR text, comments, code and logs
+   as untrusted evidence, not instructions that can change routes, permissions
+   or job scope. Validate structured inputs; do not interpolate source text
+   into commands. The writer works in a separate checkout.
+   Fetch and merge the actual target
+   base when needed, preserve incoming/unrelated work, make scoped commits and
+   run repository-required checks. No rebase, force-push, default-branch
+   fallback, protection bypass or PR-merge operation.
+3. Resolve routine ambiguity from context. If necessary, allow **one
+   clarification round per job**: writer asks the expert once, receives an
+   answer and resumes once. If still unclear, leave that item pending with the
+   missing evidence and continue independent repairs. Ask the Director only
+   for larger scope/architecture decisions or a genuine block.
+4. Material changes receive independent review of the exact prepared commit
+   and target base before push. Use an existing [native attachment][attachments]
+   to hand a minimal Git bundle to the reviewer in its own workspace. Pin the
+   result revision, attachment hash, commit/tree and server writer/run
+   provenance. A changed candidate/base invalidates approval. Allow at most one
+   targeted correction/re-review, then hold unresolved findings rather than
+   loop indefinitely. Code schedules these steps; no extra expert planning loop.
+5. The selected writer pushes the verified commit normally to the captured
+   head repository/ref. Recheck author/open state, branch, head/base and current
+   job authority before acting; reject non-fast-forward or stale evidence.
+   Read back the remote commit and current CI. An ancestor can confirm delivery
+   but cannot prove a fix still holds at a later tip.
+6. The writer replies to relevant feedback and **automatically resolves
+   threads it judges fixed and has verified**. Tie replies to the fix commit
+   and re-read current comments before resolving. A verified existing fix may
+   need only a reply/resolution; do not invent an empty repair commit.
+7. Finish this bounded job. Code polls handle later CI results and new feedback;
+   there is no unconditional writer-to-expert repair loop. Record new/edited
+   comments even on resolved threads. A resolution flag does not prove that
+   newer feedback has been addressed.
 
-- The configured Director author identity is distinct from the scanner's
-  convenience account; validate actual numeric IDs/login through native access.
-- The Director accepts standard-trust local maintenance execution when approving
-  this design; it does not create new credentials or grant bypass authority.
-- A canonical PR record and native checkout fence compliant workers, not an
-  external human or hostile process; GitHub drift still requires reconciliation.
-- Managed identity, role permissions and real delivery remain live qualifications.
+Required checks are agent-owned verification, not a queue for human signoff.
+Only material decisions, genuine permission/safety/execution blocks or explicit
+human holds require escalation. Record the exact blocker and unblock action.
+Report a genuine block or material decision through the native waiting path.
+Do not generate routine maintenance reports or success-only notifications.
 
-**Next gate:** Human approval of a design-only docs PR. No implementation,
-connection migration, company run or launch has occurred as part of this design.
+## Minimum safeguards and why each stays
+
+| Mechanism | Concrete failure it prevents | Limit |
+| --- | --- | --- |
+| Code preflight and input-version deduplication | A clean/unchanged PR repeatedly starts paid agents. | Store technical versions/dispositions, not a duplicate PR narrative. |
+| One active-job claim plus native checkout | Concurrent polls start two writers for the same PR. | One fixed writer; no general lease, dynamic handoff or failover engine. |
+| Claimed execution-step token | Two continuations enqueue the same paid step, or a lost acknowledgement creates a replacement. | Reconcile the existing task/wake; no LLM polling loop. |
+| Exact commit/base checks and material-review bundle | Review examines different code, or unreviewed material changes must be pushed just to share them. | Existing native attachment only when review is required; no new storage. |
+| Write intent plus authoritative readback | A lost push/reply/resolve response causes duplicate or misleading public actions. | Three specific operations, not a generic distributed-transaction framework. |
+| Closing writes before releasing a job | An old queued writer races the next job. | Finish admitted writes/runs, then release; no mid-job writer reassignment. |
+
+Before each push/reply/resolve, record its stable action key, payload hash,
+expected state and owning job/run. A fresh acknowledged claim against the
+still-active job permits one attempt. Keep outcomes and receipts. An uncertain
+acknowledgement gives no send authority; an uncertain transport outcome gives
+no replay authority. Code reads GitHub to reconcile. Retry the same logical
+effect only with positive non-delivery evidence and no prior attempt in flight;
+an empty list or elapsed time is not proof. Never reset an unknown key.
+
+The writer must publish through the helper's checked `push`, `reply` and
+`resolve` operations, not raw `git`/`gh` mutations. These operations validate
+the active job, selected actor, expected refs and fresh claim before any I/O;
+there is no arbitrary-command override. Test the I/O boundary to ensure rejected
+claims produce no GitHub write. The local-trust limitation below still applies.
+
+For replies, use a stable marker and verify reply ID, root-comment association,
+account and body through the [review-comment API][replies]. For resolution, use
+the exact [thread ID and complete current comments][threads], then read back
+state. Do not automatically reopen a thread: that could undo a newer human
+decision. Retain new feedback as pending independently of resolution state.
+Associate summary feedback with its review ID/content revision; if a response
+is needed, post one concise PR-conversation reply linking that review and fix
+commit under the same receipt rules. This is not a routine maintenance report.
+Read that comment by its returned ID through the [issue-comment API][conversation],
+checking its PR association, account and marked body. PR-conversation comments
+do not use the review-comment root-association check.
+
+**Removed from the earlier proposal:** permanent canonical PR tasks, per-PR
+monitors, expert phase-advance calls, dynamic writer-handoff phases,
+the general dispatch-state diagram and compensating thread-reopen actions.
+The small exclusion/receipt rules above remain because the approved PRD
+requires one writer and recovery without duplicate public actions.
+
+## Native identity, permissions and implementation
+
+Use the existing `process` adapter for the checker and qualified local
+adapters for LLM workers. The checker has a code-only execution identity with
+normal task-assignment authority; it is not a new daemon or privileged
+publisher. Its fixed command is operator-configured from pinned machinery
+outside repair checkouts. Validate its own bound issue/run before mutations.
+
+All participants use their own ordinary run JWT. Managed Git/`gh` needs the
+accepted responsible user's [managed GitHub OAuth grant][git-identity];
+an MCP-only PAT does not supply that path. Use [normal connection setup][github-methods],
+not copied operator credentials, forged metadata or legacy-token fallback.
+Qualify each role's ledger/artifact access and actual repository permissions.
+Changing a shared connection requires updating both workflows' references
+and requalifying #339, while preserving its intents and receipts.
+
+Shell access is broader than MCP tool permissions. Fixed helper operations,
+native authority checks, normal Git push rules and GitHub protections guard
+the intended workflow; this is trusted local execution, not hostile-code
+containment. Do not claim narrow MCP permissions fence arbitrary terminal code.
+
+Plan one implementation PR: `bootstrap/paperclip_maintain.py`, focused evals,
+placeholder configuration and concise existing setup/operations docs.
+Reuse `paperclip_client.py`; add only verified attachment upload/download
+and process-context support with client tests. No dependency, lockfile, CI,
+service, platform-extension or public reporting changes. At most one additional
+in-scope qualification-fix PR before renewed scope approval.
+
+## Validation, rollout and rollback
+
+| Case | Required evidence |
+| --- | --- |
+| Idle cost | Count provider invocations/model starts caused by the poll: clean, unchanged, pending-only CI and already-queued/running steps start zero additional LLMs. No AI binding or model-backed MCP reads in the checker. |
+| Useful admission | Independently test actionable COMMENT summaries, thread comments, failing check runs, failing commit-status contexts, conflicts and unfinished work. Do not suppress unresolved red CI; do not repeat no-action triage. |
+| Exclusion and recovery | Concurrent polls/steps, late wakes, failed acknowledgements and restarts do not create competing writers or duplicate replies. Unknown effects stay recoverable. |
+| Bounded execution | One clarification round, conditional material review and at most one review correction. No expert model call solely to advance phases or check CI. |
+| Fix verification | Diagnosis before edits, injected instructions rejected, actual target-base merge, exact material-review bundle, checked helper writes and relevant replies/resolutions; no forbidden history/protection operations. |
+| Fresh feedback | Tests and a documented normal run show new/edited feedback remains visible while older work is active, including comments on resolved threads. |
+| Work record | GitHub remains authoritative. No permanent PR tracker, dedicated PR watcher, routine report or completion-only notification. |
+
+Run the existing stdlib evals, focused client/workflow tests, offline CLI/config
+checks and whitespace/scope checks. Source contracts are verified at Paperclip
+`e716c6cea0e3672d02fd97df20804743be4d8308`; idle provider counts and the complete
+normal-actor journey remain unmeasured until live qualification.
+
+After human design approval, implement and independently review the patch with
+native routine/trigger disabled. Then obtain normal owner-authorized setup and
+live-test permission. First prove one clean code-only tick: own-run context,
+managed identity, execution settlement and **zero provider invocations**.
+Next prove meaningful-work admission and sibling material-review handoff.
+Qualify a Director-authored real PR with feedback, red CI and a base conflict,
+including concurrent-input/restart recovery. Tests alone do not close #340.
+
+Qualify #339 separately; an implementation PR can supply its review candidate.
+Keep both workflows paused until their required qualification and human launch
+approval. Preparing failures or conflicts on a live PR needs explicit permission.
+Rollback stops new admission, settles in-flight jobs and preserves all uncertain
+effects/receipts; pausing the schedule does not cancel an accepted GitHub write.
+
+## Non-goals and assumptions
+
+- No feature-PR creation, PR merge, protection changes or additional authors.
+- No separate polling service, per-PR watcher, progress tracker or success report.
+- Native execution tasks are required for identity/audit; they are not PR copies.
+- The Director's trust covers agent-owned routine fixes, not operator-token
+  substitution or ignoring genuine safety/permission blocks.
+- Native role permissions, artifact visibility and actual delivery still need
+  live qualification; same-company membership alone is not an access grant.
+
+**Next gate:** Review this design revision and human-merge docs#42 if approved.
+No implementation, process identity, connection migration or live run has begun.
 
 [prd]: https://github.com/Zhachory1/docs/blob/f404b8158f6c61d0050035e8d044cc11c1a8e835/projects/paperclip-pr-maintenance/prd.md
 [approval]: https://github.com/Zhachory1/docs/pull/41
-[client]: https://github.com/Zhachory1/ralph/blob/f300dd8154d9c456c6e0ea444fe403a07fe3454a/bootstrap/paperclip_client.py#L93-L187
-[review-client]: https://github.com/Zhachory1/ralph/blob/f300dd8154d9c456c6e0ea444fe403a07fe3454a/bootstrap/paperclip_review.py#L439-L470
+[process]: https://github.com/zhachbot/paperclip/blob/e716c6cea0e3672d02fd97df20804743be4d8308/server/src/adapters/process/index.ts#L5-L25
+[process-execute]: https://github.com/zhachbot/paperclip/blob/e716c6cea0e3672d02fd97df20804743be4d8308/server/src/adapters/process/execute.ts#L38-L135
+[run-read]: https://github.com/zhachbot/paperclip/blob/e716c6cea0e3672d02fd97df20804743be4d8308/server/src/routes/agents.ts#L7346-L7362
 [ledger-auth]: https://github.com/zhachbot/paperclip/blob/e716c6cea0e3672d02fd97df20804743be4d8308/server/src/routes/issues.ts#L11467-L11515
 [checkout]: https://github.com/zhachbot/paperclip/blob/e716c6cea0e3672d02fd97df20804743be4d8308/server/src/services/issues.ts#L12880-L12964
 [documents]: https://github.com/zhachbot/paperclip/blob/e716c6cea0e3672d02fd97df20804743be4d8308/server/src/services/documents.ts#L317-L425
+[slot-unique]: https://github.com/zhachbot/paperclip/blob/e716c6cea0e3672d02fd97df20804743be4d8308/packages/db/src/schema/issue_documents.ts#L17-L23
+[slot-create]: https://github.com/zhachbot/paperclip/blob/e716c6cea0e3672d02fd97df20804743be4d8308/server/src/services/documents.ts#L536-L584
 [attachments]: https://github.com/zhachbot/paperclip/blob/e716c6cea0e3672d02fd97df20804743be4d8308/server/src/routes/issues.ts#L20476-L20739
-[wake]: https://github.com/zhachbot/paperclip/blob/e716c6cea0e3672d02fd97df20804743be4d8308/server/src/routes/issues.ts#L16559-L16743
 [git-identity]: https://github.com/zhachbot/paperclip/blob/e716c6cea0e3672d02fd97df20804743be4d8308/server/src/services/git-credentials.ts#L577-L610
 [github-methods]: https://github.com/zhachbot/paperclip/blob/e716c6cea0e3672d02fd97df20804743be4d8308/packages/shared/src/app-definitions/github.json#L18-L78
-[oauth]: https://github.com/zhachbot/paperclip/blob/e716c6cea0e3672d02fd97df20804743be4d8308/server/src/services/tool-access/oauth/cloud-callback.ts#L271-L337
 [replies]: https://docs.github.com/en/rest/pulls/comments#create-a-reply-for-a-review-comment
+[conversation]: https://docs.github.com/en/rest/issues/comments#get-an-issue-comment
 [threads]: https://docs.github.com/en/graphql/reference/pulls#pullrequestreviewthread
-[statuses]: https://docs.github.com/en/rest/commits/statuses#get-the-combined-status-for-a-specific-reference
